@@ -1,0 +1,27 @@
+ra1 Model Gateway
+Copyright 2026 ra1 Engineering & Contributors
+
+This product incorporates logic and architectural patterns adapted from open-source projects under permissive licenses:
+
+1. Portkey AI Gateway
+   License: MIT
+   Pinned SHA: 669825cbe89ee51569918b8f78a9db486fd69dd4
+   Used for: Provider protocol adapters, SSE streaming normalization, retry handler concepts, handler routing.
+
+2. Bifrost (Maxim AI)
+   License: Apache License 2.0
+   Pinned SHA: fa64346b5aabbfa348c0e1e085dc7b3538bc53f3
+   Used for: Error classification matrix, cooldown tracking, pre-first-byte stream fallback logic, routing strategies.
+
+3. Envoy AI Gateway
+   License: Apache License 2.0
+   Pinned SHA: 12fef6422579f544e84be8167d0979527d3576d4
+   Used for: Protocol translation patterns, CEL expressions, and cost estimation design concepts.
+
+4. LiteLLM (Core Open-Source Modules Only)
+   License: MIT
+   Pinned SHA: 7e6fb09da3987c8b75062307695f9083da55feed
+   Used for: Model aliasing and endpoint translation patterns.
+
+AGPL repos were used as behavior references only; see PROVENANCE_LEDGER.md and docs/specs.
+Full license texts for archived reference repositories are preserved in third_party/licenses/.

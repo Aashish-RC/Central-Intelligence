@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pheonix-knowledge"
+version = "0.1.0"
+description = "Pheonix Knowledge and Docs Engine: Notes, Grounded Notebooks, and Memory Sync"
+authors = [{ name = "Pheonix Engineering" }]
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["..", "."]
+asyncio_mode = "auto"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*"]

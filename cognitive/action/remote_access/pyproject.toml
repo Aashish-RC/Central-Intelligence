@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pheonix-remote-access"
+version = "0.1.0"
+description = "Cryptographic Device Pairing, End-to-End Encrypted Tunnel, and Intelligent Path Selection for Pheonix"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
+    "websockets>=12.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["tests"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*"]

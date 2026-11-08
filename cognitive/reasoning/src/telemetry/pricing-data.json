@@ -1,0 +1,186 @@
+{
+  "version": "2026-10-19",
+  "models": {
+    "gpt-4o": {
+      "model": "gpt-4o",
+      "inputPer1k": 0.0025,
+      "outputPer1k": 0.01,
+      "cacheReadPer1k": 0.00125,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "gpt-4o-mini": {
+      "model": "gpt-4o-mini",
+      "inputPer1k": 0.00015,
+      "outputPer1k": 0.0006,
+      "cacheReadPer1k": 0.000075,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "gpt-4.5-preview": {
+      "model": "gpt-4.5-preview",
+      "inputPer1k": 0.075,
+      "outputPer1k": 0.15,
+      "cacheReadPer1k": 0.0375,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "o1": {
+      "model": "o1",
+      "inputPer1k": 0.015,
+      "outputPer1k": 0.06,
+      "reasoningPer1k": 0.06,
+      "cacheReadPer1k": 0.0075,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "o1-mini": {
+      "model": "o1-mini",
+      "inputPer1k": 0.003,
+      "outputPer1k": 0.012,
+      "reasoningPer1k": 0.012,
+      "cacheReadPer1k": 0.0015,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "o3-mini": {
+      "model": "o3-mini",
+      "inputPer1k": 0.0011,
+      "outputPer1k": 0.0044,
+      "reasoningPer1k": 0.0044,
+      "cacheReadPer1k": 0.00055,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "text-embedding-3-small": {
+      "model": "text-embedding-3-small",
+      "inputPer1k": 0.00002,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "text-embedding-3-large": {
+      "model": "text-embedding-3-large",
+      "inputPer1k": 0.00013,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://openai.com/api/pricing/",
+      "retrievedDate": "2026-10-19"
+    },
+    "claude-3-7-sonnet": {
+      "model": "claude-3-7-sonnet",
+      "inputPer1k": 0.003,
+      "outputPer1k": 0.015,
+      "cacheReadPer1k": 0.0003,
+      "cacheWritePer1k": 0.00375,
+      "currency": "USD",
+      "sourceUrl": "https://www.anthropic.com/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "claude-3-5-sonnet": {
+      "model": "claude-3-5-sonnet",
+      "inputPer1k": 0.003,
+      "outputPer1k": 0.015,
+      "cacheReadPer1k": 0.0003,
+      "cacheWritePer1k": 0.00375,
+      "currency": "USD",
+      "sourceUrl": "https://www.anthropic.com/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "claude-3-5-haiku": {
+      "model": "claude-3-5-haiku",
+      "inputPer1k": 0.0008,
+      "outputPer1k": 0.004,
+      "cacheReadPer1k": 0.00008,
+      "cacheWritePer1k": 0.001,
+      "currency": "USD",
+      "sourceUrl": "https://www.anthropic.com/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "claude-3-opus": {
+      "model": "claude-3-opus",
+      "inputPer1k": 0.015,
+      "outputPer1k": 0.075,
+      "cacheReadPer1k": 0.0015,
+      "cacheWritePer1k": 0.01875,
+      "currency": "USD",
+      "sourceUrl": "https://www.anthropic.com/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "gemini-1.5-pro": {
+      "model": "gemini-1.5-pro",
+      "inputPer1k": 0.00125,
+      "outputPer1k": 0.005,
+      "cacheReadPer1k": 0.0003125,
+      "currency": "USD",
+      "sourceUrl": "https://ai.google.dev/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "gemini-1.5-flash": {
+      "model": "gemini-1.5-flash",
+      "inputPer1k": 0.000075,
+      "outputPer1k": 0.0003,
+      "cacheReadPer1k": 0.00001875,
+      "currency": "USD",
+      "sourceUrl": "https://ai.google.dev/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "gemini-2.0-flash": {
+      "model": "gemini-2.0-flash",
+      "inputPer1k": 0.0001,
+      "outputPer1k": 0.0004,
+      "cacheReadPer1k": 0.000025,
+      "currency": "USD",
+      "sourceUrl": "https://ai.google.dev/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "gemini-2.0-pro": {
+      "model": "gemini-2.0-pro",
+      "inputPer1k": 0.00125,
+      "outputPer1k": 0.005,
+      "cacheReadPer1k": 0.0003125,
+      "currency": "USD",
+      "sourceUrl": "https://ai.google.dev/pricing",
+      "retrievedDate": "2026-10-19"
+    },
+    "ollama": {
+      "model": "ollama",
+      "inputPer1k": 0.0,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://ollama.com",
+      "retrievedDate": "2026-10-19"
+    },
+    "llama3.2": {
+      "model": "llama3.2",
+      "inputPer1k": 0.0,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://ollama.com",
+      "retrievedDate": "2026-10-19"
+    },
+    "llama.cpp": {
+      "model": "llama.cpp",
+      "inputPer1k": 0.0,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://github.com/ggerganov/llama.cpp",
+      "retrievedDate": "2026-10-19"
+    },
+    "localai": {
+      "model": "localai",
+      "inputPer1k": 0.0,
+      "outputPer1k": 0.0,
+      "currency": "USD",
+      "sourceUrl": "https://localai.io",
+      "retrievedDate": "2026-10-19"
+    }
+  }
+}

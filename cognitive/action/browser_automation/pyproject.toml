@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pheonix-browser-automation"
+version = "0.1.0"
+description = "Pheonix Browser Automation Engine with Sandboxed Infrastructure and Consequential Action Confirmation Gate"
+authors = [{ name = "Pheonix Team" }]
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+playwright = [
+    "playwright>=1.40.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*"]

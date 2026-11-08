@@ -1,0 +1,21 @@
+{
+  "name": "central-intelligence",
+  "version": "1.0.0",
+  "description": "Central Intelligence — Aevum CI Brain (Layers 1-11)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:reasoning": "pnpm --filter @central-intelligence/reasoning test",
+    "test:orchestration": "pnpm --filter @central-intelligence/orchestration test",
+    "test:memory": "python -m pytest cognitive/memory/tests/ -q",
+    "test:guardrails": "python -m pytest control/safety/guardrails/tests/ -q"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "pnpm@10.30.3"
+}

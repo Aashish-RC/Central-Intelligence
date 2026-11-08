@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pheonix-sandboxes"
+version = "0.1.0"
+description = "Pheonix Isolated Code Sandbox, Resource Governor, and Device Execution Runner"
+authors = [{ name = "Pheonix Team" }]
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+markers = [
+    "live: marks tests as requiring live infrastructure (run with -m live)",
+    "disallow_local: marks tests testing disallowal of local sandbox subprocess runner",
+]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*"]
