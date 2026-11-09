@@ -75,3 +75,4 @@ def filter_results_by_permission(
             authorized.append(item)
 
     return authorized
+

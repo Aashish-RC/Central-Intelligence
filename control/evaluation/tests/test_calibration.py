@@ -37,3 +37,4 @@ def test_confidence_calibration_poorly_calibrated():
     report = calibrator.calculate_calibration()
     assert report.expected_calibration_error >= 0.80
     assert report.well_calibrated is False
+

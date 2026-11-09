@@ -66,3 +66,4 @@ class FeedbackPillar:
             return self.default_neutral_score
 
         return round(weighted_sum / total_weight, 4)
+

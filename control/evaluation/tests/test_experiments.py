@@ -127,3 +127,4 @@ def test_side_by_side_and_variants():
     rates = sbs.get_win_rates()
     assert rates["modelA"] == pytest.approx(0.6667, rel=1e-2)
     assert rates["modelB"] == pytest.approx(0.3333, rel=1e-2)
+

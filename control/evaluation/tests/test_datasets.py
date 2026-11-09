@@ -138,3 +138,4 @@ def test_golden_suite_runner_acceptance():
     assert report2.passed is False
     assert report2.pass_rate == 0.0
     assert len(report2.failures) == 3
+

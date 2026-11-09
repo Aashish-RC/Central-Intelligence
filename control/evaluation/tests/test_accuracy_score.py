@@ -76,3 +76,4 @@ def test_accuracy_score_evaluator_low_trigger_second_opinion_def03():
     assert result.threshold_action == ThresholdAction.TRIGGER_SECOND_OPINION
     assert "Action: trigger_second_opinion" in result.explanation
     # This action directly gates L8 Second-Opinion Trigger (DEF-03 unblock)
+

@@ -100,3 +100,4 @@ def calculate_significance(
         sample_size_b=nb,
         recommendation=rec,
     )
+

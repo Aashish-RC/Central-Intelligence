@@ -110,3 +110,4 @@ class AppScopeManager:
 
 # Default singleton
 default_app_scope_manager = AppScopeManager()
+

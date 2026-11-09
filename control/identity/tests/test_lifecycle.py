@@ -47,3 +47,4 @@ def test_account_lifecycle_recovery_merge_closure_acceptance():
     restored = mgr.cancel_account_closure("usr_1")
     assert restored.status == AccountStatus.ACTIVE
     assert restored.deletion_effective_at is None
+

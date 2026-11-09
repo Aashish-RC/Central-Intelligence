@@ -26,3 +26,4 @@ class AccuracyThresholdConfig:
             return ThresholdAction.FLAG_LOW_CONFIDENCE
         else:
             return ThresholdAction.TRIGGER_SECOND_OPINION
+

@@ -31,3 +31,4 @@ class RoutingABTestRunner:
 
     def analyze(self) -> SignificanceResult:
         return calculate_significance(self.latencies_a, self.latencies_b)
+

@@ -91,3 +91,4 @@ class AutoJudge:
             passed=passed,
             scores=scores,
         )
+

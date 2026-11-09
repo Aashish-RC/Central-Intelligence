@@ -96,3 +96,4 @@ class WebPillar:
         verified = self.verify_claims(claims, reference_knowledge)
         supported_count = sum(1 for c in verified if c.verified)
         return round(supported_count / len(verified), 4)
+

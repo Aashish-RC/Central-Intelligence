@@ -63,3 +63,4 @@ class SideBySideEvaluator:
             self.model_b_name: round(wins_b / total, 4),
             "tie": round(ties / total, 4),
         }
+

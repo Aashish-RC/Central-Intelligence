@@ -35,3 +35,4 @@ class PromptABTestRunner:
 
     def analyze(self) -> SignificanceResult:
         return calculate_significance(self.variant_a.scores, self.variant_b.scores)
+

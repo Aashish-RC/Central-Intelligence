@@ -111,3 +111,4 @@ def test_agent_runner_interface_compatibility():
     result = adapter.run_scenario(scenario, runner)
     assert result.passed is True
     assert "database" in result.agent_responses[0].lower()
+

@@ -72,3 +72,4 @@ def test_scim_automated_provisioning_and_deprovisioning():
 
     with pytest.raises(PermissionError, match="revoked"):
         fed_mgr.keycloak.verify_token(tokens.access_token)
+

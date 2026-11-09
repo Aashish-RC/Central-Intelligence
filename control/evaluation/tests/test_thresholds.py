@@ -20,3 +20,4 @@ def test_configurable_thresholds():
     assert custom_config.evaluate_action(0.85) == ThresholdAction.FLAG_LOW_CONFIDENCE
     assert custom_config.evaluate_action(0.65) == ThresholdAction.TRIGGER_SECOND_OPINION
     assert custom_config.user_visibility_enabled is True
+

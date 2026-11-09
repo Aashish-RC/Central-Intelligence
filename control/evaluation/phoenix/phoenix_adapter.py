@@ -257,3 +257,4 @@ class PhoenixAdapter:
             sample_size=len(current_embeddings),
             recommendation=rec,
         )
+

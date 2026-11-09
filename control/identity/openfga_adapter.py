@@ -232,3 +232,4 @@ class OpenFGAAdapter:
 
 # Global default instance
 default_openfga_adapter = OpenFGAAdapter()
+

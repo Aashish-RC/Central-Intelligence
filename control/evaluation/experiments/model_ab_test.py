@@ -94,3 +94,4 @@ class ModelABTestHarness:
             latency_mean_b=round(lat_b, 2),
             winner=winner,
         )
+

@@ -83,3 +83,4 @@ def test_agent_mutual_authentication():
     valid_bad, err = mgr.verify_m2m_handshake(token, expected_target_agent_id="agent_imposter")
     assert valid_bad is False
     assert "mismatch" in err.lower()
+

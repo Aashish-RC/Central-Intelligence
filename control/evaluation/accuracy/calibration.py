@@ -114,3 +114,4 @@ class ConfidenceCalibrator:
             bins=bins,
             well_calibrated=ece <= self.ece_threshold,
         )
+

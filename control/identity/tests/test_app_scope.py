@@ -41,3 +41,4 @@ def test_app_data_isolation_and_rate_limiting_acceptance():
 
     # Meanwhile App B is unaffected by App A's throttling
     assert mgr.check_rate_limit("app-finance-analytics") is True
+

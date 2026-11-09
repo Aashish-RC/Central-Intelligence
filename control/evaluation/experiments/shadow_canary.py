@@ -141,3 +141,4 @@ class CanaryEvaluator:
             should_rollback=should_rollback,
             reason="; ".join(reasons) if reasons else "Canary is healthy and meeting quality targets",
         )
+

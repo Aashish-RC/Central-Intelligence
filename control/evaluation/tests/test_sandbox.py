@@ -51,3 +51,4 @@ def test_tenant_sandbox_whitelisted_and_disabled():
     is_sim2, output2 = sandbox.intercept("send_email", {"to": "user@test.com"}, tenant_id=tenant_id)
     assert is_sim2 is False
     assert output2 is None
+

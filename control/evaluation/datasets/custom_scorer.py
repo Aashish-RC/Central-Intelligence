@@ -180,3 +180,4 @@ class CompositeScorer(BaseScorer):
             details={"sub_results": sub_results, "threshold": self.pass_threshold},
             reason="Threshold met" if passed else f"Score {composite_score:.2f} below {self.pass_threshold}",
         )
+

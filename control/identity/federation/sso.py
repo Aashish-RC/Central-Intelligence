@@ -111,3 +111,4 @@ class FederationManager:
             self.keycloak.revoke_token(t)
 
         return True
+

@@ -50,3 +50,4 @@ class OnlineQualityMonitor:
             bias_fairness=self.bias_monitor.evaluate_fairness(),
             satisfaction=self.satisfaction_tracker.get_metrics(),
         )
+

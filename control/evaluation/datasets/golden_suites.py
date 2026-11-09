@@ -126,3 +126,4 @@ class GoldenSuiteRunner:
             sample_results=sample_results,
             failures=failures,
         )
+

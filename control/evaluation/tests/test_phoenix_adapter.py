@@ -119,3 +119,4 @@ def test_embedding_drift_detection(adapter):
     report_shifted = adapter.detect_embedding_drift(baseline, shifted_current, threshold=0.15)
     assert report_shifted.drift_detected is True
     assert "recalibration" in report_shifted.recommendation.lower()
+

@@ -139,3 +139,4 @@ class AccuracyScoreEvaluator:
             explanation=explanation,
             claims_evaluated=len(claims),
         )
+

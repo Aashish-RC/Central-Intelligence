@@ -317,3 +317,4 @@ class KeycloakAdapter:
                     raise PermissionError("API key has expired")
                 return record
         raise PermissionError("Invalid API key")
+

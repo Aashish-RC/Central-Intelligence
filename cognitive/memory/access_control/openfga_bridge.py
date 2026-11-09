@@ -60,3 +60,4 @@ def check_memory_access(
         raise AccessDeniedError(f"User {user_id} cannot {action} memory scope {memory_scope}")
 
     return True
+

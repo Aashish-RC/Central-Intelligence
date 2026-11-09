@@ -207,3 +207,4 @@ class AgentIdentityManager:
 
 # Default singleton
 default_agent_identity_manager = AgentIdentityManager()
+

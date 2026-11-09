@@ -225,3 +225,4 @@ class InfisicalAdapter:
 
 # Default singleton
 default_infisical_adapter = InfisicalAdapter()
+

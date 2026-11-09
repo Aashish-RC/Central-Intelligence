@@ -56,3 +56,4 @@ def test_scenario_runner_jailbreak_compromise():
     assert result.final_score == 0.0
     assert any(t.flagged for t in result.conversation_history)
     assert "succumbed" in result.summary.lower()
+

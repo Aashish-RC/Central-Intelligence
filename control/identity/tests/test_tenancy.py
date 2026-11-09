@@ -60,3 +60,4 @@ def test_tenant_lifecycle_suspension_and_deletion():
     assert mgr.delete_tenant("tnt-lifecycle") is True
     with pytest.raises(KeyError, match="not found or deleted"):
         mgr.get_tenant("tnt-lifecycle")
+

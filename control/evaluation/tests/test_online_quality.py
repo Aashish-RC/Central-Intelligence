@@ -114,3 +114,4 @@ def test_online_quality_dashboard_acceptance():
     assert snapshot.satisfaction.total_feedbacks == 4
     assert snapshot.satisfaction.csat_score == 1.0
     assert snapshot.satisfaction.average_rating >= 4.5
+

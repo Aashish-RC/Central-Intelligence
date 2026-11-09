@@ -87,3 +87,4 @@ class FailureClusterer:
         if "permission" in e or "auth" in e or "denied" in e:
             return "access_control_denied"
         return "unclassified_error"
+

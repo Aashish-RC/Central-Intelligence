@@ -76,3 +76,4 @@ def test_openfga_delegated_scoped_access():
 
     # But not edit permission
     assert fga.check_permission(user="agent:summary_bot", action="can_edit", resource="document:annual_report") is False
+

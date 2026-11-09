@@ -48,3 +48,4 @@ class BiasFairnessMonitor:
             group_scores={k: round(v, 4) for k, v in averages.items()},
             sample_sizes=counts,
         )
+

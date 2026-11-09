@@ -54,3 +54,4 @@ class HallucinationTracker:
             alert_triggered=alert,
             alert_threshold=self.alert_threshold,
         )
+

@@ -59,3 +59,4 @@ def test_unified_e2e_pipeline_stage_interruption():
     assert report.stages[4].stage == PipelineStage.L5_ACTION
     assert report.stages[4].success is False
     assert "Sandbox resource limit" in str(report.stages[4].error)
+

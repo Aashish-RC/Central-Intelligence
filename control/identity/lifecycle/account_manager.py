@@ -138,3 +138,4 @@ class AccountLifecycleManager:
 
 # Default singleton
 default_account_lifecycle_manager = AccountLifecycleManager()
+

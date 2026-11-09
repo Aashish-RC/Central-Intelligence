@@ -91,3 +91,4 @@ def test_infisical_env_injection():
     assert injected["ANTHROPIC_API_KEY"] == "sk-ant-test"
     assert injected["GEMINI_API_KEY"] == "gm-test-123"
     assert "MISSING_KEY" not in injected
+

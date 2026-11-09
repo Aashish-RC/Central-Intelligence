@@ -110,3 +110,4 @@ def test_brain_api_keys():
     record.revoked = True
     with pytest.raises(PermissionError, match="revoked"):
         adapter.verify_api_key(raw_key)
+

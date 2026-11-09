@@ -45,3 +45,4 @@ class QualityBarManager:
             required_bar=required,
             meets_bar=actual_score >= required,
         )
+

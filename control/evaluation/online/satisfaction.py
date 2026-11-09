@@ -85,3 +85,4 @@ class SatisfactionTracker:
             average_rating=round(avg_rating, 2),
             trend=trend,
         )
+

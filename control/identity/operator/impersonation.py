@@ -111,3 +111,4 @@ class ImpersonationManager:
             session.is_active = False
             return False
         return True
+

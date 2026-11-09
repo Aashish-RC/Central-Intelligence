@@ -67,3 +67,4 @@ class ConsensusPillar:
                 ratios.append(sm.ratio())
 
         return round(sum(ratios) / len(ratios), 4)
+
