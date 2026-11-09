@@ -74,6 +74,15 @@ const repos = await aciFederation.executeTool('federated:nango:github_list_repos
 const file = await aciFederation.executeTool('federated:mcp:filesystem:read_file', { path: 'README.md' });
 ```
 
+---
+
+## 5. Concurrency & Lock Manager, Shared Scratchpad (Features 5.44, 5.45, 8.49)
+
+Located in `cognitive/action/shared_state/`:
+- **DistributedLockManager (`lock_manager.py`):** Mutual exclusion (mutex) and shared reader-writer locks with auto-expiring TTL leases, reentrancy support, and renewal heartbeats.
+- **SharedScratchpad (`scratchpad.py`):** Thread-safe collaborative blackboard supporting atomic Compare-and-Set (CAS), atomic increments, append operations, and complete audit logging across concurrent agents.
+
+
 typescript
 import { getConnectorAction } from './connectors/connectorRegistry.js';
 
@@ -137,5 +146,14 @@ const tools = await aciFederation.listFederatedTools();
 const repos = await aciFederation.executeTool('federated:nango:github_list_repos');
 const file = await aciFederation.executeTool('federated:mcp:filesystem:read_file', { path: 'README.md' });
 ```
+
+---
+
+## 5. Concurrency & Lock Manager, Shared Scratchpad (Features 5.44, 5.45, 8.49)
+
+Located in `cognitive/action/shared_state/`:
+- **DistributedLockManager (`lock_manager.py`):** Mutual exclusion (mutex) and shared reader-writer locks with auto-expiring TTL leases, reentrancy support, and renewal heartbeats.
+- **SharedScratchpad (`scratchpad.py`):** Thread-safe collaborative blackboard supporting atomic Compare-and-Set (CAS), atomic increments, append operations, and complete audit logging across concurrent agents.
+
 
 
