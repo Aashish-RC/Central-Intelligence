@@ -55,8 +55,8 @@
 | **12.43** | Account Merging | **built** | Own implementation | no | `tests/test_lifecycle.py` |
 | **12.44** | Account Closure & 30-Day Grace Period | **built** | Own implementation | no | `tests/test_lifecycle.py` |
 | **12.45** | Financial Authority Bridge (Spend Limits, Approvals) | **built** | Own implementation | no | `tests/test_financial_bridge.py` |
-| **12.46** | Operator Console (Inspect, Pause, Override Agents) | pending | Own implementation | no | `tests/test_operator.py` |
-| **12.47** | Audited Support Impersonation | pending | Own implementation | no | `tests/test_operator.py` |
+| **12.46** | Operator Console (Inspect, Pause, Override Agents) | **built** | Own implementation | no | `tests/test_operator.py` |
+| **12.47** | Audited Support Impersonation | **built** | Own implementation | no | `tests/test_operator.py` |
 
 ---
 
