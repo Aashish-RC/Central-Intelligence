@@ -102,6 +102,16 @@ Located in `cognitive/action/registry/curated_registry.py`:
 - **Sliding-Window Rate Limiting:** Enforces per-agent, per-tool requests-per-minute (RPM) ceilings over moving 60-second windows.
 - **Input Schema Validation:** Validates arguments against defined property types and required fields prior to dispatch.
 
+---
+
+## 8. Review-Before-Wider-Sharing Pipeline (Features 5.47, 19.35)
+
+Located in `cognitive/action/safety/sharing_pipeline.py`:
+- **Scoping Governance:** Governs promotion of agent discoveries and assets across scopes: `agent_private` -> `team_internal` -> `cross_team` -> `public`.
+- **Automated Redaction Scanning:** Discovers and redacts API keys, passwords, bearer tokens, emails, phone numbers, and payment cards.
+- **Supervisor Approval Gate:** Requires explicit reviewer confirmation before assets containing sensitive findings or targeting external scopes can be distributed.
+
+
 
 
 
@@ -196,6 +206,16 @@ Located in `cognitive/action/registry/curated_registry.py`:
 - **Role-Based Access Control (RBAC):** Strict role prerequisites per tool (`required_roles`) with administrative bypass.
 - **Sliding-Window Rate Limiting:** Enforces per-agent, per-tool requests-per-minute (RPM) ceilings over moving 60-second windows.
 - **Input Schema Validation:** Validates arguments against defined property types and required fields prior to dispatch.
+
+---
+
+## 8. Review-Before-Wider-Sharing Pipeline (Features 5.47, 19.35)
+
+Located in `cognitive/action/safety/sharing_pipeline.py`:
+- **Scoping Governance:** Governs promotion of agent discoveries and assets across scopes: `agent_private` -> `team_internal` -> `cross_team` -> `public`.
+- **Automated Redaction Scanning:** Discovers and redacts API keys, passwords, bearer tokens, emails, phone numbers, and payment cards.
+- **Supervisor Approval Gate:** Requires explicit reviewer confirmation before assets containing sensitive findings or targeting external scopes can be distributed.
+
 
 
 

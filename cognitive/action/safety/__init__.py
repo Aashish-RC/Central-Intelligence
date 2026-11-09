@@ -29,6 +29,12 @@ from .action_preview import (
     ActionPreview,
     ActionPreviewRenderer,
 )
+from .sharing_pipeline import (
+    SharingScope,
+    SharingStatus,
+    SharingRequest,
+    ReviewSharingPipeline,
+)
 
 __all__ = [
     "ActionRiskAssessment",
@@ -46,4 +52,8 @@ __all__ = [
     "TransactionStatus",
     "ActionPreview",
     "ActionPreviewRenderer",
+    "SharingScope",
+    "SharingStatus",
+    "SharingRequest",
+    "ReviewSharingPipeline",
 ]
