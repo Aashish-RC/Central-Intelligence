@@ -41,6 +41,12 @@ from memory.integrity.poisoning_defense import (
     PoisoningDetectionResult,
     SecurityPolicyViolationError,
 )
+from memory.lessons import (
+    LessonsLearnedExtractor,
+    LessonStore,
+    LessonRecord,
+    LessonCategory,
+)
 
 
 class MemoryEngine:
@@ -119,6 +125,12 @@ class MemoryEngine:
             vector_store=self.vectors,
             embedder=self.embedder,
             config=self.config,
+        )
+
+        # Feature 2.49: Lessons-Learned Subsystem
+        self.lesson_extractor = LessonsLearnedExtractor()
+        self.lesson_store = LessonStore(
+            db_path=self.config.sqlite_path if hasattr(self.config, "sqlite_path") else None
         )
 
     def remember(
@@ -487,3 +499,21 @@ class MemoryEngine:
             project_id=project_id,
             metadata=metadata,
         )
+
+    # --- Feature 2.49 / 7.27: Lessons Learned APIs ---
+
+    def extract_and_store_lessons(self, turns: List[Turn]) -> List[LessonRecord]:
+        """Extract actionable lessons from conversation history and save them."""
+        lessons = self.lesson_extractor.extract_from_turns(turns)
+        for lesson in lessons:
+            self.lesson_store.save_lesson(lesson)
+        return lessons
+
+    def get_relevant_lessons(
+        self,
+        query: str,
+        category: Optional[LessonCategory] = None,
+        limit: int = 3,
+    ) -> List[LessonRecord]:
+        """Retrieve stored operational lessons relevant to a task query or command."""
+        return self.lesson_store.query_lessons(query=query, category=category, limit=limit)

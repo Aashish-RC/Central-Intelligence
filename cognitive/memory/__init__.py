@@ -6,6 +6,12 @@ from .integrity.poisoning_defense import (
     MemoryPoisoningError,
     PoisoningDetectionResult,
 )
+from .lessons import (
+    LessonsLearnedExtractor,
+    LessonStore,
+    LessonRecord,
+    LessonCategory,
+)
 from .config import (
     MemoryConfig,
     default_config,
