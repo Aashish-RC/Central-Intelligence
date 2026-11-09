@@ -61,3 +61,13 @@ Located in `cognitive/knowledge/quality/`:
 - **Pluggable LLM-as-Judge Hook:** Allows runtime LLM factual rigor evaluation to refine heuristic content scores.
 - **Tier Classification:** Categorizes sources into `TIER_1_AUTHORITATIVE`, `TIER_2_RELIABLE`, `TIER_3_UNVERIFIED`, and `TIER_4_LOW_QUALITY`.
 
+---
+
+## 5. Copyright & License Provenance Tagger (Features 3.45, 3.46)
+
+Located in `cognitive/knowledge/provenance/`:
+- **SPDX & License Recognition:** Analyzes ingestion text for SPDX tags (`SPDX-License-Identifier`), permissive licenses (MIT, Apache-2.0, BSD), and Creative Commons constraints.
+- **Copyleft & Viral Clause Detection:** Identifies GPL/AGPL clauses and flags requirements for source disclosure to prevent licensing contamination.
+- **Proprietary & Trade Secret Protection:** Flags confidential headers (`CONFIDENTIAL`, `PROPRIETARY AND CONFIDENTIAL`, `TRADE SECRET`) and restricts commercial or model training use.
+- **Copyright Notice Extraction:** Captures structured copyright notices with publication years and copyright holders.
+
