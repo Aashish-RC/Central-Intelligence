@@ -72,6 +72,8 @@ export interface GatewayRequestOptions {
   keyLookupHook?: KeyLookupHook;
   auditHook?: AuditHook;
   streamChunkHook?: StreamChunkHook;
+  enableSynthesis?: boolean;
+  synthesisTier?: 0 | 1 | 2 | 3;
 }
 
 export interface IGatewayEngine {

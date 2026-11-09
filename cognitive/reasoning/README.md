@@ -139,6 +139,18 @@ console.log(result.finalResponse);
 ### Security & Privacy
 - **Reversible PII Masking**: Inbound sensitive entities are substituted with surrogate tokens using the `[TOKEN_<TYPE>_<HEX>]` format before upstream dispatch and restored downstream.
 
+### Adaptive Multi-Model Synthesis Engine (Crown Jewel — Features 4.08, 11.14)
+Located in `cognitive/reasoning/src/synthesis/`:
+- **Sub-module A: Process Reward Verifier (PRM) (`prmVerifier.ts`):** Step-level scoring (0.0 - 1.0) of intermediate reasoning steps; prunes logically flawed branches before child steps execute.
+- **Sub-module B: Claim Decomposition Engine (`claimDecomposer.ts`):** Decomposes reasoning conclusions into atomic claims and cross-verifies factual claims against reference knowledge contexts.
+- **Sub-module C: Mixture of Agents (MoA) Fusion Aggregator (`moaFusion.ts`):** Fuses outputs from 3+ parallel candidate models to synthesize complementary insights, resolve disagreements, and compute cross-candidate consensus scores.
+- **Sub-module D: Tiered Activation Gate (`tieredActivation.ts`):** Dynamically chooses optimal verification tier:
+  - **Tier 0:** Fast-path for simple queries (e.g. arithmetic, greetings) with zero synthesis overhead.
+  - **Tier 1:** Single model execution with Claim Decomposition fact-checking.
+  - **Tier 2:** Complex queries with PRM step verification and claim validation.
+  - **Tier 3:** High-stakes tasks with full MoA fusion (3+ models), PRM verification, and atomic claim corroboration.
+  - **Second-Opinion Fallback:** Dynamically escalates to Tier 3 full synthesis if initial accuracy score is below 0.5.
+
 ---
 
 ## Quick Start
