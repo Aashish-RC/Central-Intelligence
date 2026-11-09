@@ -116,6 +116,46 @@ services:
     volumes:
       - phoenix_data:/root/.phoenix
 
+  # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys)
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: central-keycloak
+    restart: unless-stopped
+    command: start-dev
+    ports:
+      - "8085:8080"
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
+  # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization
+  openfga:
+    image: openfga/openfga:latest
+    container_name: central-openfga
+    restart: unless-stopped
+    command: run
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    environment:
+      - OPENFGA_DATA_STORE_ENGINE=memory
+    volumes:
+      - openfga_data:/var/lib/openfga
+
+  # Infisical Vault for L12 Secret Management & Key Rotation
+  infisical:
+    image: infisical/infisical:latest
+    container_name: central-infisical
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:-centralIntelligenceInfisicalKey32BytesLong!}
+    volumes:
+      - infisical_data:/data
+
 volumes:
   qdrant_data:
   ollama_models:
@@ -127,3 +167,6 @@ volumes:
   nango_data:
   temporal_data:
   phoenix_data:
+  keycloak_data:
+  openfga_data:
+  infisical_data:
