@@ -71,3 +71,12 @@ Located in `cognitive/knowledge/provenance/`:
 - **Proprietary & Trade Secret Protection:** Flags confidential headers (`CONFIDENTIAL`, `PROPRIETARY AND CONFIDENTIAL`, `TRADE SECRET`) and restricts commercial or model training use.
 - **Copyright Notice Extraction:** Captures structured copyright notices with publication years and copyright holders.
 
+---
+
+## 6. Point-in-Time Knowledge Snapshots (Feature 3.24)
+
+Located in `cognitive/knowledge/snapshots/`:
+- **Immutable Knowledge Checkpoints:** Captures point-in-time snapshots of notes, documents, chunk collections, and graph relationships.
+- **Structural Snapshot Diffing (`diff_snapshots`):** Compares versions to track additions, deletions, and modifications of knowledge items and relational triples.
+- **Point-in-Time Querying (`query_point_in_time`):** Enables historical retrieval strictly scoped to knowledge state as of a specific checkpoint or audit tag.
+
