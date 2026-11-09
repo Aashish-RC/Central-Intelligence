@@ -175,6 +175,13 @@ export { MODEL_CATALOG, getModelById } from './catalog.js';
 export { OmniRouter } from './routing/router.js';
 export { selectModel, searchModels } from './routing/selector.js';
 export { classifyTask } from './routing/taskClassifier.js';
+export {
+  CognitiveRoutingPolicyEngine,
+  type TaskComplexity,
+  type RoutingObjective,
+  type PolicyRule,
+  type CognitiveRoutingDecision,
+} from './routing/cognitivePolicy.js';
 export { VirtualKeyManager } from './governance/virtualKeyManager.js';
 export { BudgetTracker, BudgetExceededError } from './governance/budgetTracker.js';
 export { RateLimiter, RateLimitExceededError } from './governance/rateLimiter.js';

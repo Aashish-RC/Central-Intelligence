@@ -8,6 +8,7 @@ The Orchestration Layer (`control/orchestration`) provides multi-agent routing, 
 - **Temporal Durable Execution (`temporal_adapter.py` / `temporalBridge.ts`):** Fault-tolerant workflow engine supporting state checkpointing and automatic resumption across system restarts or worker crashes. Feature 8.31.
 - **Model Engine & Governance:** Multi-tenant quota routing, BYOK / BYOI fallback chains, virtual keys, RPM/TPM rate limiting, and real-time budget caps (`engine/`).
 - **Agent Fleet Orchestration & Paperclip Governance (`paperclipAdapter.ts`):** Hierarchical organizational structure (org charts, reporting chains), per-agent and per-team budget allocation/caps, approval threshold gates, and multi-agent fleet telemetry. Features 8.18, 8.48.
+- **Cognitive Routing Policy Engine (`cognitivePolicy.ts`):** Multi-criteria routing integrating dynamic prompt complexity assessment, cost-quality Pareto optimization, latency SLAs, domain specialist selection, canary splitting, and declarative policies. Features 8.09 - 8.15.
 
 ## Running Tests
 
@@ -16,8 +17,8 @@ The Orchestration Layer (`control/orchestration`) provides multi-agent routing, 
 python -m pytest control/orchestration/workflow_builder/tests/ -q
 ```
 
-### TypeScript Orchestration Engine & Paperclip Tests
+### TypeScript Orchestration Engine, Paperclip & Policy Tests
 ```bash
 cd control/orchestration
-npx tsx --test tests/engine.test.ts tests/paperclip.test.ts
+npx tsx --test tests/engine.test.ts tests/paperclip.test.ts tests/cognitivePolicy.test.ts
 ```
