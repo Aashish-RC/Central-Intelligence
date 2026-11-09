@@ -24,7 +24,7 @@
 | **9.12** | Dual-Boundary Context Assembler (Prompt Injection Defense) | **built** | Own implementation (Crown jewel R&D) | no | `tests/test_boundary_assembler.py` |
 | **9.13** | Byte-for-Byte Context Audit Log & Tamper-Evident Merkle Ledger | **built** | Own implementation | no | `tests/test_context_audit.py` |
 | **9.14** | Prefix Cache Optimizer (Anthropic & OpenAI KV-Cache Alignment) | **built** | Own implementation | no | `tests/test_prefix_optimizer.py` |
-| **9.15** | Per-Model Format Adapters (Anthropic, OpenAI, Gemini, Ollama) | pending | Own implementation | no | Task 9.6 |
+| **9.15** | Per-Model Format Adapters (Anthropic, OpenAI, Gemini, Ollama) | **built** | Own implementation | no | `tests/test_adapters.py` |
 | **9.16** | Situational Context Injector (Temporal, Device, Locale Awareness) | pending | Own implementation | no | Task 9.7 |
 | **9.17** | Self-Knowledge Boundary Injector (Capabilities, Limits, Tool Availability) | pending | Own implementation | no | Task 9.8 |
 
