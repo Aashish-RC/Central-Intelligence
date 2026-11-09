@@ -82,6 +82,17 @@ Located in `cognitive/action/shared_state/`:
 - **DistributedLockManager (`lock_manager.py`):** Mutual exclusion (mutex) and shared reader-writer locks with auto-expiring TTL leases, reentrancy support, and renewal heartbeats.
 - **SharedScratchpad (`scratchpad.py`):** Thread-safe collaborative blackboard supporting atomic Compare-and-Set (CAS), atomic increments, append operations, and complete audit logging across concurrent agents.
 
+---
+
+## 6. Action Preview Renderer (Feature 5.27)
+
+Located in `cognitive/action/safety/action_preview.py`:
+- **Shell Previews:** Detects dangerous invocations (`rm -rf`, raw disk access, `chmod 777`, elevated `sudo`) with danger scoring and confirmation requirements.
+- **SQL Previews:** Differentiates safe read-only queries from schema teardowns (`DROP`, `TRUNCATE`) and unconstrained bulk mutations missing `WHERE` clauses.
+- **File Write Previews:** Computes unified line diffs (`+` / `-`), identifies potential data wipeouts, and guards sensitive credentials (`.env`, private keys).
+- **API Call Previews:** Masks sensitive authorization headers, bearer tokens, passwords, and private secrets prior to operator display.
+
+
 
 typescript
 import { getConnectorAction } from './connectors/connectorRegistry.js';
@@ -154,6 +165,17 @@ const file = await aciFederation.executeTool('federated:mcp:filesystem:read_file
 Located in `cognitive/action/shared_state/`:
 - **DistributedLockManager (`lock_manager.py`):** Mutual exclusion (mutex) and shared reader-writer locks with auto-expiring TTL leases, reentrancy support, and renewal heartbeats.
 - **SharedScratchpad (`scratchpad.py`):** Thread-safe collaborative blackboard supporting atomic Compare-and-Set (CAS), atomic increments, append operations, and complete audit logging across concurrent agents.
+
+---
+
+## 6. Action Preview Renderer (Feature 5.27)
+
+Located in `cognitive/action/safety/action_preview.py`:
+- **Shell Previews:** Detects dangerous invocations (`rm -rf`, raw disk access, `chmod 777`, elevated `sudo`) with danger scoring and confirmation requirements.
+- **SQL Previews:** Differentiates safe read-only queries from schema teardowns (`DROP`, `TRUNCATE`) and unconstrained bulk mutations missing `WHERE` clauses.
+- **File Write Previews:** Computes unified line diffs (`+` / `-`), identifies potential data wipeouts, and guards sensitive credentials (`.env`, private keys).
+- **API Call Previews:** Masks sensitive authorization headers, bearer tokens, passwords, and private secrets prior to operator display.
+
 
 
 

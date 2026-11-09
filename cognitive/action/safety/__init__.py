@@ -25,6 +25,11 @@ from .financial_authority import (
     TransactionStatus,
 )
 
+from .action_preview import (
+    ActionPreview,
+    ActionPreviewRenderer,
+)
+
 __all__ = [
     "ActionRiskAssessment",
     "ApprovalGateRequest",
@@ -39,4 +44,6 @@ __all__ = [
     "AgentFinancialPolicy",
     "TransactionRecord",
     "TransactionStatus",
+    "ActionPreview",
+    "ActionPreviewRenderer",
 ]
