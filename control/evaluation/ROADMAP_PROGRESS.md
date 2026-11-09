@@ -13,7 +13,7 @@
 | **11.01** | Evaluation Datasets per Domain & Trace Grounding | **built** | Adapted (Elastic-2.0 - Arize Phoenix) / Own | no | `tests/test_phoenix_adapter.py` |
 | **11.02** | Custom Scorer Definitions | pending | Own implementation | no | `tests/test_datasets.py` |
 | **11.03** | Golden & Regression Suites for CI | pending | Own implementation | no | `tests/test_datasets.py` |
-| **11.04** | Scenario Simulation Tests (Adversarial & Edge Cases) | pending | Adapted (Apache-2.0 - LangWatch) | no | `tests/test_scenario_runner.py` |
+| **11.04** | Scenario Simulation Tests (Adversarial & Edge Cases) | **built** | Adapted (Apache-2.0 - LangWatch) | no | `tests/test_langwatch_adapter.py` |
 | **11.05** | Unified End-to-End Pipeline Test Runner (L1→L8) | pending | Own implementation | no | `tests/test_e2e_runner.py` |
 | **11.06** | Automated Judge Scoring on Live Traffic | pending | Own implementation | no | `tests/test_online_quality.py` |
 | **11.07** | Human Review Sampling & Annotation Flow | pending | Own implementation | no | `tests/test_online_quality.py` |
