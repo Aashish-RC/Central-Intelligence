@@ -13,6 +13,7 @@ control_dir = root_dir / "control"
 for p in [
     cognitive_dir,
     cognitive_dir / "memory",
+    cognitive_dir / "memory" / "storage",
     cognitive_dir / "knowledge",
     cognitive_dir / "perception",
     cognitive_dir / "action",
