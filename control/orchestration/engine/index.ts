@@ -184,3 +184,11 @@ export { EnterpriseDirectAdapter } from './providers/enterpriseDirect.js';
 export { ByokAdapter } from './providers/byokAdapter.js';
 export { ByoiAdapter } from './providers/byoiAdapter.js';
 export { MockAdapter } from './providers/mockAdapter.js';
+export {
+  PaperclipGovernanceAdapter,
+  type AgentNode,
+  type AgentStatus,
+  type ApprovalRequest,
+  type FleetOrgConfig,
+  type FleetSummary,
+} from './fleet/paperclipAdapter.js';
