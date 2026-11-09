@@ -48,9 +48,9 @@
 | **12.36** | Secret Access Auditing | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
 | **12.37** | Per-Tenant and Per-App Secret Scoping | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
 | **12.38** | Dynamic Secret Injection into Running Services | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.39** | Session Management & Device Enumeration | pending | Own implementation | no | `tests/test_sessions.py` |
-| **12.40** | Administrative Forced Session Revocation | pending | Own implementation | no | `tests/test_sessions.py` |
-| **12.41** | Identity Audit Log with L10 Merkle Ledger Bridge | pending | Own implementation | no | `tests/test_sessions.py` |
+| **12.39** | Session Management & Device Enumeration | **built** | Own implementation | no | `tests/test_sessions.py` |
+| **12.40** | Administrative Forced Session Revocation | **built** | Own implementation | no | `tests/test_sessions.py` |
+| **12.41** | Identity Audit Log with L10 Merkle Ledger Bridge | **built** | Own implementation | no | `tests/test_sessions.py` |
 | **12.42** | Account Recovery (Lost Password, Passkey, Device) | pending | Own implementation | no | `tests/test_lifecycle.py` |
 | **12.43** | Account Merging | pending | Own implementation | no | `tests/test_lifecycle.py` |
 | **12.44** | Account Closure & 30-Day Grace Period | pending | Own implementation | no | `tests/test_lifecycle.py` |
