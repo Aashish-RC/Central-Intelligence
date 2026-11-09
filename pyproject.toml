@@ -41,7 +41,21 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [
+    ".",
+    "cognitive",
+    "cognitive/memory",
+    "cognitive/memory/storage",
+    "cognitive/knowledge",
+    "cognitive/action",
+    "control",
+    "control/orchestration",
+    "control/safety",
+    "control/safety/guardrails",
+    "control/evaluation",
+    "control/context",
+    "control/identity",
+]
 testpaths = ["cognitive", "control"]
 asyncio_mode = "auto"
 markers = [

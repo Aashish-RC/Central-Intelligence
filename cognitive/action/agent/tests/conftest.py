@@ -12,16 +12,19 @@ cognitive_dir = action_dir.parent
 root_dir = cognitive_dir.parent
 
 for p in [
-    root_dir,
-    cognitive_dir,
-    cognitive_dir / "memory",
-    cognitive_dir / "memory" / "storage",
-    action_dir,
-    action_dir / "sandboxes",
     agent_dir,
+    action_dir / "sandboxes",
+    action_dir,
+    cognitive_dir / "memory" / "storage",
+    cognitive_dir / "memory",
+    cognitive_dir,
+    root_dir,
 ]:
-    if p.exists() and str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+    if p.exists():
+        p_str = str(p)
+        while p_str in sys.path:
+            sys.path.remove(p_str)
+        sys.path.insert(0, p_str)
 
 
 @pytest.fixture(autouse=True)
