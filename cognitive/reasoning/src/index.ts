@@ -20,6 +20,7 @@ export * from './collaboration/index.js';
 export * from './synthesis/index.js';
 export * from './planning/index.js';
 export * from './goals/index.js';
+export * from './debate/index.js';
 
 const { app, router, engine } = createGatewayApp();
 

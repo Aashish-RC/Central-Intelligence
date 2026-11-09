@@ -163,6 +163,12 @@ Located in `cognitive/reasoning/src/goals/`:
 - **Hierarchical Subgoals:** Supports sub-goal decomposition, dependency DAGs, output artifact capturing, and dynamic percentage-based completion tracking.
 - **Snapshot Checkpoints & Resumption:** Preserves contextual checkpoints mid-execution, enabling reliable rollback or resumption across discontinuous agent execution sessions.
 
+### Multi-Agent Debate Orchestrator (Feature 4.05)
+Located in `cognitive/reasoning/src/debate/`:
+- **Structured Multi-Turn Dialectic:** Orchestrates formalized debates across agent roles (Proponent, Opponent, Judge) to pressure-test critical conclusions and plans.
+- **Convergence & Rebuttal Analysis:** Evaluates confidence divergence, cross-examination rebuttals, and citations across iterative debate rounds.
+- **Decisive & Compromise Synthesis:** Emits synthesized verdicts categorizing outcomes into decisive victory, synthesis compromise, or inconclusive flags.
+
 ---
 
 ## Quick Start
