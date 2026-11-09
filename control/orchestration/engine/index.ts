@@ -195,7 +195,12 @@ export {
   type MergeConflict,
 } from './sharedState/workspace.js';
 export { VirtualKeyManager } from './governance/virtualKeyManager.js';
-export { BudgetTracker, BudgetExceededError } from './governance/budgetTracker.js';
+export {
+  BudgetTracker,
+  BudgetExceededError,
+  type BudgetAlert,
+  type DegradationAction,
+} from './governance/budgetTracker.js';
 export { RateLimiter, RateLimitExceededError } from './governance/rateLimiter.js';
 export { UsageStore } from './governance/usageStore.js';
 export { OpenRouterAggregatorAdapter } from './providers/openRouterAggregator.js';
