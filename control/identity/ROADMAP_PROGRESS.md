@@ -42,12 +42,12 @@
 | **12.30** | SSO with Workplace Suites (Google, Microsoft 365) | pending | Own implementation | no | `tests/test_federation.py` |
 | **12.31** | Sector & Government Identity Systems | pending | Own implementation | no | `tests/test_federation.py` |
 | **12.32** | Automated User Provisioning/Deprovisioning (SCIM) | pending | Own implementation | no | `tests/test_federation.py` |
-| **12.33** | Provider-Key Vault for User-Supplied Keys (BYOK) | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.34** | External Secret Manager Integration | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.35** | Zero-Downtime Secret Rotation | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.36** | Secret Access Auditing | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.37** | Per-Tenant and Per-App Secret Scoping | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
-| **12.38** | Dynamic Secret Injection into Running Services | pending | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.33** | Provider-Key Vault for User-Supplied Keys (BYOK) | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.34** | External Secret Manager Integration | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.35** | Zero-Downtime Secret Rotation | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.36** | Secret Access Auditing | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.37** | Per-Tenant and Per-App Secret Scoping | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
+| **12.38** | Dynamic Secret Injection into Running Services | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
 | **12.39** | Session Management & Device Enumeration | pending | Own implementation | no | `tests/test_sessions.py` |
 | **12.40** | Administrative Forced Session Revocation | pending | Own implementation | no | `tests/test_sessions.py` |
 | **12.41** | Identity Audit Log with L10 Merkle Ledger Bridge | pending | Own implementation | no | `tests/test_sessions.py` |
