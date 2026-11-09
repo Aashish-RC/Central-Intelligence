@@ -17,6 +17,13 @@ from .risk_classifier import RiskClassifier
 from .approval_gate import ApprovalGate
 from .compensation import CompensationManager
 from .blast_radius import BlastRadiusSimulator
+from .financial_authority import (
+    FinancialAuthorityGuard,
+    FinancialAuthorityError,
+    AgentFinancialPolicy,
+    TransactionRecord,
+    TransactionStatus,
+)
 
 __all__ = [
     "ActionRiskAssessment",
@@ -27,4 +34,9 @@ __all__ = [
     "ApprovalGate",
     "CompensationManager",
     "BlastRadiusSimulator",
+    "FinancialAuthorityGuard",
+    "FinancialAuthorityError",
+    "AgentFinancialPolicy",
+    "TransactionRecord",
+    "TransactionStatus",
 ]
