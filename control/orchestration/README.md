@@ -11,6 +11,7 @@ The Orchestration Layer (`control/orchestration`) provides multi-agent routing, 
 - **Cognitive Routing Policy Engine (`cognitivePolicy.ts`):** Multi-criteria routing integrating dynamic prompt complexity assessment, cost-quality Pareto optimization, latency SLAs, domain specialist selection, canary splitting, and declarative policies. Features 8.09 - 8.15.
 - **Human Escalation Protocol (`humanProtocol.ts`):** Human-in-the-loop intervention control plane, state snapshots, operator steering injection, and timeout cascades. Features 8.30, 8.50.
 - **Semantic Vector Cache Bridge (`semanticCacheBridge.ts`):** Integrates vector similarity caching directly into the ModelEngine dispatch loop, eliminating redundant model invocations and token costs. Feature 8.44.
+- **Collaboration Controls Bridge (`collaborationBridge.ts`):** Enforces cross-layer multi-agent delegation governance, maximum recursion depth bounds, cyclic loop prevention, and token-based capability scoping. Feature 8.50.
 
 ## Running Tests
 

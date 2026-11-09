@@ -239,3 +239,10 @@ export {
   type SemanticCacheConfig,
   type SemanticCacheEntry,
 } from './caching/semanticCacheBridge.js';
+export {
+  CollaborationBridge,
+  DelegationDepthExceededError,
+  DelegationCycleError,
+  type DelegationGrant,
+  type IssueDelegationParams,
+} from './fleet/collaborationBridge.js';
