@@ -15,14 +15,14 @@
 | **11.03** | Golden & Regression Suites for CI | **built** | Own implementation | no | `tests/test_datasets.py` |
 | **11.04** | Scenario Simulation Tests (Adversarial & Edge Cases) | **built** | Adapted (Apache-2.0 - LangWatch) | no | `tests/test_langwatch_adapter.py` |
 | **11.05** | Unified End-to-End Pipeline Test Runner (L1→L8) | **built** | Own implementation | no | `tests/test_e2e_runner.py` |
-| **11.06** | Automated Judge Scoring on Live Traffic | pending | Own implementation | no | `tests/test_online_quality.py` |
-| **11.07** | Human Review Sampling & Annotation Flow | pending | Own implementation | no | `tests/test_online_quality.py` |
-| **11.08** | Distribution & Embedding Drift Detection | **built** | Adapted (Elastic-2.0 - Arize Phoenix) | no | `tests/test_phoenix_adapter.py` |
-| **11.09** | Failure Clustering & Root Cause Analysis | pending | Own implementation | no | `tests/test_online_quality.py` |
-| **11.10** | Continuous Hallucination Rate Tracking | **built** | Adapted (Elastic-2.0 - Arize Phoenix) | no | `tests/test_phoenix_adapter.py` |
-| **11.11** | Bias & Fairness Measurement Metrics | pending | Own implementation | no | `tests/test_online_quality.py` |
-| **11.12** | Per-Domain & Per-Tenant Quality Bars | pending | Own implementation | no | `tests/test_online_quality.py` |
-| **11.13** | User Satisfaction Trends & CSAT Scoring | pending | Own implementation | no | `tests/test_online_quality.py` |
+| **11.06** | Automated Judge Scoring on Live Traffic | **built** | Own implementation | no | `tests/test_online_quality.py` |
+| **11.07** | Human Review Sampling & Annotation Flow | **built** | Own implementation | no | `tests/test_online_quality.py` |
+| **11.08** | Distribution & Embedding Drift Detection | **built** | Adapted (Elastic-2.0 - Arize Phoenix) / Own | no | `tests/test_phoenix_adapter.py`, `tests/test_online_quality.py` |
+| **11.09** | Failure Clustering & Root Cause Analysis | **built** | Own implementation | no | `tests/test_online_quality.py` |
+| **11.10** | Continuous Hallucination Rate Tracking | **built** | Adapted (Elastic-2.0 - Arize Phoenix) / Own | no | `tests/test_phoenix_adapter.py`, `tests/test_online_quality.py` |
+| **11.11** | Bias & Fairness Measurement Metrics | **built** | Own implementation | no | `tests/test_online_quality.py` |
+| **11.12** | Per-Domain & Per-Tenant Quality Bars | **built** | Own implementation | no | `tests/test_online_quality.py` |
+| **11.13** | User Satisfaction Trends & CSAT Scoring | **built** | Own implementation | no | `tests/test_online_quality.py` |
 | **11.14** | 🚩 Crown Jewel: Accuracy Score Evaluator (3-Pillar Composite) | pending | Own implementation (Crown jewel R&D) | no | `tests/test_accuracy_score.py` |
 | **11.15** | Calibration Scoring (Stated Confidence vs Actual Outcomes) | pending | Own implementation | no | `tests/test_calibration.py` |
 | **11.16** | Configurable Action Thresholds (0.50/0.80) | pending | Own implementation | no | `tests/test_thresholds.py` |
