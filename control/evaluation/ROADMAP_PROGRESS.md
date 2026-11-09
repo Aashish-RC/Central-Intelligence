@@ -23,10 +23,10 @@
 | **11.11** | Bias & Fairness Measurement Metrics | **built** | Own implementation | no | `tests/test_online_quality.py` |
 | **11.12** | Per-Domain & Per-Tenant Quality Bars | **built** | Own implementation | no | `tests/test_online_quality.py` |
 | **11.13** | User Satisfaction Trends & CSAT Scoring | **built** | Own implementation | no | `tests/test_online_quality.py` |
-| **11.14** | 🚩 Crown Jewel: Accuracy Score Evaluator (3-Pillar Composite) | pending | Own implementation (Crown jewel R&D) | no | `tests/test_accuracy_score.py` |
-| **11.15** | Calibration Scoring (Stated Confidence vs Actual Outcomes) | pending | Own implementation | no | `tests/test_calibration.py` |
-| **11.16** | Configurable Action Thresholds (0.50/0.80) | pending | Own implementation | no | `tests/test_thresholds.py` |
-| **11.17** | Score Visibility & Transparency Inspection Panel | pending | Own implementation | no | `tests/test_thresholds.py` |
+| **11.14** | 🚩 Crown Jewel: Accuracy Score Evaluator (3-Pillar Composite) | **built** | Own implementation (Crown jewel R&D) | no | `tests/test_accuracy_score.py` |
+| **11.15** | Calibration Scoring (Stated Confidence vs Actual Outcomes) | **built** | Own implementation | no | `tests/test_calibration.py` |
+| **11.16** | Configurable Action Thresholds (0.50/0.80) | **built** | Own implementation | no | `tests/test_thresholds.py` |
+| **11.17** | Score Visibility & Transparency Inspection Panel | **built** | Own implementation | no | `tests/test_thresholds.py` |
 | **11.18** | Model A/B Testing Harness | pending | Own implementation | no | `tests/test_experiments.py` |
 | **11.19** | Prompt & Instruction A/B Testing | pending | Own implementation | no | `tests/test_experiments.py` |
 | **11.20** | Routing Strategy A/B Testing | pending | Own implementation | no | `tests/test_experiments.py` |
