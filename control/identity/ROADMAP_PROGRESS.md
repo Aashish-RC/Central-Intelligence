@@ -67,3 +67,14 @@
 | **Keycloak** | [https://github.com/keycloak/keycloak](https://github.com/keycloak/keycloak) | Apache-2.0 | Enterprise IAM, passkeys, WebAuthn, OAuth 2.1, and SSO federation. |
 | **OpenFGA** | [https://github.com/openfga/openfga](https://github.com/openfga/openfga) | Apache-2.0 | Google Zanzibar Relationship-Based Access Control (ReBAC) engine. |
 | **Infisical** | [https://github.com/Infisical/infisical](https://github.com/Infisical/infisical) | MIT | Enterprise secret manager, BYOK vault, and rotation lifecycle. |
+
+---
+
+## 3. Deferred Items Resolution (Wave B Completion)
+
+| Deferred ID | Dependent Layer | Feature | Resolution Mechanism | Status | Verification |
+|:---|:---|:---:|:---|:---:|:---|
+| **DEF-01** | Layer 2 Memory | 2.38 | OpenFGA Memory Access Control Bridge (`cognitive/memory/access_control/openfga_bridge.py`) wired into `MemoryEngine.remember` and `MemoryEngine.recall`. | **UNBLOCKED** | `cognitive/memory/tests/test_access_control.py` |
+| **DEF-02** | Layer 3 Knowledge | 3.36 | OpenFGA Document Access Control Bridge (`cognitive/knowledge/access_control/openfga_bridge.py`) wired into `LocalHybridSearchEngine`, `ReciprocalRankFusion`, and `MeilisearchClient`. | **UNBLOCKED** | `cognitive/knowledge/search/tests/test_permission_filter.py` |
+| **DEF-03** | Layer 8 Orchestration | 8.15 | Accuracy Score Evaluator Bridge (`maybeTriggerSecondOpinion`) wired into `CognitiveRoutingPolicyEngine` escalating models when accuracy < 0.50. | **UNBLOCKED** | `control/orchestration/tests/secondOpinion.test.ts` |
+
