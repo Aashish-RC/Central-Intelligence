@@ -52,6 +52,28 @@ import { nangoAdapter } from './connectors/nango_adapter.js';
 const repos = await nangoAdapter.listGithubRepos('user-connection-id');
 console.log(repos);
 ```
+
+---
+
+## 4. ACI.dev Adapter (Unified Tool Federation)
+
+- **Repo:** [https://github.com/aipotheosis-labs/aci](https://github.com/aipotheosis-labs/aci)
+- **License:** Apache-2.0
+- **Why Chosen:** Enables unified tool federation so agents can dynamically discover and execute tools across MCP servers, Nango OAuth integrations, and native connectors through a single consistent contract (`federated:{provider}:{tool}`).
+
+### Usage Example
+
+```typescript
+import { aciFederation } from './connectors/aci_adapter.js';
+
+// 1. Discover all federated tools
+const tools = await aciFederation.listFederatedTools();
+
+// 2. Execute any federated tool seamlessly
+const repos = await aciFederation.executeTool('federated:nango:github_list_repos');
+const file = await aciFederation.executeTool('federated:mcp:filesystem:read_file', { path: 'README.md' });
+```
+
 typescript
 import { getConnectorAction } from './connectors/connectorRegistry.js';
 
@@ -94,4 +116,26 @@ import { nangoAdapter } from './connectors/nango_adapter.js';
 const repos = await nangoAdapter.listGithubRepos('user-connection-id');
 console.log(repos);
 ```
+
+---
+
+## 4. ACI.dev Adapter (Unified Tool Federation)
+
+- **Repo:** [https://github.com/aipotheosis-labs/aci](https://github.com/aipotheosis-labs/aci)
+- **License:** Apache-2.0
+- **Why Chosen:** Enables unified tool federation so agents can dynamically discover and execute tools across MCP servers, Nango OAuth integrations, and native connectors through a single consistent contract (`federated:{provider}:{tool}`).
+
+### Usage Example
+
+```typescript
+import { aciFederation } from './connectors/aci_adapter.js';
+
+// 1. Discover all federated tools
+const tools = await aciFederation.listFederatedTools();
+
+// 2. Execute any federated tool seamlessly
+const repos = await aciFederation.executeTool('federated:nango:github_list_repos');
+const file = await aciFederation.executeTool('federated:mcp:filesystem:read_file', { path: 'README.md' });
+```
+
 

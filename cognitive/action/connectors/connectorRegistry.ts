@@ -13,8 +13,9 @@ import { searchPiece } from './pieces/search.js';
 import { browserPiece } from './pieces/browser.js';
 import { openclawPiece } from './pieces/openclaw.js';
 import { nangoPiece, nangoAdapter, NangoAdapter } from './nango_adapter.js';
+import { aciPiece, aciFederation, ACIToolFederationEngine } from './aci_adapter.js';
 
-export { nangoAdapter, NangoAdapter, nangoPiece };
+export { nangoAdapter, NangoAdapter, nangoPiece, aciPiece, aciFederation, ACIToolFederationEngine };
 
 /** All registered connector pieces */
 export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
@@ -27,6 +28,7 @@ export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
   browserPiece,
   openclawPiece,
   nangoPiece,
+  aciPiece,
 ];
 
 /**
