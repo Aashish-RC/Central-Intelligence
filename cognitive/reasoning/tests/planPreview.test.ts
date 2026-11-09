@@ -5,7 +5,7 @@ import type { PlanStepInput } from '../src/planning/models.js';
 describe('Plan Preview & Cost Estimator (Features 4.13, 4.14)', () => {
   const generator = new PlanPreviewGenerator({
     budgetThresholdUsd: 0.10,
-    autoApproveRisks: ['low', 'medium'],
+    autoApproveRiskLevels: ['low', 'medium'],
   });
 
   it('computes pre-execution token, cost, and latency estimates for multi-step plan', () => {

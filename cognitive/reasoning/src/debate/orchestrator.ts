@@ -4,7 +4,7 @@ import {
   DebateProposition,
   DebateRound,
   DebateVerdict,
-} from "./models";
+} from "./models.js";
 
 export type AgentDebaterFn = (
   agentId: string,

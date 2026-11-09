@@ -1,4 +1,4 @@
-import { Goal, GoalCheckpoint, GoalStatus, SubGoal } from "./models";
+import { Goal, GoalCheckpoint, GoalStatus, SubGoal } from "./models.js";
 
 export interface CreateGoalParams {
   id?: string;
@@ -123,7 +123,7 @@ export class GoalStore {
       throw new Error(`Goal with ID ${goalId} not found`);
     }
 
-    const sg = goal.subGoals.find((s) => s.id === subGoalId);
+    const sg = goal.subGoals.find((s: SubGoal) => s.id === subGoalId);
     if (!sg) {
       throw new Error(`SubGoal with ID ${subGoalId} not found in goal ${goalId}`);
     }
@@ -140,7 +140,7 @@ export class GoalStore {
     }
 
     // Check if all subgoals are completed
-    const allDone = goal.subGoals.length > 0 && goal.subGoals.every((s) => s.status === "completed");
+    const allDone = goal.subGoals.length > 0 && goal.subGoals.every((s: SubGoal) => s.status === "completed");
     if (allDone) {
       goal.status = "completed";
     }
@@ -158,7 +158,7 @@ export class GoalStore {
       throw new Error(`Goal with ID ${goalId} not found`);
     }
 
-    const sg = goal.subGoals.find((s) => s.id === subGoalId);
+    const sg = goal.subGoals.find((s: SubGoal) => s.id === subGoalId);
     if (!sg) {
       throw new Error(`SubGoal with ID ${subGoalId} not found in goal ${goalId}`);
     }
@@ -179,7 +179,7 @@ export class GoalStore {
     if (goal.subGoals.length === 0) {
       return goal.status === "completed" ? 100 : 0;
     }
-    const completedCount = goal.subGoals.filter((sg) => sg.status === "completed").length;
+    const completedCount = goal.subGoals.filter((sg: SubGoal) => sg.status === "completed").length;
     return Math.round((completedCount / goal.subGoals.length) * 100);
   }
 
@@ -196,8 +196,8 @@ export class GoalStore {
       throw new Error(`Goal with ID ${goalId} not found`);
     }
 
-    const completed = goal.subGoals.filter((s) => s.status === "completed").map((s) => s.id);
-    const active = goal.subGoals.find((s) => s.status === "active")?.id;
+    const completed = goal.subGoals.filter((s: SubGoal) => s.status === "completed").map((s: SubGoal) => s.id);
+    const active = goal.subGoals.find((s: SubGoal) => s.status === "active")?.id;
     const progress = this.calculateProgress(goal);
 
     const checkpoint: GoalCheckpoint = {
@@ -224,7 +224,7 @@ export class GoalStore {
       throw new Error(`Goal with ID ${goalId} not found`);
     }
 
-    const chk = goal.checkpoints.find((c) => c.checkpointId === checkpointId);
+    const chk = goal.checkpoints.find((c: GoalCheckpoint) => c.checkpointId === checkpointId);
     if (!chk) {
       throw new Error(`Checkpoint ${checkpointId} not found for goal ${goalId}`);
     }

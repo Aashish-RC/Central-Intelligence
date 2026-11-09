@@ -12,9 +12,9 @@
  */
 
 import { nanoid } from 'nanoid';
-import { CONNECTOR_REGISTRY, getConnectorAction, parseConnectorNodeType } from '../../connectors/connectorRegistry.js';
-import { discoverMCPTools, executeMCPTool, parseMCPToolId, type MCPTool } from '../../connectors/mcpBridge.js';
-import { browserSessionManager } from '../../connectors/pieces/browser.js';
+import { CONNECTOR_REGISTRY, getConnectorAction, parseConnectorNodeType } from '../../../../cognitive/action/connectors/connectorRegistry.js';
+import { discoverMCPTools, executeMCPTool, parseMCPToolId, type MCPTool } from '../../../../cognitive/action/connectors/mcpBridge.js';
+import { browserSessionManager } from '../../../../cognitive/action/connectors/pieces/browser.js';
 import { ModelEngine } from '../index.js';
 import type { EngineMessage } from '../types.js';
 

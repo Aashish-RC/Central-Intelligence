@@ -58,6 +58,7 @@ export const ChatCompletionRequestSchema = z.object({
 });
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+export type ChatCompletionMessage = ChatMessage;
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
 export type ChatCompletionRequest = z.infer<typeof ChatCompletionRequestSchema>;

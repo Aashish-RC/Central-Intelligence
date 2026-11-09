@@ -10,5 +10,5 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["engine", "tests", "governance", "nodes", "debugger"]
+  "include": ["engine", "tests"]
 }

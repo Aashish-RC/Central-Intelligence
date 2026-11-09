@@ -38,7 +38,16 @@ export interface LockLease { key: string; owner: string; }
 Prove the algorithm avoids deadlocks under race conditions.`,
         },
       ],
-      tools: [{ name: 'write_file', description: 'Writes file' }],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'write_file',
+            description: 'Writes file',
+            parameters: {},
+          },
+        },
+      ],
     };
     const assessment = engine.assessComplexity(req);
     assert.ok(assessment.complexity === 'complex' || assessment.complexity === 'expert');

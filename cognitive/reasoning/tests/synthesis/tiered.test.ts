@@ -73,8 +73,8 @@ describe('Sub-module D: Tiered Activation Gate (4.08, 11.14)', () => {
     const { ModelRouter } = await import('../../src/routing/router.js');
     const { CooldownTracker } = await import('../../src/resilience/cooldown.js');
 
-    const router = new ModelRouter();
     const cooldownTracker = new CooldownTracker();
+    const router = new ModelRouter(cooldownTracker);
     const engine = new GatewayEngine({
       router,
       cooldownTracker,

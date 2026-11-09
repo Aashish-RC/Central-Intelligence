@@ -22,7 +22,7 @@ export class PlanPreviewGenerator {
   constructor(options?: PlanPreviewOptions) {
     this.estimator = new CostEstimator();
     this.defaultBudgetThreshold = options?.budgetThresholdUsd ?? 0.50;
-    this.autoApproveRisks = new Set(options?.autoApproveRiskLevels ?? ['low', 'medium']);
+    this.autoApproveRisks = new Set<PlanRiskLevel>(options?.autoApproveRiskLevels ?? ['low', 'medium']);
   }
 
   /**

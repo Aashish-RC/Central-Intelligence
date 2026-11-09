@@ -1,10 +1,11 @@
 import {
   FailureMode,
   PlanStep,
+  ScenarioFailureInjection,
   SimulationReport,
   SimulationScenario,
   SimulationStepResult,
-} from "./models";
+} from "./models.js";
 
 export type AgentStepRunner = (
   step: PlanStep,
@@ -35,7 +36,7 @@ export class ScenarioSimulator {
 
       // Find any failure injection targeted at this step
       const injection = scenario.failureInjections.find(
-        (fi) =>
+        (fi: ScenarioFailureInjection) =>
           fi.stepTarget === step.stepId ||
           fi.stepTarget === stepIndex ||
           fi.stepTarget === undefined
