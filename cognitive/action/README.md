@@ -92,6 +92,17 @@ Located in `cognitive/action/safety/action_preview.py`:
 - **File Write Previews:** Computes unified line diffs (`+` / `-`), identifies potential data wipeouts, and guards sensitive credentials (`.env`, private keys).
 - **API Call Previews:** Masks sensitive authorization headers, bearer tokens, passwords, and private secrets prior to operator display.
 
+---
+
+## 7. Curated Tool Registry (Feature 5.08)
+
+Located in `cognitive/action/registry/curated_registry.py`:
+- **Admin Curation & Whitelisting:** Explicit administrative verification and approval required before tools are active for agent reasoning loops.
+- **Role-Based Access Control (RBAC):** Strict role prerequisites per tool (`required_roles`) with administrative bypass.
+- **Sliding-Window Rate Limiting:** Enforces per-agent, per-tool requests-per-minute (RPM) ceilings over moving 60-second windows.
+- **Input Schema Validation:** Validates arguments against defined property types and required fields prior to dispatch.
+
+
 
 
 typescript
@@ -175,6 +186,17 @@ Located in `cognitive/action/safety/action_preview.py`:
 - **SQL Previews:** Differentiates safe read-only queries from schema teardowns (`DROP`, `TRUNCATE`) and unconstrained bulk mutations missing `WHERE` clauses.
 - **File Write Previews:** Computes unified line diffs (`+` / `-`), identifies potential data wipeouts, and guards sensitive credentials (`.env`, private keys).
 - **API Call Previews:** Masks sensitive authorization headers, bearer tokens, passwords, and private secrets prior to operator display.
+
+---
+
+## 7. Curated Tool Registry (Feature 5.08)
+
+Located in `cognitive/action/registry/curated_registry.py`:
+- **Admin Curation & Whitelisting:** Explicit administrative verification and approval required before tools are active for agent reasoning loops.
+- **Role-Based Access Control (RBAC):** Strict role prerequisites per tool (`required_roles`) with administrative bypass.
+- **Sliding-Window Rate Limiting:** Enforces per-agent, per-tool requests-per-minute (RPM) ceilings over moving 60-second windows.
+- **Input Schema Validation:** Validates arguments against defined property types and required fields prior to dispatch.
+
 
 
 
