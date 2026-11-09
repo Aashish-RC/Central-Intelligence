@@ -19,6 +19,7 @@ export * from './selfKnowledge/index.js';
 export * from './collaboration/index.js';
 export * from './synthesis/index.js';
 export * from './planning/index.js';
+export * from './goals/index.js';
 
 const { app, router, engine } = createGatewayApp();
 

@@ -157,6 +157,12 @@ Located in `cognitive/reasoning/src/planning/`:
 - **Blast Radius & Risk Evaluation:** Identifies destructive operations (deletions, disk mutations, partition drops) and tags risk severity (`low`, `medium`, `high`, `critical`).
 - **Human Approval Gating:** Automatically flags plans that exceed financial budget limits or risk tolerances for human checkpoint review before execution.
 
+### Goal Persistence & Long-Horizon State Store (Feature 4.15)
+Located in `cognitive/reasoning/src/goals/`:
+- **State Machine & Lifecycle:** Manages long-horizon, multi-session goals with discrete statuses (`pending`, `active`, `paused`, `completed`, `failed`).
+- **Hierarchical Subgoals:** Supports sub-goal decomposition, dependency DAGs, output artifact capturing, and dynamic percentage-based completion tracking.
+- **Snapshot Checkpoints & Resumption:** Preserves contextual checkpoints mid-execution, enabling reliable rollback or resumption across discontinuous agent execution sessions.
+
 ---
 
 ## Quick Start
