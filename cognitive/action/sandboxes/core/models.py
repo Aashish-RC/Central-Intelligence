@@ -39,7 +39,11 @@ class ResourceLimits(BaseModel):
     max_memory_mb: int = Field(
         default_factory=lambda: int(os.getenv("SANDBOX_MEMORY_MB", "512"))
     )
+    max_cpu_percent: float = 100.0
     max_output_bytes: int = 65536
+    max_file_size_bytes: int = 10 * 1024 * 1024
+    max_files_count: int = 100
+    max_processes: int = 32
     network_access: bool = False
     allow_env_vars: List[str] = Field(
         default_factory=lambda: ["PATH", "SYSTEMROOT", "TEMP", "TMP", "PYTHONPATH"]
