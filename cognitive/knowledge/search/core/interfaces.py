@@ -1,7 +1,7 @@
 """Abstract Base Classes for Global Hybrid Search."""
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from .models import SearchDocument, SearchQuery, SearchResponse, SearchResult
 
 
@@ -42,6 +42,7 @@ class BaseRankFusion(ABC):
         self,
         lexical_hits: List[Tuple[SearchDocument, float]],
         vector_hits: List[Tuple[SearchDocument, float]],
+        graph_hits: Optional[List[Tuple[SearchDocument, float]]] = None,
         k: int = 60,
         alpha: float = 0.5,
         limit: int = 20,

@@ -25,7 +25,7 @@ Central Intelligence is the unified cognitive infrastructure and AI runtime for 
 │ L3 Knowledge                  │ L10 Safety                      │
 │   • RAG Pipelines & APIs      │   • Guardrails & PII Filter     │
 │   • Local & Web Search        │   • Secret / Injection Defense  │
-│   • Hybrid Embeddings & Index │   • Merkle Audit & Approval     │
+│   • 3-Source RRF & FalkorDB   │   • Merkle Audit & Approval     │
 │                               │                                 │
 │ L4 Reasoning                  │ L11 Evaluation                  │
 │   • Model Gateway (47 Feat.)  │   • Evaluation Datasets & Bench │

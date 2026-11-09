@@ -61,6 +61,7 @@ class SearchResult(BaseModel):
     rrf_score: float = Field(..., description="Composite Reciprocal Rank Fusion score")
     lexical_rank: Optional[int] = Field(default=None, description="Rank in BM25 lexical results (1-based)")
     vector_rank: Optional[int] = Field(default=None, description="Rank in vector similarity results (1-based)")
+    graph_rank: Optional[int] = Field(default=None, description="Rank in knowledge graph traversal results (1-based)")
     highlights: List[str] = Field(default_factory=list, description="Snippet excerpts with matching keywords")
 
 

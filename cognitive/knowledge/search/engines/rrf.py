@@ -1,7 +1,7 @@
 """Reciprocal Rank Fusion (RRF) combiner for hybrid search."""
 
 import re
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 from ..core.interfaces import BaseRankFusion
 from ..core.models import SearchDocument, SearchResult
 
@@ -13,16 +13,19 @@ class ReciprocalRankFusion(BaseRankFusion):
         self,
         lexical_hits: List[Tuple[SearchDocument, float]],
         vector_hits: List[Tuple[SearchDocument, float]],
+        graph_hits: Optional[List[Tuple[SearchDocument, float]]] = None,
         k: int = 60,
         alpha: float = 0.5,
+        weights: Optional[Tuple[float, float, float]] = None,
         limit: int = 20,
     ) -> List[SearchResult]:
-        """Calculates blended RRF scores:
-        score(d) = (1 - alpha) * 1 / (k + rank_lex) + alpha * 1 / (k + rank_vec)
+        """Calculates blended RRF scores across lexical, vector, and graph candidate lists:
+        score(d) = w_lex * 1 / (k + rank_lex) + w_vec * 1 / (k + rank_vec) + w_graph * 1 / (k + rank_graph)
         """
         doc_map: Dict[str, SearchDocument] = {}
         lexical_ranks: Dict[str, int] = {}
         vector_ranks: Dict[str, int] = {}
+        graph_ranks: Dict[str, int] = {}
 
         # 1-indexed ranks
         for rank, (doc, _score) in enumerate(lexical_hits, 1):
@@ -33,17 +36,33 @@ class ReciprocalRankFusion(BaseRankFusion):
             doc_map[doc.id] = doc
             vector_ranks[doc.id] = rank
 
-        scores: Dict[str, float] = {}
-        weight_lex = 1.0 - alpha
-        weight_vec = alpha
+        if graph_hits:
+            for rank, (doc, _score) in enumerate(graph_hits, 1):
+                doc_map[doc.id] = doc
+                graph_ranks[doc.id] = rank
 
-        all_doc_ids: Set[str] = set(lexical_ranks.keys()).union(vector_ranks.keys())
+        scores: Dict[str, float] = {}
+        if weights is not None:
+            weight_lex, weight_vec, weight_graph = weights
+        elif graph_hits:
+            # 3-source balanced weighting
+            weight_lex = (1.0 - alpha) * 0.5
+            weight_vec = alpha * 0.5
+            weight_graph = 0.5
+        else:
+            weight_lex = 1.0 - alpha
+            weight_vec = alpha
+            weight_graph = 0.0
+
+        all_doc_ids: Set[str] = set(lexical_ranks.keys()).union(vector_ranks.keys()).union(graph_ranks.keys())
         for doc_id in all_doc_ids:
             score = 0.0
             if doc_id in lexical_ranks:
                 score += weight_lex * (1.0 / (k + lexical_ranks[doc_id]))
             if doc_id in vector_ranks:
                 score += weight_vec * (1.0 / (k + vector_ranks[doc_id]))
+            if doc_id in graph_ranks:
+                score += weight_graph * (1.0 / (k + graph_ranks[doc_id]))
             scores[doc_id] = score
 
         # Sort descending by fused score
@@ -60,6 +79,7 @@ class ReciprocalRankFusion(BaseRankFusion):
                     rrf_score=round(scores[did], 6),
                     lexical_rank=lexical_ranks.get(did),
                     vector_rank=vector_ranks.get(did),
+                    graph_rank=graph_ranks.get(did),
                     highlights=highlights,
                 )
             )
