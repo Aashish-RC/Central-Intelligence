@@ -34,7 +34,7 @@
 | **11.22** | Shadow Traffic Emulation & Parallel Evaluation | **built** | Own implementation | no | `tests/test_experiments.py` |
 | **11.23** | Canary Deployment Evaluation | **built** | Own implementation | no | `tests/test_experiments.py` |
 | **11.24** | Automated Quality Release Gates | **built** | Own implementation | no | `tests/test_experiments.py` |
-| **11.25** | Tenant-Level Sandbox & Dry-Run Execution Mode | pending | Own implementation | no | `tests/test_sandbox.py` |
+| **11.25** | Tenant-Level Sandbox & Dry-Run Execution Mode | **built** | Own implementation | no | `tests/test_sandbox.py` |
 
 ---
 

@@ -156,7 +156,29 @@ class AgentRunner:
                         )
 
                         params = {"query": cleaned_prompt, "expression": cleaned_prompt, "command": tool_def.command or "echo ok"}
-                        t_res: ToolResult = await tool_instance.execute(params, tool_ctx)
+                        
+                        # Layer 11 Tenant Sandbox: intercept mutating actions in simulation mode
+                        tenant_id = getattr(self.manifest, "tenant_id", "default")
+                        is_simulated = False
+                        sim_output = None
+                        try:
+                            from control.evaluation.sandbox.tenant_sandbox import default_tenant_sandbox
+                            is_simulated, sim_output = default_tenant_sandbox.intercept(
+                                tool_name=tool_def.name,
+                                parameters=params,
+                                tenant_id=tenant_id,
+                            )
+                        except Exception:
+                            is_simulated = False
+
+                        if is_simulated:
+                            t_res = ToolResult(
+                                success=True,
+                                output=sim_output,
+                                execution_time_ms=1.0,
+                            )
+                        else:
+                            t_res: ToolResult = await tool_instance.execute(params, tool_ctx)
 
                         tool_outputs.append({
                             "tool": tool_def.name,
