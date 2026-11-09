@@ -92,6 +92,20 @@ services:
     volumes:
       - nango_data:/data
 
+  # Temporal Server for L8 Durable Workflow Execution
+  temporal:
+    image: temporalio/auto-setup:latest
+    container_name: central-temporal
+    restart: unless-stopped
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    environment:
+      - DB=sqlite
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    volumes:
+      - temporal_data:/etc/temporal/config/dynamicconfig
+
 volumes:
   qdrant_data:
   ollama_models:
@@ -101,3 +115,4 @@ volumes:
   memgraph_data:
   falkordb_data:
   nango_data:
+  temporal_data:

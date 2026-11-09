@@ -101,3 +101,4 @@ describe('Nango Federated OAuth Connector (Layer 5)', () => {
     expect(res.provider).toBe('linear');
   });
 });
+

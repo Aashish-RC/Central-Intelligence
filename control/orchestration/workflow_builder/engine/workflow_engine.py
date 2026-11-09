@@ -51,3 +51,25 @@ class WorkflowEngine(BaseWorkflowEngine):
                     break
 
         return len(errors) == 0, errors
+
+    def execute_graph(
+        self,
+        graph: WorkflowGraph,
+        initial_input: str = "",
+        durable: bool = False,
+        checkpoint_dir: str = "./.temporal_checkpoints",
+        **kwargs,
+    ):
+        """Execute a validated workflow graph with optional Temporal durability."""
+        valid, errors = self.validate_graph(graph)
+        if not valid:
+            raise ValueError(f"Invalid workflow graph: {'; '.join(errors)}")
+
+        if durable:
+            from ..runtime.temporal_adapter import TemporalWorkflowAdapter
+            adapter = TemporalWorkflowAdapter(checkpoint_dir=checkpoint_dir)
+            return adapter.execute_workflow(graph=graph, initial_input=initial_input, **kwargs)
+
+        from ..runtime.orchestrator_bridge import OrchestratorBridge
+        bridge = OrchestratorBridge()
+        return bridge.execute_workflow(graph=graph, initial_input=initial_input)

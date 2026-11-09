@@ -40,3 +40,6 @@ wal/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Runtime checkpoints
+.temporal_checkpoints/
