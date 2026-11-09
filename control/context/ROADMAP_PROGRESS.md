@@ -1,0 +1,37 @@
+# Layer 9: Context Engineering — Feature Roadmap Progress & Checkpoint Log
+
+> **Subsystem Core:** Python (FastAPI, Pydantic, tiktoken, LlamaIndex Core)  
+> **Status Standard:** Verified against functional test suites.  
+> **Test Suite:** `control/context/tests/`
+
+---
+
+## 1. Feature Status Table
+
+| Feature ID | Feature Name | Status | License Treatment | Reviewed by Human | Verification Evidence |
+|:---|:---|:---:|:---|:---:|:---|
+| **9.01** | Unified Multi-Source Context Assembly (Memory, Knowledge, Tools, Instructions) | **built** | Own implementation | no | `tests/test_context_assembler.py` |
+| **9.02** | Granular Per-Source Token Budget Allocation & Overflow Protection | **built** | Own implementation | no | `tests/test_context_assembler.py` |
+| **9.03** | Strict Multi-Tier Prioritization & Pruning Hierarchy | **built** | Own implementation | no | `tests/test_context_assembler.py` |
+| **9.04** | Conversation Compaction & Rolling History Summarization | **built** | Adapted (MIT - LlamaIndex Core) | no | `tests/test_context_assembler.py` |
+| **9.05** | Dynamic Strategy Selection (Long Context vs Retrieval-Augmented Context) | **built** | Own implementation | no | `tests/test_context_assembler.py` |
+| **9.06** | Versioned Prompt & Instruction Registry | pending | Own implementation | no | Task 9.2 |
+| **9.07** | Multi-Tier Instruction Layering (Global, Tenant, App, User) | pending | Own implementation | no | Task 9.2 |
+| **9.08** | Parameterized Prompt Templates with Variable Substitution | pending | Own implementation | no | Task 9.2 |
+| **9.09** | Evaluation & A/B Testing Hooks | pending | Own implementation | no | Task 9.2 |
+| **9.10** | Deterministic Precedence Rules for Instruction Conflict Resolution | pending | Own implementation | no | Task 9.2 |
+| **9.11** | Immutable System Instruction Frames | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
+| **9.12** | Dual-Boundary Context Assembler (Prompt Injection Defense) | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
+| **9.13** | Byte-for-Byte Context Audit Log & Tamper-Evident Merkle Ledger | pending | Own implementation | no | Task 9.4 |
+| **9.14** | Prefix Cache Optimizer (Anthropic & OpenAI KV-Cache Alignment) | pending | Own implementation | no | Task 9.5 |
+| **9.15** | Per-Model Format Adapters (Anthropic, OpenAI, Gemini, Ollama) | pending | Own implementation | no | Task 9.6 |
+| **9.16** | Situational Context Injector (Temporal, Device, Locale Awareness) | pending | Own implementation | no | Task 9.7 |
+| **9.17** | Self-Knowledge Boundary Injector (Capabilities, Limits, Tool Availability) | pending | Own implementation | no | Task 9.8 |
+
+---
+
+## 2. OSS Integration Reference
+
+| OSS Tool | Repository URL | License | Purpose & Justification |
+|:---|:---|:---:|:---|
+| **LlamaIndex Core** | [https://github.com/run-llama/llama_index](https://github.com/run-llama/llama_index) | MIT | Context compaction, node parsing, and history condensation algorithms without safety filter collision. |
