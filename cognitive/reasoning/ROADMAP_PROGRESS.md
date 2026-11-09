@@ -61,6 +61,7 @@
 | #45 Voice Turn Duration Metering & Preflight Leases | quarantined, spec only | Quarantined | no | Quarantined in `quarantine/leases.ts` |
 | #46 Prepaid Credit Gating & Automated Webhooks | quarantined, spec only | Quarantined | no | Quarantined in `quarantine/credits.ts` |
 | #47 Agent-to-Agent (A2A) Routing Protocol | built | Own implementation from public protocol spec | no | `tests/a2a.test.ts` |
+| Hermes Agent Reasoning Loop | built | Adapted (MIT) | no | `tests/hermes.test.ts` |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Unverified (flagged for counsel) | no | `tests/ssrf.test.ts` |
 | Clean-Room Spec: GeoIP Country & IP Blocking | spec only | Clean-room spec | no | `docs/specs/geoip-ip-blocking.md` |
 | Clean-Room Spec: Voice-Duration Metering & Leases | spec only | Clean-room spec | no | `docs/specs/voice-duration-metering.md` |
@@ -75,6 +76,7 @@ Permissive sources incorporated under license terms:
 - **`portkey-ai-gateway`** (MIT, SHA `669825cbe89ee51569918b8f78a9db486fd69dd4`): Protocol adapters, streaming normalization, handler utilities.
 - **`bifrost`** (Apache-2.0, SHA `fa64346b5aabbfa348c0e1e085dc7b3538bc53f3`): Error classification matrix, cooldown tracking, routing strategies.
 - **`envoy-ai-gateway`** (Apache-2.0, SHA `12fef6422579f544e84be8167d0979527d3576d4`): Protocol translation patterns, CEL expressions, cost calculation concepts.
+- **`hermes-agent`** (NousResearch, MIT): Cognitive multi-turn reasoning and tool-calling execution loop.
 - **`litellm`** (MIT, SHA `7e6fb09da3987c8b75062307695f9083da55feed`): Virtual aliasing and endpoint translation patterns.
 
 AGPL repositories (`llmgateway`, `grepture-proxy`) were used as behavior references only. Full license texts are archived in `third_party/licenses/`.

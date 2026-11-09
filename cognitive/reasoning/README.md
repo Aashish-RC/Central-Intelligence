@@ -61,6 +61,7 @@ Status is tracked per-feature derived directly from `PROVENANCE_LEDGER.md`. Clea
 | #45 Voice Turn Duration Metering & Preflight Leases | built | Clean-room (implementer saw only the spec) | Layer 0 Metering | temporarily, flag off (`FEATURE_VOICE_LEASES`) | no |
 | #46 Prepaid Credit Gating & Automated Webhooks | built | Clean-room (implementer saw only the spec) | Layer 0 Metering | temporarily, flag off (`FEATURE_PREPAID_CREDITS`) | no |
 | #47 Agent-to-Agent (A2A) Routing Protocol | built | Own implementation from public protocol spec | Layer 2 orchestration | temporarily, flag off (`FEATURE_A2A`) | no |
+| Hermes Agent Reasoning Loop | built | Adapted (MIT) | Layer 4 reasoning | active | no |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Clean-room (implementer saw only the spec) | Gateway Core | active | no |
 | Spec: GeoIP Country & IP Blocking | clean-room built | Clean-room spec (`docs/specs/geoip-ip-blocking.md`) | Clean-Room Spec | temporarily, flag off (`FEATURE_GEOIP`) | no |
 | Spec: Voice-Duration Metering & Leases | clean-room built | Clean-room spec (`docs/specs/voice-duration-metering.md`) | Clean-Room Spec | temporarily, flag off (`FEATURE_VOICE_LEASES`) | no |
@@ -85,6 +86,33 @@ The following non-gateway subsystems belong to outer layers and are temporarily 
 | `FEATURE_PREPAID_CREDITS` | `false` | Layer 0 Metering | Telemetry Audit Hook | Prepaid credit gating preflight checks and automated balance webhooks. |
 
 When any flag is off, the module is not imported at startup and its routes are not registered (returning HTTP 404).
+
+### Hermes Agent Adapter (Multi-Turn Reasoning & Tool Calling)
+
+- **Repo:** [https://github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+- **License:** MIT
+- **Why Chosen:** Enables stateful, multi-turn tool-calling cognitive reasoning loops on top of the model gateway without compromising the gateway's core routing, caching, and governance responsibilities.
+- **Usage:**
+
+```typescript
+import { HermesAgentAdapter } from '@central-intelligence/reasoning';
+
+const agent = new HermesAgentAdapter({
+  name: 'HermesResearchAgent',
+  maxTurns: 5,
+  tools: [
+    {
+      name: 'search_database',
+      description: 'Search documents by query',
+      parameters: { type: 'object', properties: { q: { type: 'string' } }, required: ['q'] },
+      handler: async ({ q }) => ({ hits: [`Result for ${q}`] }),
+    },
+  ],
+});
+
+const result = await agent.run('Find documentation about architecture', gatewayDispatcher);
+console.log(result.finalResponse);
+```
 
 ---
 

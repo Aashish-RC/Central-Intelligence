@@ -14,6 +14,7 @@ export * from './telemetry/pricing.js';
 export * from './telemetry/usage.js';
 export * from './resilience/classifier.js';
 export * from './resilience/cooldown.js';
+export * from './agents/index.js';
 
 const { app, router, engine } = createGatewayApp();
 
