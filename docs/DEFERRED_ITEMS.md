@@ -8,7 +8,7 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 
 | Item ID | Layer | Feature | Title / Description | Upstream Dependency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **DEF-01** | **L2** | 2.38 | **Memory Access Control Bridge** | **L12 (IAM / Permify / OpenFGA)** | **Deferred** (Waits on L12) |
+| **DEF-01** | **L2** | 2.38 | **Memory Access Control Bridge** | **L12 (IAM / Permify / OpenFGA)** | **UNBLOCKED** (Wired to L12 OpenFGA) |
 | **DEF-02** | **L3** | 3.36 | **Permission-Filtered Retrieval** | **L12 (IAM / Permify / OpenFGA)** | **Deferred** (Waits on L12) |
 | **DEF-03** | **L8** | 8.15 | **Second-Opinion Trigger** | **L11 (Evaluation / Accuracy Score)** | **Deferred** (Waits on L11) |
 | **DEF-04** | **L8** | 8.31 | **Hatchet Queue Integration** | Architectural Evaluation Completed | **Decided: Retain Temporal for L8; Hatchet Deferred to Phase 6 for L5** |
@@ -20,8 +20,8 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 ### DEF-01: L2 Memory Access Control Bridge (Feature 2.38)
 - **Scope:** Fine-grained relationship-based access control (ReBAC) and attribute-based access control (ABAC) over persistent memory records, episodic rollups, and fact graph entities.
 - **Upstream Blocker:** Layer 12 IAM system (Permify / OpenFGA schema and authorization service).
-- **Current State:** L2 currently enforces tenant isolation, project ID filtering, and per-user namespaces (`user_id`, `tenant_id`, `project_id`) at the database and adapter level.
-- **Unlocking Criteria:** Once L12 provides the centralized ReBAC client (`iam.client.check_permission(actor, action, resource)`), L2 will wire the `MemoryEngine` pre-read and pre-write access hooks.
+- **Status:** **UNBLOCKED** — Integrated with `control.identity.openfga_adapter.OpenFGAAdapter` via `cognitive/memory/access_control/openfga_bridge.py`. Pre-write (`remember`) and pre-read (`recall`) hooks enforced.
+- **Verification:** Verified via `cognitive/memory/tests/test_access_control.py`.
 
 ### DEF-02: L3 Permission-Filtered Retrieval (Feature 3.36)
 - **Scope:** Scoping knowledge base and vector similarity search results to documents and chunks the requesting user has explicit `VIEW` permissions for.

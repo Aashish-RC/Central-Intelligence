@@ -25,6 +25,8 @@ for p in [
     control_dir / "safety",
     control_dir / "safety" / "guardrails",
     control_dir / "evaluation",
+    control_dir / "identity",
+    control_dir / "identity" / "secrets",
 ]:
     if p.exists() and str(p) not in sys.path:
         sys.path.insert(0, str(p))

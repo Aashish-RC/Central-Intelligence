@@ -173,6 +173,18 @@ class MemoryEngine:
         metadata = metadata or {}
         event_id = uuid4()
 
+        # Feature 2.38 (DEF-01): L12 Memory Access Control Pre-Write Hook
+        memory_scope = metadata.get("target_memory_scope", user_id)
+        try:
+            from memory.access_control.openfga_bridge import check_memory_access
+            check_memory_access(user_id=user_id, action="write", memory_scope=memory_scope)
+        except ImportError:
+            try:
+                from cognitive.memory.access_control.openfga_bridge import check_memory_access
+                check_memory_access(user_id=user_id, action="write", memory_scope=memory_scope)
+            except ImportError:
+                pass
+
         # Feature 2.47: Memory Poisoning Defense Pre-Write Integrity Check
         if hasattr(self, "poisoning_defense") and self.poisoning_defense is not None:
             poison_res = self.poisoning_defense.check_memory(
@@ -319,6 +331,7 @@ class MemoryEngine:
         project_id: Optional[str] = None,
         top_k: Optional[int] = None,
         tenant_id: str = "default",
+        target_memory_scope: Optional[str] = None,
     ) -> ContextPackage:
         """Recall concentrated context (< 500 tokens) for system prompt injection.
         
@@ -327,6 +340,18 @@ class MemoryEngine:
         - Tier 2: Ground-truth active user facts and preferences (project-isolated).
         - Tier 3: Top-K semantic archival matches (project-isolated).
         """
+        # Feature 2.38 (DEF-01): L12 Memory Access Control Pre-Read Hook
+        target_scope = target_memory_scope or user_id
+        try:
+            from memory.access_control.openfga_bridge import check_memory_access
+            check_memory_access(user_id=user_id, action="read", memory_scope=target_scope)
+        except ImportError:
+            try:
+                from cognitive.memory.access_control.openfga_bridge import check_memory_access
+                check_memory_access(user_id=user_id, action="read", memory_scope=target_scope)
+            except ImportError:
+                pass
+
         k = top_k or self.config.top_k_semantic_matches
 
         # Tier 1: Working memory window
