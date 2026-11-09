@@ -63,6 +63,7 @@
 | #47 Agent-to-Agent (A2A) Routing Protocol | built | Own implementation from public protocol spec | no | `tests/a2a.test.ts` |
 | Hermes Agent Reasoning Loop | built | Adapted (MIT) | no | `tests/hermes.test.ts` |
 | OpenClaw Adapter & Channel Bridge | built | Adapted (MIT) | no | `tests/openclaw.test.ts` |
+| Self-Knowledge Boundary Module | built | Own implementation | no | `tests/boundaryModule.test.ts` |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Unverified (flagged for counsel) | no | `tests/ssrf.test.ts` |
 | Clean-Room Spec: GeoIP Country & IP Blocking | spec only | Clean-room spec | no | `docs/specs/geoip-ip-blocking.md` |
 | Clean-Room Spec: Voice-Duration Metering & Leases | spec only | Clean-room spec | no | `docs/specs/voice-duration-metering.md` |
