@@ -246,3 +246,9 @@ export {
   type DelegationGrant,
   type IssueDelegationParams,
 } from './fleet/collaborationBridge.js';
+export {
+  ProactiveInitiationEngine,
+  type TriggerType,
+  type InitiationRule,
+  type ProactiveTriggerEvent,
+} from './fleet/proactiveInitiation.js';
