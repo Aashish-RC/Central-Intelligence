@@ -25,10 +25,10 @@
 | **12.13** | Entitlement-Based Access Control | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
 | **12.14** | Externalized ReBAC Policy Engine (Google Zanzibar) | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
 | **12.15** | Delegated Access with Scoped Expiring Rights | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.16** | Distinct Identity for Every Agent and Bot | pending | Own implementation | no | `tests/test_agent_identity.py` |
-| **12.17** | Scoped, Short-Lived Agent Credentials | pending | Own implementation | no | `tests/test_agent_identity.py` |
-| **12.18** | Attribution of Action to Agent & Parent User | pending | Own implementation | no | `tests/test_agent_identity.py` |
-| **12.19** | Agent-to-Agent Mutual Authentication | pending | Own implementation | no | `tests/test_agent_identity.py` |
+| **12.16** | Distinct Identity for Every Agent and Bot | **built** | Own implementation | no | `tests/test_agent_identity.py` |
+| **12.17** | Scoped, Short-Lived Agent Credentials | **built** | Own implementation | no | `tests/test_agent_identity.py` |
+| **12.18** | Attribution of Action to Agent & Parent User | **built** | Own implementation | no | `tests/test_agent_identity.py` |
+| **12.19** | Agent-to-Agent Mutual Authentication | **built** | Own implementation | no | `tests/test_agent_identity.py` |
 | **12.20** | Multi-Tenant Data & Execution Isolation | pending | Own implementation | no | `tests/test_tenancy.py` |
 | **12.21** | Per-Tenant Dedicated Encryption Keys | pending | Own implementation | no | `tests/test_tenancy.py` |
 | **12.22** | Per-Tenant Model Policy Routing | pending | Own implementation | no | `tests/test_tenancy.py` |
