@@ -2,7 +2,7 @@
 
 > **Engine Core:** TypeScript (strict ESM, Node.js LTS, Hono, Zod, Web Streams, Vitest)  
 > **Status Standard:** Derived per-feature from `PROVENANCE_LEDGER.md`. No per-repo percentages.  
-> **Test Suite:** 40 test suites, 140 passing tests hermetically executed.
+> **Test Suite:** 55 test suites, 317 passing tests hermetically executed.
 
 ---
 
