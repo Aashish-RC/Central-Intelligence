@@ -12,6 +12,9 @@ import { calendarPiece } from './pieces/calendar.js';
 import { searchPiece } from './pieces/search.js';
 import { browserPiece } from './pieces/browser.js';
 import { openclawPiece } from './pieces/openclaw.js';
+import { nangoPiece, nangoAdapter, NangoAdapter } from './nango_adapter.js';
+
+export { nangoAdapter, NangoAdapter, nangoPiece };
 
 /** All registered connector pieces */
 export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
@@ -23,6 +26,7 @@ export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
   searchPiece,
   browserPiece,
   openclawPiece,
+  nangoPiece,
 ];
 
 /**

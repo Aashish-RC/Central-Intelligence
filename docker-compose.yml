@@ -79,6 +79,19 @@ services:
     volumes:
       - falkordb_data:/data
 
+  # Nango Federated OAuth Gateway for L5 Action
+  nango:
+    image: nangohq/nango:latest
+    container_name: central-nango
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+      - "8080:8080"
+    environment:
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-centralIntelligenceNangoSecret}
+    volumes:
+      - nango_data:/data
+
 volumes:
   qdrant_data:
   ollama_models:
@@ -87,3 +100,4 @@ volumes:
   chroma_data:
   memgraph_data:
   falkordb_data:
+  nango_data:
