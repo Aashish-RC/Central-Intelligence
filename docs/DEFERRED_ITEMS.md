@@ -9,7 +9,7 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 | Item ID | Layer | Feature | Title / Description | Upstream Dependency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **DEF-01** | **L2** | 2.38 | **Memory Access Control Bridge** | **L12 (IAM / Permify / OpenFGA)** | **UNBLOCKED** (Wired to L12 OpenFGA) |
-| **DEF-02** | **L3** | 3.36 | **Permission-Filtered Retrieval** | **L12 (IAM / Permify / OpenFGA)** | **Deferred** (Waits on L12) |
+| **DEF-02** | **L3** | 3.36 | **Permission-Filtered Retrieval** | **L12 (IAM / Permify / OpenFGA)** | **UNBLOCKED** (Wired to L12 OpenFGA) |
 | **DEF-03** | **L8** | 8.15 | **Second-Opinion Trigger** | **L11 (Evaluation / Accuracy Score)** | **Deferred** (Waits on L11) |
 | **DEF-04** | **L8** | 8.31 | **Hatchet Queue Integration** | Architectural Evaluation Completed | **Decided: Retain Temporal for L8; Hatchet Deferred to Phase 6 for L5** |
 
@@ -26,8 +26,8 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 ### DEF-02: L3 Permission-Filtered Retrieval (Feature 3.36)
 - **Scope:** Scoping knowledge base and vector similarity search results to documents and chunks the requesting user has explicit `VIEW` permissions for.
 - **Upstream Blocker:** Layer 12 IAM system (Permify / OpenFGA).
-- **Current State:** L3 provides collection-level and namespace-level partitioning.
-- **Unlocking Criteria:** L12 authorization engine deployment allowing token-injected pre-filtering on Qdrant/Meilisearch vector queries.
+- **Status:** **UNBLOCKED** — Integrated with `control.identity.openfga_adapter.OpenFGAAdapter` via `cognitive/knowledge/access_control/openfga_bridge.py`. Enforces `can_view` document ReBAC filtering in `LocalHybridSearchEngine`, `ReciprocalRankFusion`, and `MeilisearchClient`.
+- **Verification:** Verified via `cognitive/knowledge/search/tests/test_permission_filter.py`.
 
 ### DEF-03: L8 Second-Opinion Trigger (Feature 8.15)
 - **Scope:** Triggering second-opinion arbitration or consensus reruns when initial task reasoning confidence is marginal or task risk is elevated.

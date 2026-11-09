@@ -44,6 +44,7 @@ class SearchQuery(BaseModel):
     project_id: str = Field(default="default", description="Workspace isolation boundary")
     corpus_types: Optional[List[CorpusType]] = Field(default=None, description="Filter by corpora")
     tags: Optional[List[str]] = Field(default=None, description="Filter by tags (OR matching)")
+    user_id: Optional[str] = Field(default=None, description="Requesting user ID for ReBAC permission filtering")
     limit: int = Field(default=20, ge=1, le=100, description="Max results to return")
     hybrid_alpha: float = Field(
         default=0.5,

@@ -325,6 +325,18 @@ class LocalHybridSearchEngine(BaseSearchEngine):
             limit=query.limit,
         )
 
+        # Feature 3.36 (DEF-02): L12 Permission-Filtered Retrieval
+        if query.user_id:
+            try:
+                from cognitive.knowledge.access_control.openfga_bridge import filter_results_by_permission
+                fused_results = filter_results_by_permission(fused_results, user_id=query.user_id)
+            except ImportError:
+                try:
+                    from knowledge.access_control.openfga_bridge import filter_results_by_permission
+                    fused_results = filter_results_by_permission(fused_results, user_id=query.user_id)
+                except ImportError:
+                    pass
+
         return SearchResponse(
             query=query.query_text,
             tenant_id=query.tenant_id,

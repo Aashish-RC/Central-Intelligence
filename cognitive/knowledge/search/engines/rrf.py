@@ -1,7 +1,7 @@
 """Reciprocal Rank Fusion (RRF) combiner for hybrid search."""
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from ..core.interfaces import BaseRankFusion
 from ..core.models import SearchDocument, SearchResult
 
@@ -18,6 +18,8 @@ class ReciprocalRankFusion(BaseRankFusion):
         alpha: float = 0.5,
         weights: Optional[Tuple[float, float, float]] = None,
         limit: int = 20,
+        user_id: Optional[str] = None,
+        openfga_client: Optional[Any] = None,
     ) -> List[SearchResult]:
         """Calculates blended RRF scores across lexical, vector, and graph candidate lists:
         score(d) = w_lex * 1 / (k + rank_lex) + w_vec * 1 / (k + rank_vec) + w_graph * 1 / (k + rank_graph)
@@ -83,6 +85,17 @@ class ReciprocalRankFusion(BaseRankFusion):
                     highlights=highlights,
                 )
             )
+
+        if user_id:
+            try:
+                from cognitive.knowledge.access_control.openfga_bridge import filter_results_by_permission
+                results = filter_results_by_permission(results, user_id=user_id, openfga_client=openfga_client)
+            except ImportError:
+                try:
+                    from knowledge.access_control.openfga_bridge import filter_results_by_permission
+                    results = filter_results_by_permission(results, user_id=user_id, openfga_client=openfga_client)
+                except ImportError:
+                    pass
 
         return results
 
