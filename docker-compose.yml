@@ -106,6 +106,16 @@ services:
     volumes:
       - temporal_data:/etc/temporal/config/dynamicconfig
 
+  # Arize Phoenix for L11 Evaluation, Hallucination Detection & Tracing
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: central-phoenix
+    restart: unless-stopped
+    ports:
+      - "6006:6006"
+    volumes:
+      - phoenix_data:/root/.phoenix
+
 volumes:
   qdrant_data:
   ollama_models:
@@ -116,3 +126,4 @@ volumes:
   falkordb_data:
   nango_data:
   temporal_data:
+  phoenix_data:
