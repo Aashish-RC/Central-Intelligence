@@ -35,11 +35,12 @@ from memory.stitches.conflict_resolver import ConflictResolver
 from memory.stitches.synthesizer import ContextSynthesizer
 from memory.stitches.consolidation import ConsolidationEngine, ConsolidationResult
 from memory.stitches.sources_view import MemorySourcesViewBuilder
-
-
-class SecurityPolicyViolationError(Exception):
-    """Raised when memory ingestion is blocked or intercepted by safety guardrails."""
-    pass
+from memory.integrity.poisoning_defense import (
+    MemoryPoisoningDefense,
+    MemoryPoisoningError,
+    PoisoningDetectionResult,
+    SecurityPolicyViolationError,
+)
 
 
 class MemoryEngine:
@@ -54,9 +55,11 @@ class MemoryEngine:
         graph_store: Optional[BaseGraphStore] = None,
         embedder: Optional[BaseEmbedder] = None,
         guardrails_client: Optional[Any] = None,
+        poisoning_defense: Optional[MemoryPoisoningDefense] = None,
     ):
         self.config = config or default_config
         self.guardrails_client = guardrails_client
+        self.poisoning_defense = poisoning_defense or MemoryPoisoningDefense()
 
         # Embedder
         self.embedder = embedder or get_embedder(self.config)
@@ -139,6 +142,26 @@ class MemoryEngine:
         """
         metadata = metadata or {}
         event_id = uuid4()
+
+        # Feature 2.47: Memory Poisoning Defense Pre-Write Integrity Check
+        if hasattr(self, "poisoning_defense") and self.poisoning_defense is not None:
+            poison_res = self.poisoning_defense.check_memory(
+                text=text,
+                metadata=metadata,
+                source=str(getattr(role, "value", role)),
+            )
+            if poison_res.is_poisoned:
+                quarantine_id = self.poisoning_defense.quarantine(
+                    text=text,
+                    user_id=user_id,
+                    result=poison_res,
+                    metadata=metadata,
+                )
+                raise MemoryPoisoningError(
+                    f"Memory write rejected by poisoning defense ({poison_res.threat_category}): "
+                    f"{'; '.join(poison_res.reasons)} [quarantine_id={quarantine_id}]",
+                    result=poison_res,
+                )
 
         # Task 1.1 / W9: Guardrails Pre-Write Filter for Memory Store
         client = getattr(self, "guardrails_client", None)

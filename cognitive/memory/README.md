@@ -17,6 +17,7 @@ A modular, production-grade **Fused Dynamic Memory Layer for AI Agents**, fusing
   - **Stitch 3: Conflict & Deduplication Resolver:** Automatic contradiction detection (e.g. *"Moved from Berlin to Tokyo"*) with semantic versioning and superseding.
   - **Stitch 4: Dynamic Context Synthesizer:** Compresses memories into concentrated, token-budgeted prompt injections (< 500 tokens).
 - **Autonomous Consolidation ("REM Sleep"):** Background worker that compresses raw multi-turn session histories into long-term vector milestones and purges ephemeral working memory.
+- **Memory Poisoning Defense & Quarantine (Feature 2.47):** Pre-write integrity analysis protecting against adversarial prompt injections, role confusion, canary exfiltration, and memory tampering with forensic quarantine buffering.
 - **Fact Decay & Relevance Scoring:** Soft exponential decay with frequency-based reinforcement for long-term relevance.
 - **Zero-Dependency Offline Mode:** Ships with deterministic local hashing embeddings and in-memory Qdrant/SQLite for 100% offline development.
 - **Dual Delivery Interface:** Exposes both a **FastAPI REST API** and a native **Model Context Protocol (MCP)** server for IDEs (Antigravity, Cursor, Windsurf).
@@ -59,6 +60,9 @@ memory/
 │   ├── conflict_resolver.py           # Stitch 3: Deduplication and contradiction resolution
 │   ├── consolidation.py               # Phase 4: Autonomous Consolidation loop ("REM Sleep")
 │   └── synthesizer.py                 # Stitch 4: Context synthesizer for prompt injection (< 500 tokens)
+├── integrity/
+│   ├── __init__.py
+│   └── poisoning_defense.py           # Feature 2.47: Prompt injection, canary, and poisoning defense
 ├── embeddings/
 │   ├── __init__.py
 │   └── embedder.py                    # Unified embedding client (Local Hash / Remote OpenAI)
