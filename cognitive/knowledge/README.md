@@ -42,3 +42,12 @@ acquisitions = adapter.query_manager_company_acquisitions(employee_name="Alice")
 print(acquisitions)  # ['StartupAI']
 ```
 
+---
+
+## 3. Abstention Logic & Hallucination Prevention (Feature 3.35)
+
+Located in `cognitive/knowledge/abstention/`:
+- **Principled Refusal vs Hallucination:** When evidence retrieved from search or RAG is insufficient, irrelevant, or contradictory, the engine abstains with a verified refusal rather than generating ungrounded facts.
+- **Evidence Grounding Evaluator (`evaluator.py`):** Calculates composite grounding confidence based on relevance, query keyword coverage, and cross-passage contradiction penalties.
+- **Abstention Engine (`engine.py`):** Wraps generation pipelines; gates LLM execution behind verification thresholds (`ANSWER`, `PARTIAL`, `ABSTAIN`).
+
