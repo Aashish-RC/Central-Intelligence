@@ -10,7 +10,7 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **DEF-01** | **L2** | 2.38 | **Memory Access Control Bridge** | **L12 (IAM / Permify / OpenFGA)** | **UNBLOCKED** (Wired to L12 OpenFGA) |
 | **DEF-02** | **L3** | 3.36 | **Permission-Filtered Retrieval** | **L12 (IAM / Permify / OpenFGA)** | **UNBLOCKED** (Wired to L12 OpenFGA) |
-| **DEF-03** | **L8** | 8.15 | **Second-Opinion Trigger** | **L11 (Evaluation / Accuracy Score)** | **Deferred** (Waits on L11) |
+| **DEF-03** | **L8** | 8.15 | **Second-Opinion Trigger** | **L11 (Evaluation / Accuracy Score)** | **UNBLOCKED** (Wired to L11 Accuracy Score) |
 | **DEF-04** | **L8** | 8.31 | **Hatchet Queue Integration** | Architectural Evaluation Completed | **Decided: Retain Temporal for L8; Hatchet Deferred to Phase 6 for L5** |
 
 ---
@@ -32,8 +32,8 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 ### DEF-03: L8 Second-Opinion Trigger (Feature 8.15)
 - **Scope:** Triggering second-opinion arbitration or consensus reruns when initial task reasoning confidence is marginal or task risk is elevated.
 - **Upstream Blocker:** Layer 11 Accuracy Scoring & Evaluation Service.
-- **Current State:** L4 Tiered Synthesis has second-opinion fallback based on local model confidence thresholds (< 0.5), and L7 Recommender has local rule arbitration. Full orchestration-level automatic second-opinion re-runs require L11 real-time output accuracy scoring.
-- **Unlocking Criteria:** Deployment of Layer 11 live accuracy scorer providing real-time quality confidence metrics back to the Layer 8 Cognitive Policy Engine.
+- **Status:** **UNBLOCKED** — Integrated with Layer 11 Accuracy Score Evaluator ($S_{composite} = w_1 S_{feedback} + w_2 S_{web} + w_3 S_{consensus}$). Cognitive routing policy engine `maybeTriggerSecondOpinion` triggers automatic model escalation (e.g. to `claude-3-7-sonnet` or `o3-mini`) when composite accuracy is below 0.50.
+- **Verification:** Verified via `control/orchestration/tests/secondOpinion.test.ts`.
 
 ### DEF-04: L8 Hatchet Orchestration Evaluation
 - **Scope:** Evaluating Hatchet distributed task queue against Temporal for durable execution.

@@ -214,4 +214,78 @@ export class CognitiveRoutingPolicyEngine {
       estimatedLatencyMs: estimatedLatency,
     };
   }
+
+  /**
+   * Feature 8.15 / Task 12.14: Second-Opinion Trigger on Accuracy Score (DEF-03 UNBLOCKED)
+   */
+  maybeTriggerSecondOpinion(
+    score: { composite: number; confidence?: number },
+    task: TaskExecutionContext
+  ): SecondOpinionTriggerResult {
+    return maybeTriggerSecondOpinion(score, task);
+  }
+}
+
+/**
+ * Feature 8.15 / Task 12.14: Second-Opinion Trigger on Accuracy Score (DEF-03 UNBLOCKED)
+ *
+ * Evaluates Layer 11 real-time composite accuracy score (S_composite = w1*S_feedback + w2*S_web + w3*S_consensus).
+ * If composite < 0.50 and user enabled second opinions, triggers automatic re-run on a frontier reasoning model.
+ */
+export interface SecondOpinionTriggerResult {
+  triggered: boolean;
+  reason: string;
+  recommendedModel?: string;
+  originalModel?: string;
+}
+
+export interface TaskExecutionContext {
+  taskId: string;
+  currentModel: string;
+  userPreferences?: {
+    enableSecondOpinions?: boolean;
+    tierEscalation?: boolean;
+  };
+  request?: ExecutionRequest;
+}
+
+export function maybeTriggerSecondOpinion(
+  score: { composite: number; confidence?: number },
+  task: TaskExecutionContext
+): SecondOpinionTriggerResult {
+  const enabled = task.userPreferences?.enableSecondOpinions !== false;
+  if (!enabled) {
+    return {
+      triggered: false,
+      reason: 'Second opinions disabled by user preferences',
+      originalModel: task.currentModel,
+    };
+  }
+
+  if (score.composite < 0.50) {
+    // Model escalation hierarchy
+    let betterModel = 'anthropic/claude-3-7-sonnet-20250219';
+    if (task.currentModel === 'anthropic/claude-3-7-sonnet-20250219') {
+      betterModel = 'openai/o3-mini';
+    } else if (
+      task.currentModel.includes('mini') ||
+      task.currentModel.includes('haiku') ||
+      task.currentModel.includes('llama')
+    ) {
+      betterModel = 'anthropic/claude-3-7-sonnet-20250219';
+    }
+
+    return {
+      triggered: true,
+      reason: `Accuracy composite score (${score.composite.toFixed(2)}) fell below 0.50 threshold. Escalating to frontier model for second opinion.`,
+      recommendedModel: betterModel,
+      originalModel: task.currentModel,
+    };
+  }
+
+  return {
+    triggered: false,
+    reason: `Accuracy score (${score.composite.toFixed(2)}) satisfies quality threshold (>= 0.50).`,
+    originalModel: task.currentModel,
+  };
 }

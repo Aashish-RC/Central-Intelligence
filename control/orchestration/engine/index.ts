@@ -195,10 +195,13 @@ export { selectModel, searchModels } from './routing/selector.js';
 export { classifyTask } from './routing/taskClassifier.js';
 export {
   CognitiveRoutingPolicyEngine,
+  maybeTriggerSecondOpinion,
   type TaskComplexity,
   type RoutingObjective,
   type PolicyRule,
   type CognitiveRoutingDecision,
+  type SecondOpinionTriggerResult,
+  type TaskExecutionContext,
 } from './routing/cognitivePolicy.js';
 export {
   HumanEscalationProtocol,
