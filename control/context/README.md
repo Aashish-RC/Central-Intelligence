@@ -13,6 +13,12 @@ Context Engineering provides multi-source context synthesis, strict per-tier tok
 - **Conversation Compaction (9.04):** Compacts turns beyond the sliding window into bulleted gists using LlamaIndex-aligned history rolling algorithms.
 - **Strategy Selector (9.05):** Dynamically chooses between Long Context pass-through and dense Retrieval-Augmented Compaction.
 
+### `control.context.prompts` (`registry.py`, `layering.py`, `templates.py`)
+- **Versioned Prompt Registry (9.06):** SemVer-indexed prompt template catalogue.
+- **Multi-Tier Layering & Precedence (9.07, 9.10):** Cascading instruction inheritance (User > App > Tenant > Global) with immutable safety directive enforcement.
+- **Parameterized Templates (9.08):** Variable substitution with defaults and missing variable validation.
+- **A/B Test Hooks (9.09):** Session-hash-partitioned prompt experiment variations feeding into L11 quality metrics.
+
 ---
 
 ## 2. API Server

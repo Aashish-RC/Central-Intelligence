@@ -15,11 +15,11 @@
 | **9.03** | Strict Multi-Tier Prioritization & Pruning Hierarchy | **built** | Own implementation | no | `tests/test_context_assembler.py` |
 | **9.04** | Conversation Compaction & Rolling History Summarization | **built** | Adapted (MIT - LlamaIndex Core) | no | `tests/test_context_assembler.py` |
 | **9.05** | Dynamic Strategy Selection (Long Context vs Retrieval-Augmented Context) | **built** | Own implementation | no | `tests/test_context_assembler.py` |
-| **9.06** | Versioned Prompt & Instruction Registry | pending | Own implementation | no | Task 9.2 |
-| **9.07** | Multi-Tier Instruction Layering (Global, Tenant, App, User) | pending | Own implementation | no | Task 9.2 |
-| **9.08** | Parameterized Prompt Templates with Variable Substitution | pending | Own implementation | no | Task 9.2 |
-| **9.09** | Evaluation & A/B Testing Hooks | pending | Own implementation | no | Task 9.2 |
-| **9.10** | Deterministic Precedence Rules for Instruction Conflict Resolution | pending | Own implementation | no | Task 9.2 |
+| **9.06** | Versioned Prompt & Instruction Registry | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
+| **9.07** | Multi-Tier Instruction Layering (Global, Tenant, App, User) | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
+| **9.08** | Parameterized Prompt Templates with Variable Substitution | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
+| **9.09** | Evaluation & A/B Testing Hooks | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
+| **9.10** | Deterministic Precedence Rules for Instruction Conflict Resolution | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
 | **9.11** | Immutable System Instruction Frames | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
 | **9.12** | Dual-Boundary Context Assembler (Prompt Injection Defense) | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
 | **9.13** | Byte-for-Byte Context Audit Log & Tamper-Evident Merkle Ledger | pending | Own implementation | no | Task 9.4 |
