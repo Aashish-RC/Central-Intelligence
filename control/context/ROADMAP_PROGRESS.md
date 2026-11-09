@@ -26,7 +26,7 @@
 | **9.14** | Prefix Cache Optimizer (Anthropic & OpenAI KV-Cache Alignment) | **built** | Own implementation | no | `tests/test_prefix_optimizer.py` |
 | **9.15** | Per-Model Format Adapters (Anthropic, OpenAI, Gemini, Ollama) | **built** | Own implementation | no | `tests/test_adapters.py` |
 | **9.16** | Situational Context Injector (Temporal, Device, Locale Awareness) | **built** | Own implementation | no | `tests/test_situational.py` |
-| **9.17** | Self-Knowledge Boundary Injector (Capabilities, Limits, Tool Availability) | pending | Own implementation | no | Task 9.8 |
+| **9.17** | Self-Knowledge Boundary Injector (Capabilities, Limits, Tool Availability) | **built** | Own implementation | no | `tests/test_self_knowledge.py` |
 
 ---
 

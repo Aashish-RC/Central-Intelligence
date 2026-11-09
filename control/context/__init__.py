@@ -30,6 +30,7 @@ from control.context.adapters.openai_adapter import OpenAIContextAdapter
 from control.context.adapters.gemini_adapter import GeminiContextAdapter
 from control.context.adapters.ollama_adapter import OllamaContextAdapter
 from control.context.situational.injector import SituationalInjector, SituationalContext
+from control.context.self_knowledge.injector import SelfKnowledgeInjector, SelfKnowledgeProfile
 
 __all__ = [
     "ContextAssembler",
@@ -62,4 +63,6 @@ __all__ = [
     "OllamaContextAdapter",
     "SituationalInjector",
     "SituationalContext",
+    "SelfKnowledgeInjector",
+    "SelfKnowledgeProfile",
 ]
