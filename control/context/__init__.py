@@ -19,6 +19,12 @@ from control.context.trust.untrusted_sandbox import UntrustedBlock
 from control.context.trust.injection_detector import InjectionDetector, InjectionDetectionResult
 from control.context.trust.boundary_assembler import DualBoundaryAssembler, DualBoundaryAssemblyResult
 from control.context.audit.context_audit import ContextAuditLog, ContextAuditRecord
+from control.context.cache.prefix_optimizer import (
+    PrefixCacheOptimizer,
+    CacheableSection,
+    SectionStability,
+    OptimizedContextResult,
+)
 
 __all__ = [
     "ContextAssembler",
@@ -41,4 +47,8 @@ __all__ = [
     "DualBoundaryAssemblyResult",
     "ContextAuditLog",
     "ContextAuditRecord",
+    "PrefixCacheOptimizer",
+    "CacheableSection",
+    "SectionStability",
+    "OptimizedContextResult",
 ]

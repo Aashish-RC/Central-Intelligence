@@ -29,6 +29,7 @@ except ImportError:
     _LLAMA_INDEX_AVAILABLE = False
 
 from control.context.trust.boundary_assembler import DualBoundaryAssembler, DualBoundaryAssemblyResult
+from control.context.cache.prefix_optimizer import PrefixCacheOptimizer, CacheableSection, SectionStability, OptimizedContextResult
 
 logger = logging.getLogger("control.context.assembly")
 
@@ -328,6 +329,57 @@ class ContextAssembler:
             retrieved_content=formatted_knowledge,
             memory_records=formatted_memories,
         )
+
+    def optimize_prefix_cache(self, assembled: AssembledContext) -> OptimizedContextResult:
+        """Feature 9.14: Reorders assembled context sections to maximize KV-cache prefix hits."""
+        sections = []
+        if assembled.system_prompt:
+            sections.append(
+                CacheableSection(
+                    name="system_instructions",
+                    content=f"<system_instructions>\n{assembled.system_prompt}\n</system_instructions>",
+                    stability=SectionStability.STATIC_SYSTEM,
+                    token_count=assembled.token_counts.get("system", 0),
+                )
+            )
+        if assembled.tools_context:
+            sections.append(
+                CacheableSection(
+                    name="active_tools",
+                    content=f"<active_tools>\n{assembled.tools_context}\n</active_tools>",
+                    stability=SectionStability.STATIC_TOOLS,
+                    token_count=assembled.token_counts.get("tools", 0),
+                )
+            )
+        if assembled.knowledge_context:
+            sections.append(
+                CacheableSection(
+                    name="retrieved_knowledge",
+                    content=f"<retrieved_knowledge>\n{assembled.knowledge_context}\n</retrieved_knowledge>",
+                    stability=SectionStability.SEMI_STATIC_KNOWLEDGE,
+                    token_count=assembled.token_counts.get("knowledge", 0),
+                )
+            )
+        if assembled.memory_context:
+            sections.append(
+                CacheableSection(
+                    name="memory_context",
+                    content=f"<memory_context>\n{assembled.memory_context}\n</memory_context>",
+                    stability=SectionStability.DYNAMIC_MEMORY,
+                    token_count=assembled.token_counts.get("memory", 0),
+                )
+            )
+        if assembled.conversation_context:
+            sections.append(
+                CacheableSection(
+                    name="conversation_history",
+                    content=f"<conversation_history>\n{assembled.conversation_context}\n</conversation_history>",
+                    stability=SectionStability.DYNAMIC_CONVERSATION,
+                    token_count=assembled.token_counts.get("conversation", 0),
+                )
+            )
+
+        return PrefixCacheOptimizer.assemble_optimized(sections)
 
     def assemble(
         self,
