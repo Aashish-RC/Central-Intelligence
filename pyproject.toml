@@ -44,3 +44,7 @@ dev = [
 pythonpath = ["."]
 testpaths = ["cognitive", "control"]
 asyncio_mode = "auto"
+markers = [
+    "live: marks tests requiring an actual browser environment (excluded from default CI)",
+]
+addopts = "-m 'not live'"

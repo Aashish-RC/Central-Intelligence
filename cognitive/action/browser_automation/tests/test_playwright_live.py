@@ -9,6 +9,8 @@ import pytest
 from browser_automation.core.agent import BrowserUseAdapter, BrowserUseAgent
 from browser_automation.core.models import BrowserAction, BrowserActionType
 
+pytestmark = pytest.mark.live
+
 HTML_CONTENT = """<!DOCTYPE html>
 <html>
 <head>

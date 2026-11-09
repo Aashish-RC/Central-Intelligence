@@ -44,3 +44,4 @@ This document tracks items intentionally deferred per the Central-Intelligence m
 ## 3. Maintenance and Review Schedule
 - **Review Cadence:** Evaluated upon kickoff of Wave B (Layers 11–13).
 - **Owner:** Architecture & Cognitive Systems Core.
+

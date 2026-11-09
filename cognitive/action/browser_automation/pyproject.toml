@@ -21,6 +21,10 @@ asyncio_mode = "strict"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["..", ".", "../../.."]
+markers = [
+    "live: marks tests requiring an actual browser environment (excluded from default CI)",
+]
+addopts = "-m 'not live'"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["*"]

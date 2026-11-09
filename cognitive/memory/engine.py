@@ -195,6 +195,17 @@ class MemoryEngine:
 
         # Task 1.1 / W9: Guardrails Pre-Write Filter for Memory Store
         client = getattr(self, "guardrails_client", None)
+        if client is None:
+            try:
+                from guardrails.client import GuardrailsClient
+                client = GuardrailsClient()
+            except ImportError:
+                try:
+                    from control.safety.guardrails.client import GuardrailsClient
+                    client = GuardrailsClient()
+                except ImportError:
+                    client = None
+
         if client is not None:
             try:
                 g_res = client.check(prompt=text, actor=user_id) if hasattr(client, "check") else client.analyze(text, actor=user_id)
@@ -202,25 +213,13 @@ class MemoryEngine:
                 if action == "redact" and getattr(g_res, "sanitized_prompt", None):
                     text = g_res.sanitized_prompt
                 elif action in ("block", "crisis_intervention"):
+                    reason = getattr(g_res, "reason", "Blocked by safety policy")
                     raise SecurityPolicyViolationError(
-                        f"Memory write rejected by guardrails policy ({action}): {getattr(g_res, 'reason', 'Blocked by policy')}"
+                        f"Memory write rejected by guardrails policy ({action}): {reason}"
                     )
             except Exception as ex:
                 if isinstance(ex, SecurityPolicyViolationError):
                     raise
-        else:
-            try:
-                from guardrails.client import GuardrailsClient
-                client = GuardrailsClient()
-                g_res = client.check(prompt=text, actor=user_id)
-                if g_res.action == "redact" and g_res.sanitized_prompt:
-                    text = g_res.sanitized_prompt
-                elif g_res.action in ("block", "crisis_intervention"):
-                    raise SecurityPolicyViolationError(
-                        f"Memory write rejected by guardrails policy ({g_res.action}): {g_res.reason}"
-                    )
-            except ImportError:
-                pass
 
         # Step 1: Append turn to Tier 1 Working Memory
         if session_id:

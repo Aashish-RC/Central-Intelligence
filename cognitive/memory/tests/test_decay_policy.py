@@ -44,6 +44,7 @@ def test_exponential_decay_with_time(policy_engine):
         base_confidence=1.0,
         access_count=0,
         category=FactCategory.PREFERENCE,
+        current_time=now,
     )
     assert recent_score == 1.0
 
@@ -54,6 +55,7 @@ def test_exponential_decay_with_time(policy_engine):
         base_confidence=1.0,
         access_count=0,
         category=FactCategory.PREFERENCE,
+        current_time=now,
     )
     # 0.5^2 = 0.25 (scaled by freq bonus log2(2) = 1.0)
     assert 0.2 < stale_score < 0.3

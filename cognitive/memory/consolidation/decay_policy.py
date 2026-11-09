@@ -40,6 +40,7 @@ class DecayCompressionPolicyEngine:
         base_confidence: float = 1.0,
         access_count: int = 0,
         category: Optional[FactCategory] = None,
+        current_time: Optional[datetime] = None,
     ) -> float:
         """Calculates current decayed relevance score for a memory item.
         
@@ -48,18 +49,24 @@ class DecayCompressionPolicyEngine:
         if category in self.policy.exempt_categories:
             return 1.0
 
-        now = utc_now()
+        now = current_time or utc_now()
         if last_accessed_at.tzinfo is None:
             last_accessed_at = last_accessed_at.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
 
         elapsed_seconds = max(0.0, (now - last_accessed_at).total_seconds())
         elapsed_days = elapsed_seconds / 86400.0
 
-        # Exponential decay factor: 0.5 ^ (elapsed_days / half_life)
-        decay = math.pow(0.5, elapsed_days / max(0.1, self.policy.half_life_days))
+        # Immediate / recent recall (< 60s) has zero decay
+        if elapsed_seconds <= 60.0:
+            decay = 1.0
+        else:
+            # Exponential decay factor: 0.5 ^ (elapsed_days / half_life)
+            decay = math.pow(0.5, elapsed_days / max(0.1, self.policy.half_life_days))
 
         # Frequency reinforcement: frequently retrieved memories resist decay
-        freq_bonus = math.log2(2.0 + (access_count * self.policy.frequency_bonus_weight))
+        freq_bonus = math.log2(2.0 + (max(0, access_count) * self.policy.frequency_bonus_weight))
 
         score = base_confidence * decay * freq_bonus
         return float(min(1.0, max(0.0, score)))

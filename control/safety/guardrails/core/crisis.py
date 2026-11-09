@@ -74,10 +74,10 @@ CRISIS_RESOURCES: Dict[str, Dict[str, str]] = {
 
 CATEGORY_PATTERNS = {
     "self_harm": [
-        r"\b(?:suicide|kill\s+myself|end\s+my\s+life|want\s+to\s+die|hang\s+myself|slit\s+my\s+wrists)\b",
-        r"\b(?:how\s+to\s+commit\s+suicide|painless\s+way\s+to\s+die|overdose\s+on\s+pills\s+to\s+die)\b",
-        r"\b(?:self[-\s]?harm|cut\s+myself|cutting\s+my\s+wrists)\b",
-        r"\b(?:end\s+it\s+all|don't\s+want\s+to\s+live|want\s+to\s+commit\s+suicide)\b",
+        r"\b(?:suicid(?:e|al|ing)?|kill(?:ing)?\s+myself|end(?:ing)?\s+my\s+life|want(?:ing)?\s+to\s+die|hang(?:ing)?\s+myself|slit(?:ting)?\s+my\s+wrists)\b",
+        r"\b(?:how\s+to\s+commit\s+suicide|painless\s+way\s+to\s+die|overdose\s+on\s+pills\s+to\s+die|take\s+my\s+(?:own\s+)?life)\b",
+        r"\b(?:self[-\s]?harm(?:ing)?|cut(?:ting)?\s+myself|harm(?:ing)?\s+myself|hurt(?:ing)?\s+myself)\b",
+        r"\b(?:end\s+it\s+all|don't\s+want\s+to\s+live|want(?:ing)?\s+to\s+commit\s+suicide)\b",
     ],
     "eating_disorder": [
         r"\b(?:anorexia|bulimia|binge\s+eating|starving\s+myself|purge\s+after\s+eating|purging)\b",
