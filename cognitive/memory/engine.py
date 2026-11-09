@@ -1,7 +1,7 @@
 """Unified Memory Manager (Engine Facade API) orchestrating the 3 tiers and 4 stitches."""
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
 from memory.config import MemoryConfig, default_config, WorkingMemoryBackend, FactStoreBackend, VectorStoreBackend
@@ -46,6 +46,11 @@ from memory.lessons import (
     LessonStore,
     LessonRecord,
     LessonCategory,
+)
+from memory.portability import (
+    MemoryPortabilityManager,
+    MemoryPortabilityFormat,
+    ImportStats,
 )
 
 
@@ -132,6 +137,9 @@ class MemoryEngine:
         self.lesson_store = LessonStore(
             db_path=self.config.sqlite_path if hasattr(self.config, "sqlite_path") else None
         )
+
+        # Features 2.46, 2.50: Cross-Assistant Memory Portability Manager
+        self.portability = MemoryPortabilityManager()
 
     def remember(
         self,
@@ -517,3 +525,33 @@ class MemoryEngine:
     ) -> List[LessonRecord]:
         """Retrieve stored operational lessons relevant to a task query or command."""
         return self.lesson_store.query_lessons(query=query, category=category, limit=limit)
+
+    # --- Features 2.46, 2.50: Cross-Assistant Memory Import/Export APIs ---
+
+    def import_memory(
+        self,
+        raw_data: Any,
+        source_format: Union[str, MemoryPortabilityFormat],
+        user_id: str,
+    ) -> ImportStats:
+        """Import conversation/fact memory from ChatGPT, Claude, or CI JSON."""
+        return self.portability.import_into_engine(
+            raw_data=raw_data,
+            source_format=source_format,
+            user_id=user_id,
+            engine=self,
+        )
+
+    def export_memory(
+        self,
+        user_id: str,
+        target_format: Union[str, MemoryPortabilityFormat],
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Export user memory to ChatGPT, Claude, or CI Standard format."""
+        return self.portability.export_from_engine(
+            user_id=user_id,
+            target_format=target_format,
+            engine=self,
+            session_id=session_id,
+        )

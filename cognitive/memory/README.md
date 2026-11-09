@@ -18,6 +18,7 @@ A modular, production-grade **Fused Dynamic Memory Layer for AI Agents**, fusing
   - **Stitch 4: Dynamic Context Synthesizer:** Compresses memories into concentrated, token-budgeted prompt injections (< 500 tokens).
 - **Autonomous Consolidation ("REM Sleep"):** Background worker that compresses raw multi-turn session histories into long-term vector milestones and purges ephemeral working memory.
 - **Lessons-Learned Auto-Extractor (Features 2.49, 7.27):** Distills actionable procedural guidelines and preventative rules from user corrections, error recoveries, and post-mortems for future task execution.
+- **Cross-Assistant Memory Import/Export (Features 2.46, 2.50):** Translators and migrations for ChatGPT (`conversations.json`), Claude data exports, and standard CI memory format with bidirectional lossless translation.
 - **Memory Poisoning Defense & Quarantine (Feature 2.47):** Pre-write integrity analysis protecting against adversarial prompt injections, role confusion, canary exfiltration, and memory tampering with forensic quarantine buffering.
 - **Fact Decay & Relevance Scoring:** Soft exponential decay with frequency-based reinforcement for long-term relevance.
 - **Zero-Dependency Offline Mode:** Ships with deterministic local hashing embeddings and in-memory Qdrant/SQLite for 100% offline development.
@@ -69,6 +70,11 @@ memory/
 │   ├── models.py                      # Data contracts for distilled lessons
 │   ├── extractor.py                   # Features 2.49, 7.27: Error/correction auto-extractor
 │   └── store.py                       # Relevance ranking and lesson repository
+├── portability/
+│   ├── __init__.py
+│   ├── models.py                      # Portability schemas and data contracts
+│   ├── translators.py                 # Features 2.46, 2.50: ChatGPT, Claude, and CI Standard translators
+│   └── manager.py                     # MemoryPortabilityManager orchestration
 ├── embeddings/
 │   ├── __init__.py
 │   └── embedder.py                    # Unified embedding client (Local Hash / Remote OpenAI)
