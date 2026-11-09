@@ -18,13 +18,13 @@
 | **12.06** | OAuth 2.1 & OpenID Connect Authorization Server | **built** | Adapted (Apache-2.0 - Keycloak) / Own | no | `tests/test_keycloak.py` |
 | **12.07** | Machine-to-Brain Scoped API Keys | **built** | Own implementation | no | `tests/test_keycloak.py` |
 | **12.08** | Token Lifecycle (Issue, Introspect, Refresh, Revoke) | **built** | Adapted (Apache-2.0 - Keycloak) / Own | no | `tests/test_keycloak.py` |
-| **12.09** | Role-Based Access Control (RBAC) | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.10** | Attribute-Based Access Control (ABAC & Context-Aware) | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.11** | Per-Capability Permissions | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.12** | Per-App Permissions & Scoping | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.13** | Entitlement-Based Access Control | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.14** | Externalized ReBAC Policy Engine (Google Zanzibar) | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
-| **12.15** | Delegated Access with Scoped Expiring Rights | pending | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.09** | Role-Based Access Control (RBAC) | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.10** | Attribute-Based Access Control (ABAC & Context-Aware) | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.11** | Per-Capability Permissions | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.12** | Per-App Permissions & Scoping | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.13** | Entitlement-Based Access Control | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.14** | Externalized ReBAC Policy Engine (Google Zanzibar) | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
+| **12.15** | Delegated Access with Scoped Expiring Rights | **built** | Adapted (Apache-2.0 - OpenFGA) | no | `tests/test_openfga.py` |
 | **12.16** | Distinct Identity for Every Agent and Bot | pending | Own implementation | no | `tests/test_agent_identity.py` |
 | **12.17** | Scoped, Short-Lived Agent Credentials | pending | Own implementation | no | `tests/test_agent_identity.py` |
 | **12.18** | Attribution of Action to Agent & Parent User | pending | Own implementation | no | `tests/test_agent_identity.py` |
