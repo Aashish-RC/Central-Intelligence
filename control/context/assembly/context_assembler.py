@@ -389,6 +389,7 @@ class ContextAssembler:
         active_tools: Optional[List[Union[Dict[str, Any], str]]] = None,
         conversation_history: Optional[List[Dict[str, str]]] = None,
         situational_context: Optional[str] = None,
+        user_input: Optional[str] = None,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
     ) -> AssembledContext:
@@ -400,7 +401,10 @@ class ContextAssembler:
         memory_records = memory_records or []
         retrieved_knowledge = retrieved_knowledge or []
         active_tools = active_tools or []
-        conversation_history = conversation_history or []
+        conversation_history = list(conversation_history or [])
+
+        if user_input:
+            conversation_history.append({"role": "user", "content": user_input})
 
         # 1. Format raw strings for each component
         system_str = (system_instructions or "").strip()

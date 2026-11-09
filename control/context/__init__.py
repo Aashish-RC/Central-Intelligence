@@ -29,6 +29,7 @@ from control.context.adapters.anthropic_adapter import AnthropicContextAdapter
 from control.context.adapters.openai_adapter import OpenAIContextAdapter
 from control.context.adapters.gemini_adapter import GeminiContextAdapter
 from control.context.adapters.ollama_adapter import OllamaContextAdapter
+from control.context.situational.injector import SituationalInjector, SituationalContext
 
 __all__ = [
     "ContextAssembler",
@@ -59,4 +60,6 @@ __all__ = [
     "OpenAIContextAdapter",
     "GeminiContextAdapter",
     "OllamaContextAdapter",
+    "SituationalInjector",
+    "SituationalContext",
 ]
