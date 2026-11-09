@@ -79,3 +79,17 @@ We evaluated **Temporal** (currently integrated via `temporal_adapter.py` and `t
 ### Next Steps:
 1. Continue utilizing the implemented `temporal_adapter.py` and `temporalBridge.ts` as the standard durable orchestration foundation.
 2. In subsequent scalability phases, introduce an optional `HatchetQueueAdapter` in `control/orchestration/workflow_builder/runtime/` as an alternative backend for lightweight, single-database installations.
+
+---
+
+## 5. Formal Integration Decision & Sign-off
+
+- **Decision Outcome:** **Temporal Selected for L8 Durable Workflows; Hatchet Deferred as Optional L5 Queue Adapter.**
+- **Rationale:**
+  1. **Determinism & Event Sourcing:** Temporal provides zero-data-loss execution replay across long-horizon agent tasks, multi-agent collaboration, and human escalations.
+  2. **Code Simplicity in L8:** Writing state machines as standard async code with native durable timers is critical for L8 Cognitive Routing and human-in-the-loop workflows.
+  3. **No Fragmentation:** Preserving Temporal avoids splitting L8 orchestration logic across two conflicting workflow engines.
+  4. **Deferred Action on Hatchet:** Hatchet integration is deferred to Phase 6 as an optional alternative queue adapter for resource-constrained, single-PostgreSQL environments.
+- **Approved by:** Architecture Team
+- **Status:** **FINAL DECISION RECORDED**
+

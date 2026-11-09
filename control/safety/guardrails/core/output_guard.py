@@ -29,7 +29,7 @@ BLOCKED_OUTPUT_PATTERNS = [
 ]
 
 LEAK_OUTPUT_PATTERNS = [
-    (r"\b(?:sk-proj-[A-Za-z0-9]{32,}|ghp_[A-Za-z0-9]{36}|AIzaSy[A-Za-z0-9_-]{33})\b", "api_key_leak"),
+    (r"\b(?:sk-(?:proj-)?[A-Za-z0-9_-]{16,}|ghp_[A-Za-z0-9]{20,}|AIzaSy[A-Za-z0-9_-]{33})\b", "api_key_leak"),
     (r"-----BEGIN\s+PRIVATE\s+KEY-----[\s\S]*?-----END\s+PRIVATE\s+KEY-----", "private_key_leak"),
 ]
 

@@ -41,7 +41,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "..", "../../..", "../../../cognitive/memory", "../../../cognitive/memory/storage", "../sandboxes"]
 
 [tool.setuptools]
 py-modules = ["config"]
