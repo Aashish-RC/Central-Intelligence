@@ -51,9 +51,9 @@
 | **12.39** | Session Management & Device Enumeration | **built** | Own implementation | no | `tests/test_sessions.py` |
 | **12.40** | Administrative Forced Session Revocation | **built** | Own implementation | no | `tests/test_sessions.py` |
 | **12.41** | Identity Audit Log with L10 Merkle Ledger Bridge | **built** | Own implementation | no | `tests/test_sessions.py` |
-| **12.42** | Account Recovery (Lost Password, Passkey, Device) | pending | Own implementation | no | `tests/test_lifecycle.py` |
-| **12.43** | Account Merging | pending | Own implementation | no | `tests/test_lifecycle.py` |
-| **12.44** | Account Closure & 30-Day Grace Period | pending | Own implementation | no | `tests/test_lifecycle.py` |
+| **12.42** | Account Recovery (Lost Password, Passkey, Device) | **built** | Own implementation | no | `tests/test_lifecycle.py` |
+| **12.43** | Account Merging | **built** | Own implementation | no | `tests/test_lifecycle.py` |
+| **12.44** | Account Closure & 30-Day Grace Period | **built** | Own implementation | no | `tests/test_lifecycle.py` |
 | **12.45** | Financial Authority Bridge (Spend Limits, Approvals) | pending | Own implementation | no | `tests/test_financial_bridge.py` |
 | **12.46** | Operator Console (Inspect, Pause, Override Agents) | pending | Own implementation | no | `tests/test_operator.py` |
 | **12.47** | Audited Support Impersonation | pending | Own implementation | no | `tests/test_operator.py` |
