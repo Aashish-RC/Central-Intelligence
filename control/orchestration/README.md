@@ -10,6 +10,7 @@ The Orchestration Layer (`control/orchestration`) provides multi-agent routing, 
 - **Agent Fleet Orchestration & Paperclip Governance (`paperclipAdapter.ts`):** Hierarchical organizational structure (org charts, reporting chains), per-agent and per-team budget allocation/caps, approval threshold gates, and multi-agent fleet telemetry. Features 8.18, 8.48.
 - **Cognitive Routing Policy Engine (`cognitivePolicy.ts`):** Multi-criteria routing integrating dynamic prompt complexity assessment, cost-quality Pareto optimization, latency SLAs, domain specialist selection, canary splitting, and declarative policies. Features 8.09 - 8.15.
 - **Human Escalation Protocol (`humanProtocol.ts`):** Human-in-the-loop intervention control plane, state snapshots, operator steering injection, and timeout cascades. Features 8.30, 8.50.
+- **Semantic Vector Cache Bridge (`semanticCacheBridge.ts`):** Integrates vector similarity caching directly into the ModelEngine dispatch loop, eliminating redundant model invocations and token costs. Feature 8.44.
 
 ## Running Tests
 

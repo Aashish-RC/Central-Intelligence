@@ -5,7 +5,7 @@
 
 export type Modality = 'text' | 'image' | 'embedding' | 'audio';
 export type Capability = 'reasoning' | 'code' | 'math' | 'creative' | 'multimodal' | 'tools' | 'fast';
-export type RoutingPath = 'pooled-enterprise' | 'pooled-aggregator' | 'byok' | 'byoi';
+export type RoutingPath = 'pooled-enterprise' | 'pooled-aggregator' | 'byok' | 'byoi' | 'semantic-cache';
 export type SelectionMode = 'dropdown' | 'search' | 'auto';
 export type FlagPreference = 'always' | 'cost-impacting' | 'never';
 
@@ -91,6 +91,8 @@ export interface ExecutionResponse {
     costUSD: number;
   };
   latencyMs: number;
+  cached?: boolean;
+  similarityScore?: number;
 }
 
 export interface VirtualKey {
@@ -135,6 +137,8 @@ export interface UsageAuditRecord {
   completionTokens: number;
   costUSD: number;
   latencyMs: number;
+  cached?: boolean;
+  similarityScore?: number;
   status: 'success' | 'failed';
   error?: string;
 }

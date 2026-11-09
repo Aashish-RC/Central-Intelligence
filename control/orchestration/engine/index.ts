@@ -20,9 +20,12 @@ import { BudgetTracker } from './governance/budgetTracker.js';
 import { RateLimiter, type RateLimitConfig } from './governance/rateLimiter.js';
 import { UsageStore } from './governance/usageStore.js';
 import { MODEL_CATALOG, getModelById } from './catalog.js';
+import { SemanticCacheBridge, type SemanticCacheConfig } from './caching/semanticCacheBridge.js';
 
 export interface ModelEngineConfig {
   routerConfig?: RouterConfig;
+  enableSemanticCache?: boolean;
+  semanticCacheConfig?: SemanticCacheConfig;
 }
 
 export class ModelEngine {
@@ -31,6 +34,7 @@ export class ModelEngine {
   readonly budgetTracker: BudgetTracker;
   readonly rateLimiter: RateLimiter;
   readonly usageStore: UsageStore;
+  readonly semanticCache?: SemanticCacheBridge;
 
   constructor(config?: ModelEngineConfig) {
     this.router = new OmniRouter(config?.routerConfig);
@@ -38,6 +42,9 @@ export class ModelEngine {
     this.budgetTracker = new BudgetTracker();
     this.rateLimiter = new RateLimiter();
     this.usageStore = new UsageStore();
+    if (config?.enableSemanticCache) {
+      this.semanticCache = new SemanticCacheBridge(config.semanticCacheConfig);
+    }
   }
 
   // --- Governance Facade Methods ---
@@ -123,10 +130,21 @@ export class ModelEngine {
       this.budgetTracker.checkBudget(userId);
     }
 
+    // 2.5 Caching: Check Semantic Vector Cache if enabled
+    if (this.semanticCache) {
+      const cachedResult = this.semanticCache.get(request);
+      if (cachedResult) {
+        return cachedResult.response;
+      }
+    }
+
     // 3. Routing: Dispatch to OmniRouter (handles 4-path priority & fallbacks)
     let response: ExecutionResponse;
     try {
       response = await this.router.execute(request);
+      if (this.semanticCache) {
+        this.semanticCache.set(request, response);
+      }
     } catch (err) {
       // Record failure audit
       this.usageStore.recordUsage({
@@ -216,3 +234,8 @@ export {
   type FleetOrgConfig,
   type FleetSummary,
 } from './fleet/paperclipAdapter.js';
+export {
+  SemanticCacheBridge,
+  type SemanticCacheConfig,
+  type SemanticCacheEntry,
+} from './caching/semanticCacheBridge.js';
