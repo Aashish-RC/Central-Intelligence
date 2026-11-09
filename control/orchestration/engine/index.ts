@@ -182,6 +182,12 @@ export {
   type PolicyRule,
   type CognitiveRoutingDecision,
 } from './routing/cognitivePolicy.js';
+export {
+  HumanEscalationProtocol,
+  type EscalationUrgency,
+  type EscalationStatus,
+  type EscalationTrigger,
+} from './escalation/humanProtocol.js';
 export { VirtualKeyManager } from './governance/virtualKeyManager.js';
 export { BudgetTracker, BudgetExceededError } from './governance/budgetTracker.js';
 export { RateLimiter, RateLimitExceededError } from './governance/rateLimiter.js';
