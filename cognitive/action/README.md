@@ -111,6 +111,17 @@ Located in `cognitive/action/safety/sharing_pipeline.py`:
 - **Automated Redaction Scanning:** Discovers and redacts API keys, passwords, bearer tokens, emails, phone numbers, and payment cards.
 - **Supervisor Approval Gate:** Requires explicit reviewer confirmation before assets containing sensitive findings or targeting external scopes can be distributed.
 
+---
+
+## 9. Per-Agent Memory Partition & Namespace Isolation (Feature 5.38)
+
+Located in `cognitive/action/sandboxes/memory_partition.py`:
+- **Execution-to-Memory Bridge:** Bridges L5 execution sandboxes into L2 memory spaces with isolated namespaces (`ns:agent:{id}:sandbox:{id}`).
+- **Zero-Bleed Memory Partitions:** Enforces thread-safe reentrant isolation guaranteeing agents cannot observe or mutate private state of concurrent peers.
+- **Explicit ACL Grants:** Supports granular delegated read and read/write capability tokens between collaborating agents.
+- **Lifecycle Cleanup:** Guarantees deterministic partition memory destruction upon sandbox container teardown.
+
+
 
 
 
@@ -215,6 +226,17 @@ Located in `cognitive/action/safety/sharing_pipeline.py`:
 - **Scoping Governance:** Governs promotion of agent discoveries and assets across scopes: `agent_private` -> `team_internal` -> `cross_team` -> `public`.
 - **Automated Redaction Scanning:** Discovers and redacts API keys, passwords, bearer tokens, emails, phone numbers, and payment cards.
 - **Supervisor Approval Gate:** Requires explicit reviewer confirmation before assets containing sensitive findings or targeting external scopes can be distributed.
+
+---
+
+## 9. Per-Agent Memory Partition & Namespace Isolation (Feature 5.38)
+
+Located in `cognitive/action/sandboxes/memory_partition.py`:
+- **Execution-to-Memory Bridge:** Bridges L5 execution sandboxes into L2 memory spaces with isolated namespaces (`ns:agent:{id}:sandbox:{id}`).
+- **Zero-Bleed Memory Partitions:** Enforces thread-safe reentrant isolation guaranteeing agents cannot observe or mutate private state of concurrent peers.
+- **Explicit ACL Grants:** Supports granular delegated read and read/write capability tokens between collaborating agents.
+- **Lifecycle Cleanup:** Guarantees deterministic partition memory destruction upon sandbox container teardown.
+
 
 
 

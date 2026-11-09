@@ -21,6 +21,11 @@ from .runner.local_process_runner import LocalProcessRunner
 from .runner.device_runner import DeviceRunner
 from .runner.docker_runner import DockerRunner
 from .manager import SandboxManager
+from .memory_partition import (
+    AgentMemoryPartition,
+    MemoryPartitionManager,
+    MemoryIsolationViolationError,
+)
 
 __all__ = [
     "SandboxStatus",
@@ -38,4 +43,7 @@ __all__ = [
     "DeviceRunner",
     "DockerRunner",
     "SandboxManager",
+    "AgentMemoryPartition",
+    "MemoryPartitionManager",
+    "MemoryIsolationViolationError",
 ]
