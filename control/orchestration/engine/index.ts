@@ -188,6 +188,12 @@ export {
   type EscalationStatus,
   type EscalationTrigger,
 } from './escalation/humanProtocol.js';
+export {
+  SharedWorkspace,
+  type WorkspaceArtifact,
+  type WorkspaceBranch,
+  type MergeConflict,
+} from './sharedState/workspace.js';
 export { VirtualKeyManager } from './governance/virtualKeyManager.js';
 export { BudgetTracker, BudgetExceededError } from './governance/budgetTracker.js';
 export { RateLimiter, RateLimitExceededError } from './governance/rateLimiter.js';
