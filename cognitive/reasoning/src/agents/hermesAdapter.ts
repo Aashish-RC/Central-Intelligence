@@ -230,3 +230,4 @@ export class HermesAgentAdapter {
     throw new Error(`Hermes reasoning loop reached maximum turns limit (${maxTurns}).`);
   }
 }
+

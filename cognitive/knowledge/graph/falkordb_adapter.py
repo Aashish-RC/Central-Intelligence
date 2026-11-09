@@ -293,3 +293,4 @@ class FalkorDBAdapter:
                     acquired.append(target_name)
 
         return acquired
+

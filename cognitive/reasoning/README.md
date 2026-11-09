@@ -62,6 +62,7 @@ Status is tracked per-feature derived directly from `PROVENANCE_LEDGER.md`. Clea
 | #46 Prepaid Credit Gating & Automated Webhooks | built | Clean-room (implementer saw only the spec) | Layer 0 Metering | temporarily, flag off (`FEATURE_PREPAID_CREDITS`) | no |
 | #47 Agent-to-Agent (A2A) Routing Protocol | built | Own implementation from public protocol spec | Layer 2 orchestration | temporarily, flag off (`FEATURE_A2A`) | no |
 | Hermes Agent Reasoning Loop | built | Adapted (MIT) | Layer 4 reasoning | active | no |
+| OpenClaw Adapter & Channel Bridge | built | Adapted (MIT) | Layer 4/5 integration | active | no |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Clean-room (implementer saw only the spec) | Gateway Core | active | no |
 | Spec: GeoIP Country & IP Blocking | clean-room built | Clean-room spec (`docs/specs/geoip-ip-blocking.md`) | Clean-Room Spec | temporarily, flag off (`FEATURE_GEOIP`) | no |
 | Spec: Voice-Duration Metering & Leases | clean-room built | Clean-room spec (`docs/specs/voice-duration-metering.md`) | Clean-Room Spec | temporarily, flag off (`FEATURE_VOICE_LEASES`) | no |
@@ -113,6 +114,12 @@ const agent = new HermesAgentAdapter({
 const result = await agent.run('Find documentation about architecture', gatewayDispatcher);
 console.log(result.finalResponse);
 ```
+
+### OpenClaw Adapter (Control Plane & Chat Channels)
+
+- **Repo:** [https://github.com/openclaw/openclaw](https://github.com/openclaw/openclaw)
+- **License:** MIT
+- **Why Chosen:** Coordinates multi-channel messaging dispatch across Discord, Slack, Telegram, WhatsApp, and Microsoft Teams while controlling host OS operations.
 
 ---
 

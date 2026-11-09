@@ -41,3 +41,4 @@ adapter.add_relationship(source="Megacorp", relation="ACQUIRED", target="Startup
 acquisitions = adapter.query_manager_company_acquisitions(employee_name="Alice")
 print(acquisitions)  # ['StartupAI']
 ```
+

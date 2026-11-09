@@ -3,3 +3,4 @@
 from .falkordb_adapter import FalkorDBAdapter
 
 __all__ = ["FalkorDBAdapter"]
+

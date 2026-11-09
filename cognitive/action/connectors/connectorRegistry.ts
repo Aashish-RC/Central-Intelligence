@@ -11,6 +11,7 @@ import { emailPiece } from './pieces/email.js';
 import { calendarPiece } from './pieces/calendar.js';
 import { searchPiece } from './pieces/search.js';
 import { browserPiece } from './pieces/browser.js';
+import { openclawPiece } from './pieces/openclaw.js';
 
 /** All registered connector pieces */
 export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
@@ -21,6 +22,7 @@ export const CONNECTOR_REGISTRY: ConnectorPiece[] = [
   calendarPiece,
   searchPiece,
   browserPiece,
+  openclawPiece,
 ];
 
 /**

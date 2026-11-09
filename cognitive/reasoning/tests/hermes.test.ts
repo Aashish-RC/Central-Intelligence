@@ -239,3 +239,4 @@ describe('HermesAgentAdapter', () => {
     expect(result.finalResponse).toContain('The tool failed with an error, but I recovered.');
   });
 });
+
