@@ -18,6 +18,7 @@ from control.context.trust.instruction_frame import InstructionFrame
 from control.context.trust.untrusted_sandbox import UntrustedBlock
 from control.context.trust.injection_detector import InjectionDetector, InjectionDetectionResult
 from control.context.trust.boundary_assembler import DualBoundaryAssembler, DualBoundaryAssemblyResult
+from control.context.audit.context_audit import ContextAuditLog, ContextAuditRecord
 
 __all__ = [
     "ContextAssembler",
@@ -38,4 +39,6 @@ __all__ = [
     "InjectionDetectionResult",
     "DualBoundaryAssembler",
     "DualBoundaryAssemblyResult",
+    "ContextAuditLog",
+    "ContextAuditRecord",
 ]
