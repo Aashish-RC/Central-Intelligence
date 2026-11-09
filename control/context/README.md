@@ -19,6 +19,13 @@ Context Engineering provides multi-source context synthesis, strict per-tier tok
 - **Parameterized Templates (9.08):** Variable substitution with defaults and missing variable validation.
 - **A/B Test Hooks (9.09):** Session-hash-partitioned prompt experiment variations feeding into L11 quality metrics.
 
+### `control.context.trust` (`boundary_assembler.py`, `instruction_frame.py`, `untrusted_sandbox.py`, `injection_detector.py`)
+- **🚩 Crown Jewel: Dual-Boundary Context Assembler (9.11, 9.12):** Strict separation parser that:
+  - Enforces immutable `<system_instruction>` frames models must strictly obey.
+  - Encloses all user input, retrieved web documents, memories, and tool outputs into `<untrusted_content source="..." trust="low">` blocks.
+  - Injects rigid meta-invariants forbidding execution of instructions inside untrusted blocks.
+  - Scans and neutralizes prompt injections ("ignore previous instructions", "system: you are now DAN", delimiter escapes) before delivery.
+
 ---
 
 ## 2. API Server

@@ -20,8 +20,8 @@
 | **9.08** | Parameterized Prompt Templates with Variable Substitution | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
 | **9.09** | Evaluation & A/B Testing Hooks | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
 | **9.10** | Deterministic Precedence Rules for Instruction Conflict Resolution | **built** | Own implementation | no | `tests/test_prompt_registry.py` |
-| **9.11** | Immutable System Instruction Frames | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
-| **9.12** | Dual-Boundary Context Assembler (Prompt Injection Defense) | pending | Own implementation (Crown jewel R&D) | no | Task 9.3 |
+| **9.11** | Immutable System Instruction Frames | **built** | Own implementation (Crown jewel R&D) | no | `tests/test_boundary_assembler.py` |
+| **9.12** | Dual-Boundary Context Assembler (Prompt Injection Defense) | **built** | Own implementation (Crown jewel R&D) | no | `tests/test_boundary_assembler.py` |
 | **9.13** | Byte-for-Byte Context Audit Log & Tamper-Evident Merkle Ledger | pending | Own implementation | no | Task 9.4 |
 | **9.14** | Prefix Cache Optimizer (Anthropic & OpenAI KV-Cache Alignment) | pending | Own implementation | no | Task 9.5 |
 | **9.15** | Per-Model Format Adapters (Anthropic, OpenAI, Gemini, Ollama) | pending | Own implementation | no | Task 9.6 |

@@ -28,6 +28,8 @@ try:
 except ImportError:
     _LLAMA_INDEX_AVAILABLE = False
 
+from control.context.trust.boundary_assembler import DualBoundaryAssembler, DualBoundaryAssemblyResult
+
 logger = logging.getLogger("control.context.assembly")
 
 
@@ -89,9 +91,11 @@ class ContextAssembler:
         self,
         config: Optional[TokenBudgetConfig] = None,
         model_name: str = "gpt-4",
+        boundary_assembler: Optional[DualBoundaryAssembler] = None,
     ):
         self.config = config or TokenBudgetConfig()
         self.model_name = model_name
+        self.boundary_assembler = boundary_assembler or DualBoundaryAssembler()
         self._encoder = None
         if _TIKTOKEN_AVAILABLE:
             try:
@@ -275,6 +279,55 @@ class ContextAssembler:
         ratio = max_tokens / max(1, current_tokens)
         slice_len = int(len(text) * ratio * 0.9)
         return text[:slice_len] + "...", True
+
+    def assemble_with_boundaries(
+        self,
+        system_instructions: Optional[str] = None,
+        memory_records: Optional[List[Union[Dict[str, Any], str]]] = None,
+        retrieved_knowledge: Optional[List[Union[Dict[str, Any], str]]] = None,
+        active_tools: Optional[List[Union[Dict[str, Any], str]]] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        user_input: Optional[str] = None,
+    ) -> DualBoundaryAssemblyResult:
+        """Feature 9.11, 9.12: Dual-Boundary context assembly wrapping all external sources in untrusted sandboxes."""
+        formatted_memories = []
+        if memory_records:
+            for m in memory_records:
+                if isinstance(m, dict):
+                    formatted_memories.append(m)
+                else:
+                    formatted_memories.append({"key": "memory", "value": str(m)})
+
+        formatted_knowledge = []
+        if retrieved_knowledge:
+            for k in retrieved_knowledge:
+                if isinstance(k, dict):
+                    formatted_knowledge.append(k)
+                else:
+                    formatted_knowledge.append({"doc_id": "knowledge", "content": str(k)})
+
+        tool_outputs = []
+        if active_tools:
+            for t in active_tools:
+                if isinstance(t, dict):
+                    tool_outputs.append(t)
+                else:
+                    tool_outputs.append({"name": "tool", "output": str(t)})
+
+        if not user_input and conversation_history:
+            # Extract latest user input
+            for turn in reversed(conversation_history):
+                if turn.get("role") == "user":
+                    user_input = turn.get("content")
+                    break
+
+        return self.boundary_assembler.assemble_with_boundaries(
+            system_instructions=system_instructions or "",
+            user_input=user_input,
+            tool_outputs=tool_outputs,
+            retrieved_content=formatted_knowledge,
+            memory_records=formatted_memories,
+        )
 
     def assemble(
         self,
