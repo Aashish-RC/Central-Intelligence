@@ -16,6 +16,7 @@ export * from './resilience/classifier.js';
 export * from './resilience/cooldown.js';
 export * from './agents/index.js';
 export * from './selfKnowledge/index.js';
+export * from './collaboration/index.js';
 
 const { app, router, engine } = createGatewayApp();
 
