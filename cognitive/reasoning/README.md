@@ -169,6 +169,12 @@ Located in `cognitive/reasoning/src/debate/`:
 - **Convergence & Rebuttal Analysis:** Evaluates confidence divergence, cross-examination rebuttals, and citations across iterative debate rounds.
 - **Decisive & Compromise Synthesis:** Emits synthesized verdicts categorizing outcomes into decisive victory, synthesis compromise, or inconclusive flags.
 
+### Scenario Simulator ("What-If" Failure Testing) (Feature 4.06)
+Located in `cognitive/reasoning/src/simulation/`:
+- **Synthetic Failure Injection:** Injects realistic system stress events (API 504 timeouts, 429 rate limit throttles, corrupt JSON payloads, context overflow, budget exhaustion).
+- **Automated Fallback & Resilience Scoring:** Validates that multi-step plans can automatically recover via exponential retries, schema parsers, or fallback providers.
+- **Resilience Diagnostics:** Computes quantitative resilience scores $[0.0, 1.0]$ and actionable hardening recommendations before deploying plans to production.
+
 ---
 
 ## Quick Start

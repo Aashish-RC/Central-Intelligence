@@ -69,6 +69,7 @@
 | Plan Preview & Cost Estimator | built | Own implementation | no | `tests/planPreview.test.ts` |
 | Goal Persistence & Long-Horizon State Store (4.15) | built | Own implementation | no | `tests/goalPersistence.test.ts` |
 | Multi-Agent Debate Orchestrator (4.05) | built | Own implementation | no | `tests/debate.test.ts` |
+| Scenario Simulator ("What-If" Failure Testing) (4.06) | built | Own implementation | no | `tests/scenarioSimulator.test.ts` |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Unverified (flagged for counsel) | no | `tests/ssrf.test.ts` |
 | Clean-Room Spec: GeoIP Country & IP Blocking | spec only | Clean-room spec | no | `docs/specs/geoip-ip-blocking.md` |
 | Clean-Room Spec: Voice-Duration Metering & Leases | spec only | Clean-room spec | no | `docs/specs/voice-duration-metering.md` |

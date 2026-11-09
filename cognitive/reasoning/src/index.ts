@@ -21,6 +21,7 @@ export * from './synthesis/index.js';
 export * from './planning/index.js';
 export * from './goals/index.js';
 export * from './debate/index.js';
+export * from './simulation/index.js';
 
 const { app, router, engine } = createGatewayApp();
 
