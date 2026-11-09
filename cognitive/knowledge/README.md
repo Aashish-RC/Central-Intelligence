@@ -51,3 +51,13 @@ Located in `cognitive/knowledge/abstention/`:
 - **Evidence Grounding Evaluator (`evaluator.py`):** Calculates composite grounding confidence based on relevance, query keyword coverage, and cross-passage contradiction penalties.
 - **Abstention Engine (`engine.py`):** Wraps generation pipelines; gates LLM execution behind verification thresholds (`ANSWER`, `PARTIAL`, `ABSTAIN`).
 
+---
+
+## 4. Source Quality & Authority Scorer (Feature 3.43)
+
+Located in `cognitive/knowledge/quality/`:
+- **Multi-Factor Source Evaluation:** Blends domain authority heuristics, content depth, code/spec signals, and temporal freshness into a single composite trustworthiness score ($0.0 - 1.0$).
+- **Anti-Spam & Clickbait Penalties:** Penalizes low-value SEO clickbait, affiliate spam, and deceptive marketing claims to prevent grounding contamination.
+- **Pluggable LLM-as-Judge Hook:** Allows runtime LLM factual rigor evaluation to refine heuristic content scores.
+- **Tier Classification:** Categorizes sources into `TIER_1_AUTHORITATIVE`, `TIER_2_RELIABLE`, `TIER_3_UNVERIFIED`, and `TIER_4_LOW_QUALITY`.
+
