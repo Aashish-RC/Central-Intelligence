@@ -18,6 +18,7 @@ export * from './agents/index.js';
 export * from './selfKnowledge/index.js';
 export * from './collaboration/index.js';
 export * from './synthesis/index.js';
+export * from './planning/index.js';
 
 const { app, router, engine } = createGatewayApp();
 

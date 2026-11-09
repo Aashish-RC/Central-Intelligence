@@ -66,6 +66,7 @@
 | Self-Knowledge Boundary Module | built | Own implementation | no | `tests/boundaryModule.test.ts` |
 | Multi-Agent Collaboration Controls | built | Own implementation | no | `tests/collaboration.test.ts` |
 | Adaptive Multi-Model Synthesis Engine (PRM + MoA) | built | Own implementation (Crown jewel R&D) | no | `tests/synthesis/` (16 tests) |
+| Plan Preview & Cost Estimator | built | Own implementation | no | `tests/planPreview.test.ts` |
 | SSRF Guard (Zero-Trust IP & DNS Validation) | built | Unverified (flagged for counsel) | no | `tests/ssrf.test.ts` |
 | Clean-Room Spec: GeoIP Country & IP Blocking | spec only | Clean-room spec | no | `docs/specs/geoip-ip-blocking.md` |
 | Clean-Room Spec: Voice-Duration Metering & Leases | spec only | Clean-room spec | no | `docs/specs/voice-duration-metering.md` |

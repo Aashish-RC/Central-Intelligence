@@ -151,6 +151,12 @@ Located in `cognitive/reasoning/src/synthesis/`:
   - **Tier 3:** High-stakes tasks with full MoA fusion (3+ models), PRM verification, and atomic claim corroboration.
   - **Second-Opinion Fallback:** Dynamically escalates to Tier 3 full synthesis if initial accuracy score is below 0.5.
 
+### Plan Preview & Cost Estimator (Features 4.13, 4.14)
+Located in `cognitive/reasoning/src/planning/`:
+- **Pre-Execution Resource Estimates:** Analyzes scheduled plan steps to forecast prompt/completion token counts, compute costs in USD, and latency duration based on model pricing catalogs.
+- **Blast Radius & Risk Evaluation:** Identifies destructive operations (deletions, disk mutations, partition drops) and tags risk severity (`low`, `medium`, `high`, `critical`).
+- **Human Approval Gating:** Automatically flags plans that exceed financial budget limits or risk tolerances for human checkpoint review before execution.
+
 ---
 
 ## Quick Start
