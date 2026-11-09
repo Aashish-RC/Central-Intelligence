@@ -35,10 +35,10 @@
 | **12.23** | Per-Tenant Safety Guardrails Configuration | **built** | Own implementation | no | `tests/test_tenancy.py` |
 | **12.24** | Per-Tenant Rate Limits & Quotas | **built** | Own implementation | no | `tests/test_tenancy.py` |
 | **12.25** | Tenant Lifecycle Management (Create, Suspend, Delete) | **built** | Own implementation | no | `tests/test_tenancy.py` |
-| **12.26** | App-Level API Keys | pending | Own implementation | no | `tests/test_app_scope.py` |
-| **12.27** | App-Level Rate Limiting | pending | Own implementation | no | `tests/test_app_scope.py` |
-| **12.28** | App-Level Data Isolation | pending | Own implementation | no | `tests/test_app_scope.py` |
-| **12.29** | App-Level Capability Scoping | pending | Own implementation | no | `tests/test_app_scope.py` |
+| **12.26** | App-Level API Keys | **built** | Own implementation | no | `tests/test_app_scope.py` |
+| **12.27** | App-Level Rate Limiting | **built** | Own implementation | no | `tests/test_app_scope.py` |
+| **12.28** | App-Level Data Isolation | **built** | Own implementation | no | `tests/test_app_scope.py` |
+| **12.29** | App-Level Capability Scoping | **built** | Own implementation | no | `tests/test_app_scope.py` |
 | **12.30** | SSO with Workplace Suites (Google, Microsoft 365) | pending | Own implementation | no | `tests/test_federation.py` |
 | **12.31** | Sector & Government Identity Systems | pending | Own implementation | no | `tests/test_federation.py` |
 | **12.32** | Automated User Provisioning/Deprovisioning (SCIM) | pending | Own implementation | no | `tests/test_federation.py` |
