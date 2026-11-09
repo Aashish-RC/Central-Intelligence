@@ -39,9 +39,9 @@
 | **12.27** | App-Level Rate Limiting | **built** | Own implementation | no | `tests/test_app_scope.py` |
 | **12.28** | App-Level Data Isolation | **built** | Own implementation | no | `tests/test_app_scope.py` |
 | **12.29** | App-Level Capability Scoping | **built** | Own implementation | no | `tests/test_app_scope.py` |
-| **12.30** | SSO with Workplace Suites (Google, Microsoft 365) | pending | Own implementation | no | `tests/test_federation.py` |
-| **12.31** | Sector & Government Identity Systems | pending | Own implementation | no | `tests/test_federation.py` |
-| **12.32** | Automated User Provisioning/Deprovisioning (SCIM) | pending | Own implementation | no | `tests/test_federation.py` |
+| **12.30** | SSO with Workplace Suites (Google, Microsoft 365) | **built** | Own implementation | no | `tests/test_federation.py` |
+| **12.31** | Sector & Government Identity Systems | **built** | Own implementation | no | `tests/test_federation.py` |
+| **12.32** | Automated User Provisioning/Deprovisioning (SCIM) | **built** | Own implementation | no | `tests/test_federation.py` |
 | **12.33** | Provider-Key Vault for User-Supplied Keys (BYOK) | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
 | **12.34** | External Secret Manager Integration | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
 | **12.35** | Zero-Downtime Secret Rotation | **built** | Adapted (MIT - Infisical) | no | `tests/test_infisical.py` |
