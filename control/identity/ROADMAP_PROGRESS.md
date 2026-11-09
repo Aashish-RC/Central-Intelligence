@@ -29,12 +29,12 @@
 | **12.17** | Scoped, Short-Lived Agent Credentials | **built** | Own implementation | no | `tests/test_agent_identity.py` |
 | **12.18** | Attribution of Action to Agent & Parent User | **built** | Own implementation | no | `tests/test_agent_identity.py` |
 | **12.19** | Agent-to-Agent Mutual Authentication | **built** | Own implementation | no | `tests/test_agent_identity.py` |
-| **12.20** | Multi-Tenant Data & Execution Isolation | pending | Own implementation | no | `tests/test_tenancy.py` |
-| **12.21** | Per-Tenant Dedicated Encryption Keys | pending | Own implementation | no | `tests/test_tenancy.py` |
-| **12.22** | Per-Tenant Model Policy Routing | pending | Own implementation | no | `tests/test_tenancy.py` |
-| **12.23** | Per-Tenant Safety Guardrails Configuration | pending | Own implementation | no | `tests/test_tenancy.py` |
-| **12.24** | Per-Tenant Rate Limits & Quotas | pending | Own implementation | no | `tests/test_tenancy.py` |
-| **12.25** | Tenant Lifecycle Management (Create, Suspend, Delete) | pending | Own implementation | no | `tests/test_tenancy.py` |
+| **12.20** | Multi-Tenant Data & Execution Isolation | **built** | Own implementation | no | `tests/test_tenancy.py` |
+| **12.21** | Per-Tenant Dedicated Encryption Keys | **built** | Own implementation | no | `tests/test_tenancy.py` |
+| **12.22** | Per-Tenant Model Policy Routing | **built** | Own implementation | no | `tests/test_tenancy.py` |
+| **12.23** | Per-Tenant Safety Guardrails Configuration | **built** | Own implementation | no | `tests/test_tenancy.py` |
+| **12.24** | Per-Tenant Rate Limits & Quotas | **built** | Own implementation | no | `tests/test_tenancy.py` |
+| **12.25** | Tenant Lifecycle Management (Create, Suspend, Delete) | **built** | Own implementation | no | `tests/test_tenancy.py` |
 | **12.26** | App-Level API Keys | pending | Own implementation | no | `tests/test_app_scope.py` |
 | **12.27** | App-Level Rate Limiting | pending | Own implementation | no | `tests/test_app_scope.py` |
 | **12.28** | App-Level Data Isolation | pending | Own implementation | no | `tests/test_app_scope.py` |
