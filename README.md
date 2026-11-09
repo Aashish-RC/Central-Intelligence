@@ -18,7 +18,7 @@ Central Intelligence is the unified cognitive infrastructure and AI runtime for 
 │   • Speech-to-Text (STT)      │   • OmniRoute Multi-Strategy    │
 │                               │   • 109 Workflow Nodes          │
 │ L2 Memory                     │                                 │
-│   • 3-Tier Memory Engine      │ L9 Context Engineering          │
+│   • 4-Tier Memory Engine      │ L9 Context Engineering          │
 │   • 4 Graph Stitches          │   • Context Synthesizer         │
 │   • FastAPI & MCP Server      │   • Compaction & Summarization  │
 │                               │                                 │

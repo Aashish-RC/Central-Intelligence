@@ -6,10 +6,11 @@ A modular, production-grade **Fused Dynamic Memory Layer for AI Agents**, fusing
 
 ## 1. Architectural Highlights
 
-- **3-Tier Cognitive Hierarchy:**
+- **4-Tier Cognitive Hierarchy:**
   - **Tier 1: Working Memory:** Sub-millisecond session cache (In-Memory with Write-Ahead Logging or Redis) for active conversational scratchpads.
   - **Tier 2: Fact Store:** Relational ground truth (SQLite or PostgreSQL) storing atomic, versioned key-value facts, user preferences, and entity constraints.
   - **Tier 3: Semantic Vector Store:** Dense HNSW vector index (Qdrant or Chroma) with payload-level filtering (`user_id`, `is_active`, dates).
+  - **Tier 4: Graph Memory Tier:** Relational & multi-hop knowledge graph (Memgraph via Cypher / NetworkX in-memory) for entity relationships, deep traversals, and structural conflict resolution.
 - **The 4 Operational Stitches:**
   - **Stitch 1: Triage & Fact Extractor:** Fast extraction of atomic facts, entities, and summaries from chat turns while filtering ephemeral chit-chat.
   - **Stitch 2: Cross-Referencing ID:** Unified UUID propagation across SQL relational metadata and vector payloads.
@@ -45,10 +46,13 @@ memory/
 │   │   ├── __init__.py
 │   │   ├── sqlite_adapter.py          # Local SQLite structured fact store
 │   │   └── postgres_adapter.py        # Production PostgreSQL fact store
-│   └── semantic/                      # Tier 3: Semantic Vector Store
+│   ├── semantic/                      # Tier 3: Semantic Vector Store
+│   │   ├── __init__.py
+│   │   ├── chroma_adapter.py          # Local Chroma vector store adapter
+│   │   └── qdrant_adapter.py          # Production Qdrant vector engine
+│   └── graph/                         # Tier 4: Graph Memory Tier
 │       ├── __init__.py
-│       ├── chroma_adapter.py          # Local Chroma vector store adapter
-│       └── qdrant_adapter.py          # Production Qdrant vector engine
+│       └── memgraph_adapter.py        # Production Memgraph adapter + in-memory graph fallback
 ├── stitches/
 │   ├── __init__.py
 │   ├── extractor.py                   # Stitch 1: LLM extraction of atomic facts and tags
@@ -145,6 +149,34 @@ Exposed IDE Tools:
 - `save_memory(user_id, text, session_id)`
 - `list_user_facts(user_id)`
 - `consolidate_session(user_id, session_id)`
+
+### 3.4 Tier 4 Graph Memory (Memgraph Adapter)
+
+- **Repo:** [https://github.com/memgraph/memgraph](https://github.com/memgraph/memgraph)
+- **License:** Apache-2.0
+- **Why Chosen:** High-performance, in-memory graph database with native Cypher query support, built for real-time multi-hop graph queries and low-latency relationship lookups.
+- **Configuration:**
+  - Environment variables: `MEMGRAPH_HOST` (default: `localhost`, use `:memory:` for local in-memory execution), `MEMGRAPH_PORT` (default: `7687`), `MEMGRAPH_USERNAME`, `MEMGRAPH_PASSWORD`.
+  - Docker Compose: service `memgraph` running `memgraph/memgraph-platform:latest` on port `7687` (bolt) and `3000` (Memgraph Lab UI).
+
+```python
+from engine import MemoryEngine
+from config import MemoryConfig
+
+engine = MemoryEngine(config=MemoryConfig(memgraph_host="localhost"))
+
+# Add entity relationship
+engine.add_relationship(
+    user_id="alice",
+    source="Bob",
+    relation="MANAGES",
+    target="Alice",
+)
+
+# Cypher multi-hop query
+results = engine.query_graph("MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name")
+print(results)  # [{'m.name': 'Bob'}]
+```
 
 ---
 

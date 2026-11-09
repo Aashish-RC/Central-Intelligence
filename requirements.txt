@@ -27,3 +27,4 @@ qdrant-client>=1.8.0
 meilisearch>=0.30.0
 redis>=5.0.0
 chromadb>=0.4.22
+gqlalchemy>=1.10.0

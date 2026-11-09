@@ -21,6 +21,11 @@ class VectorStoreBackend(str, Enum):
     CHROMA = "chroma"
 
 
+class GraphStoreBackend(str, Enum):
+    MEMGRAPH = "memgraph"
+    MEMORY = "memory"
+
+
 class EmbeddingBackend(str, Enum):
     LOCAL = "local"
     OPENAI = "openai"
@@ -77,6 +82,28 @@ class MemoryConfig(BaseModel):
     collection_name: str = Field(
         default="agent_memories",
         description="Collection name for semantic vector storage",
+    )
+
+    # Graph Store (Tier 4)
+    graph_backend: GraphStoreBackend = Field(
+        default=GraphStoreBackend.MEMGRAPH,
+        description="Tier 4 backend: memgraph or memory",
+    )
+    memgraph_host: str = Field(
+        default=os.getenv("MEMGRAPH_HOST", "localhost"),
+        description="Memgraph host (use ':memory:' for in-memory graph)",
+    )
+    memgraph_port: int = Field(
+        default=int(os.getenv("MEMGRAPH_PORT", "7687")),
+        description="Memgraph port",
+    )
+    memgraph_username: Optional[str] = Field(
+        default=os.getenv("MEMGRAPH_USERNAME", None),
+        description="Memgraph username",
+    )
+    memgraph_password: Optional[str] = Field(
+        default=os.getenv("MEMGRAPH_PASSWORD", None),
+        description="Memgraph password",
     )
 
     # Embeddings

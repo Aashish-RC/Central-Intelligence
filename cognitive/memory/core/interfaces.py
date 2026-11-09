@@ -1,7 +1,7 @@
 """Abstract Base Classes defining the contracts for the 3 memory tiers and stitches."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from .models import (
@@ -145,3 +145,71 @@ class BaseLLMExtractor(ABC):
     ) -> ExtractedMemoryPlan:
         """Extract atomic facts, entities, and summaries from raw user input."""
         pass
+
+
+class BaseGraphStore(ABC):
+    """Abstract interface for Tier 4: Knowledge Graph Store (Memgraph / Neo4j / NetworkX)."""
+
+    @abstractmethod
+    def add_entity(
+        self,
+        user_id: str,
+        name: str,
+        entity_type: str = "Entity",
+        properties: Optional[Dict[str, Any]] = None,
+        project_id: str = "default",
+    ) -> str:
+        """Create or update an entity node in the graph."""
+        pass
+
+    @abstractmethod
+    def add_relationship(
+        self,
+        user_id: str,
+        source: str,
+        relation: str,
+        target: str,
+        properties: Optional[Dict[str, Any]] = None,
+        project_id: str = "default",
+    ) -> Dict[str, Any]:
+        """Create or update a directed relationship between two entities."""
+        pass
+
+    @abstractmethod
+    def execute_query(
+        self,
+        query: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Execute a Cypher query against the graph and return list of result dicts."""
+        pass
+
+    @abstractmethod
+    def multi_hop_query(
+        self,
+        user_id: str,
+        start_entity: str,
+        relation: Optional[str] = None,
+        hops: int = 2,
+        project_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Traverse graph up to N hops from start entity following relations."""
+        pass
+
+    @abstractmethod
+    def delete_relationship(
+        self,
+        user_id: str,
+        source: str,
+        relation: str,
+        target: str,
+        project_id: Optional[str] = None,
+    ) -> bool:
+        """Remove a relationship between entities."""
+        pass
+
+    @abstractmethod
+    def check_health(self) -> bool:
+        """Check if graph backend is operational."""
+        pass
+

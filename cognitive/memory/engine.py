@@ -7,6 +7,7 @@ from uuid import uuid4
 from memory.config import MemoryConfig, default_config, WorkingMemoryBackend, FactStoreBackend, VectorStoreBackend
 from memory.core.models import (
     ContextPackage,
+    FactCategory,
     FactItem,
     MemoryRecord,
     Turn,
@@ -18,6 +19,7 @@ from memory.core.interfaces import (
     BaseWorkingMemory,
     BaseFactStore,
     BaseVectorStore,
+    BaseGraphStore,
     BaseEmbedder,
 )
 from memory.tiers.working.in_memory import InMemoryWorkingMemory
@@ -26,6 +28,7 @@ from memory.tiers.facts.sqlite_adapter import SQLiteFactStore
 from memory.tiers.facts.postgres_adapter import PostgreSQLFactStore
 from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 from memory.tiers.semantic.chroma_adapter import ChromaAdapter
+from memory.tiers.graph.memgraph_adapter import MemgraphAdapter
 from memory.embeddings.embedder import get_embedder
 from memory.stitches.extractor import FactExtractor
 from memory.stitches.conflict_resolver import ConflictResolver
@@ -48,6 +51,7 @@ class MemoryEngine:
         working_memory: Optional[BaseWorkingMemory] = None,
         fact_store: Optional[BaseFactStore] = None,
         vector_store: Optional[BaseVectorStore] = None,
+        graph_store: Optional[BaseGraphStore] = None,
         embedder: Optional[BaseEmbedder] = None,
         guardrails_client: Optional[Any] = None,
     ):
@@ -89,6 +93,17 @@ class MemoryEngine:
                 location=self.config.qdrant_location,
                 collection_name=self.config.collection_name,
                 dim=self.embedder.dimension,
+            )
+
+        # Tier 4: Knowledge Graph Store
+        if graph_store is not None:
+            self.graph = graph_store
+        else:
+            self.graph = MemgraphAdapter(
+                host=self.config.memgraph_host,
+                port=self.config.memgraph_port,
+                username=self.config.memgraph_username,
+                password=self.config.memgraph_password,
             )
 
         # Stitches
@@ -205,6 +220,33 @@ class MemoryEngine:
             self.vectors.upsert_vectors([archival_record])
             archival_record_id = str(event_id)
 
+        # Step 6: Tier 4 Graph Store Sync
+        graph_relationships = []
+        if hasattr(self, "graph") and self.graph:
+            for ent in plan.entities:
+                try:
+                    self.graph.add_entity(user_id=user_id, name=ent, project_id=project_id)
+                except Exception:
+                    pass
+
+            for fact in saved_facts:
+                if fact.category == FactCategory.RELATIONSHIP or any(
+                    k in fact.key.lower() for k in ["manages", "reports_to", "works_at", "member_of", "part_of"]
+                ):
+                    try:
+                        rel_name = fact.key.replace(" ", "_").upper()
+                        rel_info = self.graph.add_relationship(
+                            user_id=user_id,
+                            source=user_id,
+                            relation=rel_name,
+                            target=fact.value,
+                            properties={"fact_id": str(fact.id)},
+                            project_id=project_id,
+                        )
+                        graph_relationships.append(rel_info)
+                    except Exception:
+                        pass
+
         return {
             "event_id": str(event_id),
             "tenant_id": tenant_id,
@@ -214,6 +256,7 @@ class MemoryEngine:
             "facts_saved": [f.model_dump() for f in saved_facts],
             "archival_record_id": archival_record_id,
             "entities": plan.entities,
+            "graph_relationships": graph_relationships,
         }
 
     def recall(
@@ -340,6 +383,67 @@ class MemoryEngine:
             project_id=project_id,
             facts=facts,
             archival_records=records,
+        )
+
+    def add_relationship(
+        self,
+        user_id: str,
+        source: str,
+        relation: str,
+        target: str,
+        properties: Optional[Dict[str, Any]] = None,
+        project_id: str = "default",
+    ) -> Dict[str, Any]:
+        """Record an explicit entity relationship in Tier 4 Knowledge Graph."""
+        return self.graph.add_relationship(
+            user_id=user_id,
+            source=source,
+            relation=relation,
+            target=target,
+            properties=properties,
+            project_id=project_id,
+        )
+
+    def delete_relationship(
+        self,
+        user_id: str,
+        source: str,
+        relation: str,
+        target: str,
+        project_id: Optional[str] = None,
+    ) -> bool:
+        """Remove a relationship in Tier 4 Knowledge Graph (e.g. on conflict resolution)."""
+        return self.graph.delete_relationship(
+            user_id=user_id,
+            source=source,
+            relation=relation,
+            target=target,
+            project_id=project_id,
+        )
+
+    def query_graph(
+        self,
+        query: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Execute a Cypher query on the Tier 4 Knowledge Graph."""
+        return self.graph.execute_query(query=query, params=params)
+
+    def multi_hop_query(
+        self,
+        user_id: str,
+        start_entity: str,
+        relation: Optional[str] = None,
+        hops: int = 2,
+        project_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Traverse multi-hop relationships starting from an entity."""
+        return self.graph.multi_hop_query(
+            user_id=user_id,
+            start_entity=start_entity,
+            relation=relation,
+            hops=hops,
+            project_id=project_id,
         )
 
     def store(

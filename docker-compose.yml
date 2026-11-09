@@ -56,9 +56,23 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
 
+  # Graph Memory Tier (Tier 4)
+  memgraph:
+    image: memgraph/memgraph-platform:latest
+    container_name: central-memgraph
+    restart: unless-stopped
+    ports:
+      - "7687:7687"
+      - "3000:3000"
+    environment:
+      - MEMGRAPH=--log-level=WARNING
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+
 volumes:
   qdrant_data:
   ollama_models:
   meili_data:
   redis_data:
   chroma_data:
+  memgraph_data:
