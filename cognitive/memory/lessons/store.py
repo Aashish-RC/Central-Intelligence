@@ -156,6 +156,21 @@ class LessonStore:
                 conn.execute("DELETE FROM lessons_learned")
                 conn.commit()
 
+    def delete_lesson(self, lesson_id: str) -> bool:
+        """Delete a stored lesson by ID."""
+        deleted = False
+        if lesson_id in self._memory_cache:
+            del self._memory_cache[lesson_id]
+            deleted = True
+
+        if self.db_path and self.db_path != ":memory:":
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("DELETE FROM lessons_learned WHERE lesson_id = ?", (lesson_id,))
+                conn.commit()
+                if cursor.rowcount > 0:
+                    deleted = True
+        return deleted
+
     def _row_to_record(self, row: tuple) -> LessonRecord:
         return LessonRecord(
             lesson_id=row[0],

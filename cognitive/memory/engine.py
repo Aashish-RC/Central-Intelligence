@@ -52,6 +52,11 @@ from memory.portability import (
     MemoryPortabilityFormat,
     ImportStats,
 )
+from memory.snapshots import (
+    MemorySnapshotManager,
+    MemorySnapshot,
+    RollbackResult,
+)
 
 
 class MemoryEngine:
@@ -140,6 +145,11 @@ class MemoryEngine:
 
         # Features 2.46, 2.50: Cross-Assistant Memory Portability Manager
         self.portability = MemoryPortabilityManager()
+
+        # Feature 2.51: Versioned Memory Snapshot & Adaptation Rollback Manager
+        self.snapshots = MemorySnapshotManager(
+            db_path=self.config.sqlite_path if hasattr(self.config, "sqlite_path") else None
+        )
 
     def remember(
         self,
@@ -555,3 +565,35 @@ class MemoryEngine:
             engine=self,
             session_id=session_id,
         )
+
+    # --- Feature 2.51: Versioned Memory Snapshot & Adaptation Rollback APIs ---
+
+    def create_memory_snapshot(
+        self,
+        user_id: str,
+        tag: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> MemorySnapshot:
+        """Create a versioned snapshot of the user's active facts and learned lessons."""
+        return self.snapshots.create_snapshot(
+            user_id=user_id,
+            engine=self,
+            tag=tag,
+            description=description,
+        )
+
+    def rollback_memory(
+        self,
+        user_id: str,
+        snapshot_id: str,
+    ) -> RollbackResult:
+        """Rollback user facts and learned lessons to a previous snapshot."""
+        return self.snapshots.rollback(
+            user_id=user_id,
+            snapshot_id=snapshot_id,
+            engine=self,
+        )
+
+    def list_memory_snapshots(self, user_id: str) -> List[MemorySnapshot]:
+        """List all versioned snapshots captured for a user."""
+        return self.snapshots.list_snapshots(user_id=user_id)
