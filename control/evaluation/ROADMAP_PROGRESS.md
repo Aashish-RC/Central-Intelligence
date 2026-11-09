@@ -27,13 +27,13 @@
 | **11.15** | Calibration Scoring (Stated Confidence vs Actual Outcomes) | **built** | Own implementation | no | `tests/test_calibration.py` |
 | **11.16** | Configurable Action Thresholds (0.50/0.80) | **built** | Own implementation | no | `tests/test_thresholds.py` |
 | **11.17** | Score Visibility & Transparency Inspection Panel | **built** | Own implementation | no | `tests/test_thresholds.py` |
-| **11.18** | Model A/B Testing Harness | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.19** | Prompt & Instruction A/B Testing | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.20** | Routing Strategy A/B Testing | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.21** | Statistical Significance & Sample Size Engine | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.22** | Shadow Traffic Emulation & Parallel Evaluation | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.23** | Canary Deployment Evaluation | pending | Own implementation | no | `tests/test_experiments.py` |
-| **11.24** | Automated Quality Release Gates | pending | Own implementation | no | `tests/test_experiments.py` |
+| **11.18** | Model A/B Testing Harness | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.19** | Prompt & Instruction A/B Testing | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.20** | Routing Strategy A/B Testing | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.21** | Statistical Significance & Sample Size Engine | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.22** | Shadow Traffic Emulation & Parallel Evaluation | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.23** | Canary Deployment Evaluation | **built** | Own implementation | no | `tests/test_experiments.py` |
+| **11.24** | Automated Quality Release Gates | **built** | Own implementation | no | `tests/test_experiments.py` |
 | **11.25** | Tenant-Level Sandbox & Dry-Run Execution Mode | pending | Own implementation | no | `tests/test_sandbox.py` |
 
 ---
