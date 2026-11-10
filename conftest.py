@@ -30,3 +30,11 @@ for p in [
 ]:
     if p.exists() and str(p) not in sys.path:
         sys.path.insert(0, str(p))
+
+# Ensure platform package namespace works even if pytest pre-imported stdlib platform
+platform_dir = root_dir / "platform"
+if platform_dir.exists():
+    import platform as _std_platform
+    if not hasattr(_std_platform, "__path__"):
+        _std_platform.__path__ = [str(platform_dir)]
+

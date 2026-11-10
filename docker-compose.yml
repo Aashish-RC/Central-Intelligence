@@ -179,6 +179,19 @@ services:
     environment:
       - LIVEKIT_KEYS=${LIVEKIT_KEYS:-devkey: secret}
 
+  # Supabase Postgres + pgvector + Apache AGE + RLS for L15 Data (Task 15.1)
+  supabase-db:
+    image: supabase/postgres:15.1.1.78
+    container_name: central-supabase-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    volumes:
+      - supabase_data:/var/lib/postgresql/data
+
 
 volumes:
   qdrant_data:
@@ -194,3 +207,4 @@ volumes:
   keycloak_data:
   openfga_data:
   infisical_data:
+  supabase_data:
