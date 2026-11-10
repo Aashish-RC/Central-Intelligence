@@ -31,6 +31,12 @@ export class ByokAdapter implements ProviderAdapter {
       completionTokens,
       latencyMs: Math.max(20, Date.now() - startTime),
       finishReason: 'stop',
+      isBillable: false,
+      isByok: true,
     };
+  }
+
+  shouldBypassBilling(): boolean {
+    return true;
   }
 }
