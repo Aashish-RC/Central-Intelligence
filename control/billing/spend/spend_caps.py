@@ -227,3 +227,4 @@ class SpendCapManager:
 
 # Global default singleton
 default_spend_cap_manager = SpendCapManager()
+

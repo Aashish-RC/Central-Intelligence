@@ -78,3 +78,4 @@ def test_resume_agent_on_cap_increase():
     manager.resume_agent(user_id, new_cap_usd=100.0)
     assert manager.is_agent_allowed(user_id)[0] is True
     assert manager.get_policy(user_id).monthly_cap_usd == 100.0
+

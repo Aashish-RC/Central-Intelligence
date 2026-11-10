@@ -110,3 +110,4 @@ def test_mixed_byok_and_platform_usage_tracking():
     # Only 1500 was billed to Lago
     sub = lago._subscriptions[user_id]
     assert sub.tokens_used_this_period == 1500
+

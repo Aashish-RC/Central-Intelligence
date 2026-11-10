@@ -196,3 +196,4 @@ class RefundPipeline:
 
 # Global default singleton
 default_refund_pipeline = RefundPipeline()
+

@@ -102,3 +102,4 @@ def test_combined_token_and_hyperswitch_payment_refund():
     p = hyperswitch.get_payment(payment.payment_id)
     assert p.refunded_cents == 500
     assert p.status == "refunded"
+

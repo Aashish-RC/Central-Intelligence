@@ -103,3 +103,4 @@ def test_refund_processing():
     p_after_2 = hyperswitch.get_payment(payment.payment_id)
     assert p_after_2.refunded_cents == 5000
     assert p_after_2.status == PaymentStatus.REFUNDED
+
