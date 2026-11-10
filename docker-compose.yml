@@ -167,6 +167,19 @@ services:
       - ROUTER_PORT=8080
       - ENVIRONMENT=sandbox
 
+  # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1)
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: central-livekit
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_KEYS:-devkey: secret}
+
+
 volumes:
   qdrant_data:
   ollama_models:
