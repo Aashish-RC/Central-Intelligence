@@ -8,9 +8,23 @@ import threading
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .models import UnifiedAuditEntry, AuditSeverity, UserRole
+
+
+from dataclasses import dataclass
+
+@dataclass
+class IntegrityReport:
+    """Detailed cryptographic chain integrity report (Feature 10.36)."""
+    is_valid: bool
+    total_entries: int
+    tampered_entry_id: Optional[str] = None
+    tampered_seq: Optional[int] = None
+    violation_type: Optional[str] = None  # "broken_prev_hash", "modified_entry_payload", None
+    details: Optional[str] = None
+    merkle_root: Optional[str] = None
 
 
 class UnifiedAuditLedger:
@@ -277,4 +291,123 @@ class UnifiedAuditLedger:
     def verify_chain(self) -> bool:
         """Alias for verify_integrity for automated cryptographic chain verification."""
         return self.verify_integrity()
+
+    def verify_integrity_detailed(self) -> IntegrityReport:
+        """
+        Extensive cryptographic audit log verification (Feature 10.36).
+        Identifies the exact entry index and violation type if any tampering occurred.
+        """
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.execute(
+                    """
+                    SELECT seq, id, tenant_id, project_id, user_id, role, module, action, resource,
+                           status, severity, details_json, timestamp, prev_hash, entry_hash
+                    FROM unified_audit_log
+                    ORDER BY seq ASC
+                    """
+                )
+                rows = cur.fetchall()
+                expected_prev_hash = "GENESIS_HASH_PHEONIX_2026"
+                hashes = []
+
+                for r in rows:
+                    seq = r["seq"]
+                    entry_id = r["id"]
+                    hashes.append(r["entry_hash"])
+
+                    # 1. Verify previous hash pointer
+                    if r["prev_hash"] != expected_prev_hash:
+                        return IntegrityReport(
+                            is_valid=False,
+                            total_entries=len(rows),
+                            tampered_entry_id=entry_id,
+                            tampered_seq=seq,
+                            violation_type="broken_prev_hash",
+                            details=(
+                                f"Chaining broken at entry {entry_id} (seq {seq}): "
+                                f"stored prev_hash='{r['prev_hash']}', expected='{expected_prev_hash}'"
+                            ),
+                        )
+
+                    # 2. Recompute and verify payload hash
+                    entry = UnifiedAuditEntry(
+                        id=entry_id,
+                        tenant_id=r["tenant_id"],
+                        project_id=r["project_id"],
+                        user_id=r["user_id"],
+                        role=r["role"],
+                        module=r["module"],
+                        action=r["action"],
+                        resource=r["resource"],
+                        status=r["status"],
+                        severity=AuditSeverity(r["severity"]),
+                        details=json.loads(r["details_json"]),
+                        timestamp=datetime.fromisoformat(r["timestamp"]),
+                    )
+                    recomputed = self._calculate_hash(expected_prev_hash, entry, r["details_json"])
+                    if recomputed != r["entry_hash"]:
+                        return IntegrityReport(
+                            is_valid=False,
+                            total_entries=len(rows),
+                            tampered_entry_id=entry_id,
+                            tampered_seq=seq,
+                            violation_type="modified_entry_payload",
+                            details=(
+                                f"Payload tampered at entry {entry_id} (seq {seq}): "
+                                f"stored hash='{r['entry_hash']}', recomputed='{recomputed}'"
+                            ),
+                        )
+
+                    expected_prev_hash = r["entry_hash"]
+
+                merkle_root = self._compute_merkle_root(hashes) if hashes else None
+                return IntegrityReport(
+                    is_valid=True,
+                    total_entries=len(rows),
+                    merkle_root=merkle_root,
+                    details="Audit chain integrity fully verified; zero tampering detected.",
+                )
+            finally:
+                if self._memory_conn is None:
+                    conn.close()
+
+    def detect_tampering(self) -> Tuple[bool, Optional[str]]:
+        """
+        Quick tamper detection check. Returns (has_tampering, explanation).
+        """
+        report = self.verify_integrity_detailed()
+        if not report.is_valid:
+            return True, report.details
+        return False, None
+
+    def _compute_merkle_root(self, hashes: List[str]) -> str:
+        """Computes hierarchical Merkle tree root over audit entry hashes."""
+        if not hashes:
+            return hashlib.sha256(b"EMPTY_MERKLE_TREE").hexdigest()
+
+        current = list(hashes)
+        while len(current) > 1:
+            if len(current) % 2 != 0:
+                current.append(current[-1])  # Duplicate last element if odd
+            next_level = []
+            for i in range(0, len(current), 2):
+                combined = current[i] + current[i + 1]
+                next_level.append(hashlib.sha256(combined.encode("utf-8")).hexdigest())
+            current = next_level
+
+        return current[0]
+
+    def get_merkle_root(self) -> str:
+        """Returns the Merkle root of all recorded audit entries in the ledger."""
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.execute("SELECT entry_hash FROM unified_audit_log ORDER BY seq ASC")
+                hashes = [r[0] for r in cur.fetchall()]
+                return self._compute_merkle_root(hashes)
+            finally:
+                if self._memory_conn is None:
+                    conn.close()
 
