@@ -119,3 +119,17 @@ class OperatorConsole:
             return [o for o in self._overrides if o.target_id == target_id]
         return list(self._overrides)
 
+    def get_analytics(self) -> Any:
+        """Retrieves Layer 14 Operator Analytics wired to this console."""
+        from control.observability.operator.operator_analytics import OperatorAnalytics
+        return OperatorAnalytics(operator_console=self)
+
+    def get_cross_tenant_usage(self, window_seconds: float = 86400.0) -> Any:
+        """Admin cross-tenant inspection wired from Layer 14 Observability (Feature 14.24)."""
+        return self.get_analytics().get_cross_tenant_usage(window_seconds=window_seconds)
+
+    def identify_heavy_users(self, limit: int = 10) -> Any:
+        """Admin tool to spot heavy consumers across all tenants (Feature 14.24)."""
+        return self.get_analytics().identify_heavy_users(limit=limit)
+
+
