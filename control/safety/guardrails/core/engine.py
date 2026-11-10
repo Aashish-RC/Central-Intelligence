@@ -232,6 +232,26 @@ class GuardrailsEngine:
             self._log_if_needed(request, result)
             return result
 
+        # Gate 2.6: Minor Safeguards Gate (Feature 10.44)
+        actor = getattr(request, "actor", "anonymous")
+        try:
+            from control.safety.wellbeing.minor_safeguards import default_minor_safeguards
+            minor_check = default_minor_safeguards.evaluate_content(text, user_id=actor)
+            if not minor_check.allowed:
+                result = SafetyCheckResult(
+                    action="block",
+                    severity="strict" if is_strict else "block",
+                    threat_category=cast(ThreatCategory, "child_safety"),
+                    sanitized_prompt=None,
+                    reason=minor_check.reason or "Content restricted under child-safety mode",
+                    crisis_response=None,
+                    matched_patterns=[f"minor_{minor_check.violated_category}"],
+                )
+                self._log_if_needed(request, result)
+                return result
+        except ImportError:
+            pass
+
         # Gate 3: PII & Credential Sanitization
         sanitized_text, was_redacted, pii_types = self.pii_detector.sanitize(text)
         if was_redacted:
