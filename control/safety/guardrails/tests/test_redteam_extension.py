@@ -97,3 +97,4 @@ def test_clean_weekly_run_when_zero_penetrations():
     assert report.status == "clean"
     assert len(report.penetrated_vectors) == 0
     assert len(report.remediation_recommendations) == 0
+

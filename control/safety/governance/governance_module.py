@@ -266,3 +266,4 @@ class AIGovernanceModule:
 
 # Global default singleton
 default_ai_governance = AIGovernanceModule()
+

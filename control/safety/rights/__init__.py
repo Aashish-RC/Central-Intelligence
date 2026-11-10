@@ -19,3 +19,4 @@ __all__ = [
     "ProtectedMaterial",
     "default_content_rights_enforcer",
 ]
+

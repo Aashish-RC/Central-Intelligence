@@ -145,3 +145,4 @@ def test_merkle_root_computation():
     root_one = ledger.get_merkle_root()
     assert root_one != root_empty
     assert len(root_one) == 64
+

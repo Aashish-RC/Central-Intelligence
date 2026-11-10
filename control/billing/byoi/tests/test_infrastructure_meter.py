@@ -91,3 +91,4 @@ def test_empty_user_distribution():
     assert dist.by_target_percentage["local"] == 0.0
     assert dist.by_target_percentage["peer_device"] == 0.0
     assert dist.by_target_percentage["cloud"] == 0.0
+

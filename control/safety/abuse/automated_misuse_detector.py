@@ -111,3 +111,4 @@ class AutomatedMisuseDetector:
 
 # Global default detector instance
 default_automated_misuse_detector = AutomatedMisuseDetector()
+

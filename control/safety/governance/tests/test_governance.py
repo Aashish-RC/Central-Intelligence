@@ -122,3 +122,4 @@ def test_tenant_manager_governance_integration():
     config = default_ai_governance.get_tenant_config(t.tenant_id)
     assert config.tenant_id == t.tenant_id
     assert config.custom_rules.get("high_risk") is True
+

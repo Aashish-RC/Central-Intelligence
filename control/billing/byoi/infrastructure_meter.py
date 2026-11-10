@@ -168,3 +168,4 @@ class BYOInfrastructureMeter:
 
 # Global default singleton
 default_infrastructure_meter = BYOInfrastructureMeter()
+

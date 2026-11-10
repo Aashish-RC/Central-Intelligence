@@ -174,3 +174,4 @@ class BillingQuotaGamingDetector:
 
 # Global default singleton
 default_billing_quota_gaming_detector = BillingQuotaGamingDetector()
+

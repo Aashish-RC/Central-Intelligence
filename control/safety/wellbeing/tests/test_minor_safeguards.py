@@ -102,3 +102,4 @@ def test_guardrails_engine_integration_with_minor_safeguards():
 
     assert result.action == "block"
     assert "child-safety mode" in result.reason
+

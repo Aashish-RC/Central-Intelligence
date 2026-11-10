@@ -220,3 +220,4 @@ class MinorSafeguardsEnforcer:
 
 # Default global singleton
 default_minor_safeguards = MinorSafeguardsEnforcer()
+

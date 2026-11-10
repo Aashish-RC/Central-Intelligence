@@ -99,3 +99,4 @@ def test_audit_non_existent_charge_raises_key_error():
     manager = BillingAuditManager()
     with pytest.raises(KeyError):
         manager.audit_charge("chg_missing")
+

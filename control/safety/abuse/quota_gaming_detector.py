@@ -85,3 +85,4 @@ class QuotaGamingDetector:
 
 # Global default instance
 default_quota_gaming_detector = QuotaGamingDetector()
+

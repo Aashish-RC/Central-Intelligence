@@ -117,3 +117,4 @@ def test_whitelist_allows_authorized_third_party_emails():
     assert "vendor@partner.org" in res.sanitized_text
     assert "rogue@unknown.org" not in res.sanitized_text
     assert res.total_redacted == 1
+

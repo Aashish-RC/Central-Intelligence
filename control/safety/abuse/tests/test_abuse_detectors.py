@@ -139,3 +139,4 @@ def test_account_manager_wiring_with_abuse_detector():
         ip_address=ip,
     )
     assert assessment.is_flagged is True
+

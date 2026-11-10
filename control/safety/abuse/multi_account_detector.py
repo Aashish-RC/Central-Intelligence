@@ -107,3 +107,4 @@ class MultiAccountDetector:
 
 # Global singleton instance
 default_multi_account_detector = MultiAccountDetector()
+

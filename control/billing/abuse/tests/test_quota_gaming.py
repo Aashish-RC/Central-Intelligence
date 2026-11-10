@@ -93,3 +93,4 @@ def test_bridge_to_l10_safety_quota_detector():
 
     assert res.is_gaming is True
     assert any("disposable email domain" in r for r in res.reasons)
+

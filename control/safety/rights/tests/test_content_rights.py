@@ -126,3 +126,4 @@ def test_tagger_enforce_content_rights_bridge():
     res = tagger.enforce_content_rights(output, sources=sources)
     assert "Sources & Attribution:" in res.sanitized_output
     assert "**Clean Architecture Foundations** by Robert Miller (MIT)" in res.sanitized_output
+
