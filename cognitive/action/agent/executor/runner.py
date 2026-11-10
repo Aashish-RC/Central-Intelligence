@@ -17,6 +17,12 @@ from agent.guardrails.filter import GuardrailFilter
 from agent.sandbox.local_docker_adapter import LocalDockerSandboxAdapter
 from agent.sandbox.e2b_adapter import E2BSandboxAdapter
 
+try:
+    from control.safety.action_safety.kill_switch import AgentKillSwitch, default_kill_switch
+except ImportError:
+    AgentKillSwitch = None
+    default_kill_switch = None
+
 
 class AgentRunner:
     """Core autonomous task execution loop driving manifests with Agno/Hermes runtime patterns."""
@@ -29,6 +35,7 @@ class AgentRunner:
         guardrail_filter: Optional[GuardrailFilter] = None,
         event_bus: Optional[EventBus] = None,
         sandbox_manager: Optional[Any] = None,
+        kill_switch: Optional[Any] = None,
     ):
         self.manifest = manifest
         self.tools = tool_registry or default_tool_registry
@@ -36,6 +43,7 @@ class AgentRunner:
         self.guardrails = guardrail_filter or GuardrailFilter()
         self.event_bus = event_bus or default_event_bus
         self.subagents = SubagentManager(event_bus=self.event_bus)
+        self.kill_switch = kill_switch if kill_switch is not None else default_kill_switch
 
         # Configure Sandbox: delegate directly to canonical sandboxes.manager.SandboxManager
         if sandbox_manager is not None:
@@ -85,6 +93,10 @@ class AgentRunner:
         )
 
         try:
+            # 0. Emergency Kill Switch Verification (10.24)
+            if self.kill_switch:
+                self.kill_switch.assert_not_halted(agent_id=self.manifest.agent_id)
+
             # 1. Input Guardrails
             cleaned_prompt = self.guardrails.sanitize_input(prompt, self.manifest.guardrails)
 
@@ -135,6 +147,8 @@ class AgentRunner:
                 if tool_def.name.lower() in cleaned_prompt.lower() or any(k in cleaned_prompt.lower() for k in ["calculate", "math", "test", "search", "read"]):
                     tool_instance = self.tools.get(tool_def.name)
                     if tool_instance:
+                        if self.kill_switch:
+                            self.kill_switch.assert_not_halted(agent_id=self.manifest.agent_id)
                         tool_called = True
                         current_step += 1
                         tool_ctx = ToolContext(

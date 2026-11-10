@@ -17,6 +17,7 @@ import { discoverMCPTools, executeMCPTool, parseMCPToolId, type MCPTool } from '
 import { browserSessionManager } from '../../../../cognitive/action/connectors/pieces/browser.js';
 import { ModelEngine } from '../index.js';
 import type { EngineMessage } from '../types.js';
+import { defaultKillSwitchTS } from './killSwitch.js';
 
 export interface AgentTool {
   id: string; // e.g. "piece:email:send_email" or "mcp:filesystem:read_file"
@@ -461,6 +462,13 @@ export async function runReActLoop(
   let finalText = '';
 
   while (currentStep <= maxSteps) {
+    // 0. Emergency Kill Switch Verification (Feature 10.24)
+    if (defaultKillSwitchTS.isHalted(options.userId)) {
+      terminatedReason = 'cancelled';
+      finalText = `EMERGENCY STOP: Execution halted by Kill Switch (${defaultKillSwitchTS.getHaltReason(options.userId)}).`;
+      break;
+    }
+
     // 1. THINK: Decide next action based on current state
     const plan = planNextStep(userPrompt, steps, tools);
 
