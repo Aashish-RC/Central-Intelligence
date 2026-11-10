@@ -87,6 +87,19 @@ class TenantManager:
             guardrails_policy=guardrails_policy or {"strict_pii": True, "profanity_filter": True},
         )
         self._tenants[t_id] = tenant
+
+        # Wire with L10 AI Governance (Features 10.25, 10.28)
+        if guardrails_policy and "governance" in guardrails_policy:
+            try:
+                from control.safety.governance.governance_module import default_ai_governance
+                gov = guardrails_policy["governance"]
+                default_ai_governance.configure_tenant(
+                    tenant_id=t_id,
+                    custom_rules=gov,
+                )
+            except ImportError:
+                pass
+
         return tenant
 
     def get_tenant(self, tenant_id: str) -> TenantRecord:
