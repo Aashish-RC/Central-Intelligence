@@ -48,10 +48,12 @@ class TieredLogRouter:
         scrubber: Optional[FourTierPIIScrubber] = None,
         signoz: Optional[SigNozAdapter] = None,
         consent_adapter: Optional[Any] = None,
+        residency_enforcer: Optional[Any] = None,
     ):
         self.scrubber = scrubber or FourTierPIIScrubber()
         self.signoz = signoz or SigNozAdapter()
         self.consent_adapter = consent_adapter or (get_default_consent_adapter() if get_default_consent_adapter else None)
+        self.residency_enforcer = residency_enforcer
         self._routed_logs: List[Dict[str, Any]] = []
 
     def route(
@@ -84,8 +86,18 @@ class TieredLogRouter:
             },
         )
 
-        # 2. Dispatch to destination based on Tier
-        if scrubbed.tier == 1:
+        # 2. Check Data Residency Boundary (Feature 10.32)
+        allow_external_dispatch = True
+        if self.residency_enforcer:
+            signoz_region = getattr(self.signoz, "region", "us")
+            allow_external_dispatch = self.residency_enforcer.is_dispatch_allowed(
+                user_id=entry.user_id,
+                target_region=signoz_region,
+                tenant_id=entry.tenant_id,
+            )
+
+        # 3. Dispatch to destination based on Tier
+        if scrubbed.tier == 1 and allow_external_dispatch:
             # Telemetry -> SigNoz metric emission
             self.signoz.record_metric(
                 name="log.telemetry.events",
@@ -106,6 +118,7 @@ class TieredLogRouter:
             "stored": scrubbed.stored,
             "retained_days": scrubbed.retained_days,
             "findings_count": len(scrubbed.findings),
+            "dispatched_external": allow_external_dispatch,
         })
 
         return scrubbed
