@@ -25,7 +25,7 @@ except ImportError:
     C15tConsentAdapter = None
     get_default_consent_adapter = lambda: None
 
-logger = logging.getLogger("control.observability.logging")
+logger = logging.getLogger("control.observability.log_management")
 
 
 @dataclass

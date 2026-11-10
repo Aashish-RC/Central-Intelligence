@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from control.safety.pii import DataClass, FourTierPIIScrubber, RetentionPolicy
 
-logger = logging.getLogger("control.observability.logging.retention")
+logger = logging.getLogger("control.observability.log_management.retention")
 
 DEFAULT_RETENTION_TTLS: Dict[DataClass, int] = {
     DataClass.TELEMETRY: 365,

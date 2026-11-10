@@ -10,7 +10,7 @@ The Observability layer provides comprehensive telemetry, distributed tracing, l
    - Real-time latency distribution percentiles ($P_{50}, P_{90}, P_{95}, P_{99}$).
    - Error rate calculation and request replay debugging.
 
-2. **4-Tier Structured Log Router & Retention Engine (`control/observability/log_routing/`, `control/observability/logging/`)**
+2. **4-Tier Structured Log Router & Retention Engine (`control/observability/log_routing/`, `control/observability/log_management/`)**
    - Integrates with Layer 10 Crown Jewel (`FourTierPIIScrubber`).
    - Routes telemetry metrics to SigNoz (Tier 1), diagnostic traces to ephemeral stores (Tier 2), compliance actions to Merkle ledgers (Tier 3), and Zero-Data Retention (ZDR) to volatile RAM (Tier 4).
    - `RetentionScheduler` enforces tenant/user TTLs and respects c15t consent privacy mode (zero retention for privacy mode).

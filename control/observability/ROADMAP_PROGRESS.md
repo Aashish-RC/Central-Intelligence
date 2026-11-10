@@ -29,7 +29,7 @@
 | **14.17** | Per-App Metrics Dashboards | **built** | Own implementation | no | `dashboards/tests/test_dashboards.py` |
 | **14.18** | Executive KPI & Cost Dashboard | **built** | Own implementation | no | `dashboards/tests/test_dashboards.py` |
 | **14.19** | 🚩 4-Tier Structured Log Router (Shared Crown Jewel) | **built** | Shared with L10 (Feature 10.30) | no | `log_routing/tests/test_tier_router.py` |
-| **14.20** | Configurable Log Retention Scheduler | **built** | Own implementation | no | `logging/tests/test_retention_scheduler.py` |
+| **14.20** | Configurable Log Retention Scheduler | **built** | Own implementation | no | `log_management/tests/test_retention_scheduler.py` |
 | **14.21** | Component Health & Status Page | **built** | Adapted (MIT - Uptime Kuma) | no | `uptime/tests/test_uptime_kuma.py` |
 | **14.22** | Privacy-Preserving Funnels (Differential Privacy) | **built** | Own implementation & PostHog | no | `privacy/tests/test_privacy_funnels.py` |
 | **14.23** | Per-Feature & Per-App Product Analytics | **built** | Adapted (MIT - PostHog) | no | `posthog/tests/test_posthog.py` |

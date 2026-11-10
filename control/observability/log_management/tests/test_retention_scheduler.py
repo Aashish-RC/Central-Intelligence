@@ -5,7 +5,7 @@ Unit tests for Log Retention Scheduler & Cleanup Engine (14.20).
 import time
 import pytest
 from control.safety.pii import DataClass, FourTierPIIScrubber, RetentionPolicy
-from control.observability.logging.retention_scheduler import (
+from control.observability.log_management.retention_scheduler import (
     RetentionScheduler,
     RetentionPolicyOverride,
     DEFAULT_RETENTION_TTLS,
