@@ -137,3 +137,4 @@ class InputNormalizer:
 
 # Global default normalizer instance
 default_input_normalizer = InputNormalizer()
+

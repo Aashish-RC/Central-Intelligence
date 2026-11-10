@@ -85,3 +85,4 @@ class NormalizedEvent:
                 "metadata": self.provenance.metadata if self.provenance else {},
             },
         }
+

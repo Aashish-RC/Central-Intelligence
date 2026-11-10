@@ -71,6 +71,31 @@ class SituationalInjector:
         )
 
     @classmethod
+    def capture_from_probe(
+        cls,
+        probe: Optional[Any] = None,
+        active_workspace: Optional[str] = None,
+        active_document: Optional[str] = None,
+        active_window: Optional[str] = None,
+    ) -> SituationalContext:
+        """Captures situational context directly using Layer 1 SituationalContextProbe (Task 1.9)."""
+        if probe is None:
+            try:
+                from cognitive.perception.situational.context_probe import default_context_probe
+                probe = default_context_probe
+            except ImportError:
+                return cls.capture(
+                    active_workspace=active_workspace,
+                    active_document=active_document,
+                )
+        return probe.supply_to_l9(
+            active_workspace=active_workspace,
+            active_document=active_document,
+            active_window=active_window,
+        )
+
+
+    @classmethod
     def format_block(cls, ctx: SituationalContext) -> str:
         """Formats the situational context into a structured prompt injection block."""
         lines = [

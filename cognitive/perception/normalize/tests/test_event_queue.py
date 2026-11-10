@@ -101,3 +101,4 @@ def test_custom_source_trust_overrides():
     )
     assert ev.trust == TrustLevel.UNTRUSTED.value
     assert ev.provenance.trust == TrustLevel.UNTRUSTED.value
+
