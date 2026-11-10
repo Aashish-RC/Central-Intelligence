@@ -58,10 +58,25 @@ class TenantManager:
         rate_limit_tpm: int = 100000,
         model_policy: Optional[Dict[str, Any]] = None,
         guardrails_policy: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None,
     ) -> TenantRecord:
         t_id = tenant_id or f"tnt-{secrets.token_hex(6)}"
         if t_id in self._tenants:
             raise ValueError(f"Tenant with id '{t_id}' already exists")
+
+        # Multi-tenant creation abuse detection (Feature 10.48)
+        if ip_address:
+            try:
+                from control.safety.abuse.multi_account_detector import default_multi_account_detector
+                res = default_multi_account_detector.record_and_evaluate(
+                    user_id=t_id,
+                    email=f"{t_id}@tenancy.local",
+                    ip_address=ip_address,
+                )
+                if res.action == "block":
+                    raise PermissionError(f"Tenant registration blocked by abuse detector: {res.reason}")
+            except ImportError:
+                pass
 
         tenant = TenantRecord(
             tenant_id=t_id,

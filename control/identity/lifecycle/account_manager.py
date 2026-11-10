@@ -49,7 +49,29 @@ class AccountLifecycleManager:
         self._accounts: Dict[str, AccountRecord] = {}  # user_id -> account
         self._email_map: Dict[str, str] = {}  # email -> user_id
 
-    def create_account(self, user_id: str, email: str, password_hash: Optional[str] = None) -> AccountRecord:
+    def create_account(
+        self,
+        user_id: str,
+        email: str,
+        password_hash: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        device_fingerprint: Optional[str] = None,
+    ) -> AccountRecord:
+        # Check Multi-Account & Sybil Abuse (Feature 10.48)
+        if ip_address:
+            try:
+                from control.safety.abuse.multi_account_detector import default_multi_account_detector
+                assessment = default_multi_account_detector.record_and_evaluate(
+                    user_id=user_id,
+                    email=email,
+                    ip_address=ip_address,
+                    device_fingerprint=device_fingerprint,
+                )
+                if assessment.action == "block":
+                    raise PermissionError(f"Account registration blocked: {assessment.reason}")
+            except ImportError:
+                pass
+
         acc = AccountRecord(user_id=user_id, email=email, password_hash=password_hash)
         self._accounts[user_id] = acc
         self._email_map[email] = user_id
