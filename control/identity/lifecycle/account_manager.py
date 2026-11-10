@@ -111,6 +111,14 @@ class AccountLifecycleManager:
     # --- 12.44: Account Closure & Grace Period ---
     def request_account_closure(self, user_id: str, grace_period_days: int = 30) -> AccountRecord:
         """Initiates account closure with 30-day retention grace period."""
+        # Enforce legal hold check before scheduling deletion (Feature 10.46)
+        try:
+            from control.safety.legal.legal_hold import default_legal_hold_manager
+            if default_legal_hold_manager.is_held(user_id=user_id):
+                raise PermissionError(f"Account closure prohibited: User '{user_id}' is under an active legal hold.")
+        except ImportError:
+            pass
+
         account = self.get_account(user_id)
         now = time.time()
         grace_seconds = grace_period_days * 86400

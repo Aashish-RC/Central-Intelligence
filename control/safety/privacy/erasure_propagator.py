@@ -23,6 +23,11 @@ from control.safety.audit.ledger import UnifiedAuditLedger
 from control.safety.audit.models import AuditSeverity, UnifiedAuditEntry, UserRole
 from control.safety.pii import FourTierPIIScrubber
 
+try:
+    from control.safety.legal.legal_hold import default_legal_hold_manager
+except ImportError:
+    default_legal_hold_manager = None
+
 
 class LegalHoldActiveError(PermissionError):
     """Raised when an erasure request cannot proceed because an active legal hold is in place."""
@@ -64,7 +69,7 @@ class UniversalMemoryErasurePropagator:
         self.meilisearch_adapter = meilisearch_adapter
         self.redis_adapter = redis_adapter
         self.log_router = log_router
-        self.legal_hold_handler = legal_hold_handler
+        self.legal_hold_handler = legal_hold_handler if legal_hold_handler is not None else default_legal_hold_manager
 
         # In-memory mock stores for hermetic / standalone test execution
         self._mock_stores: Dict[str, Dict[str, List[Any]]] = {
@@ -99,7 +104,9 @@ class UniversalMemoryErasurePropagator:
         meta-record to the Merkle audit ledger.
         """
         # 0. Check Legal Hold Gate (Feature 10.46)
-        if self.is_legal_hold_active(user_id=user_id, tenant_id=tenant_id):
+        if self.legal_hold_handler and hasattr(self.legal_hold_handler, "assert_not_held"):
+            self.legal_hold_handler.assert_not_held(user_id=user_id, tenant_id=tenant_id)
+        elif self.is_legal_hold_active(user_id=user_id, tenant_id=tenant_id):
             raise LegalHoldActiveError(
                 f"Cannot erase data for user '{user_id}': An active legal hold is in place for this identity."
             )
