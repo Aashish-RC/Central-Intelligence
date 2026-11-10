@@ -138,7 +138,7 @@ class CrossDeviceReconciler:
     ) -> MessageItem:
         """Append message originating from a specific device."""
         state = self.get_or_create_state(session_id, device_id)
-        current_clock = state.vector_clock.get(device_id, 0) + 1
+        current_clock = max(state.vector_clock.values(), default=0) + 1
         state.vector_clock[device_id] = current_clock
 
         msg = MessageItem(
@@ -163,7 +163,7 @@ class CrossDeviceReconciler:
     ) -> None:
         """Set a session-scoped variable on a device."""
         state = self.get_or_create_state(session_id, device_id)
-        current_clock = state.vector_clock.get(device_id, 0) + 1
+        current_clock = max(state.vector_clock.values(), default=0) + 1
         state.vector_clock[device_id] = current_clock
         ts = timestamp if timestamp is not None else time.time()
         state.variables[key] = (value, current_clock, ts, device_id)
