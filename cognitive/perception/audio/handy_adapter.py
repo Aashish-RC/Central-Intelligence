@@ -192,3 +192,4 @@ class HandyAdapter:
 
 # Global default offline STT instance
 default_handy_adapter = HandyAdapter()
+

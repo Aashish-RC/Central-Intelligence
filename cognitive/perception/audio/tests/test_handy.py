@@ -60,3 +60,4 @@ def test_transcribe_invalid_file_handling(tmp_path: Path):
     bad_file.write_text("not audio")
     with pytest.raises(ValueError, match="Unsupported audio file format"):
         adapter.transcribe_file(bad_file)
+
