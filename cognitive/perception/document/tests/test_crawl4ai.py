@@ -114,3 +114,4 @@ async def test_crawl_error_handling():
     res = await adapter.crawl_url("file:///nonexistent/path/page.html")
     assert res.status_code == 404
     assert res.is_success is False
+

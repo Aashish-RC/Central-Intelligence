@@ -100,3 +100,4 @@ def test_fallback_to_closest_past_frame(timeline_adapter):
     assert len(results) >= 1
     # Should resolve to the closest past frame (the 5 min ago frame)
     assert "calculate_risk_score" in results[0].text
+

@@ -217,3 +217,4 @@ class Crawl4AIAdapter:
 
 # Global default instance
 default_crawl4ai_adapter = Crawl4AIAdapter()
+

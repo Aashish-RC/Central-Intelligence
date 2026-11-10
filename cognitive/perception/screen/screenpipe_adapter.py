@@ -164,3 +164,4 @@ class ScreenpipeAdapter:
 
 # Global default instance
 default_screenpipe_adapter = ScreenpipeAdapter()
+

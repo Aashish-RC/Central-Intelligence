@@ -11,3 +11,4 @@ __all__ = [
     "ScreenpipeAdapter",
     "default_screenpipe_adapter",
 ]
+
