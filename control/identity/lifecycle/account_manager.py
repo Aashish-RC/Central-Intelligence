@@ -135,6 +135,29 @@ class AccountLifecycleManager:
         account.deletion_effective_at = None
         return account
 
+    def permanently_close_and_erase(
+        self,
+        user_id: str,
+        erasure_propagator: Optional[Any] = None,
+    ) -> Any:
+        """
+        Permanently terminates account and triggers universal Right-to-Erasure propagation (Features 12.44, 10.31).
+        """
+        account = self.get_account(user_id)
+        account.status = AccountStatus.PERMANENTLY_CLOSED
+
+        if erasure_propagator is None:
+            try:
+                from control.safety.privacy.erasure_propagator import default_erasure_propagator
+                erasure_propagator = default_erasure_propagator
+            except ImportError:
+                erasure_propagator = None
+
+        if erasure_propagator and hasattr(erasure_propagator, "propagate_erasure"):
+            return erasure_propagator.propagate_erasure(user_id=user_id)
+
+        return None
+
 
 # Default singleton
 default_account_lifecycle_manager = AccountLifecycleManager()
