@@ -1,5 +1,6 @@
 """Layer 14: Observability."""
 
+from .log_routing import LogEntry, TieredLogRouter
 from .models import (
     MetricRecord,
     PercentileMetrics,
@@ -14,4 +15,6 @@ __all__ = [
     "MetricRecord",
     "PercentileMetrics",
     "TraceStatus",
+    "TieredLogRouter",
+    "LogEntry",
 ]
