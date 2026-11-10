@@ -1,0 +1,49 @@
+define flow check jailbreak
+  user ...
+  $is_jailbreak = execute check_jailbreak_action
+  if $is_jailbreak
+    bot refuse jailbreak
+    stop
+
+define flow check toxicity
+  user ...
+  $is_toxic = execute check_toxicity_action
+  if $is_toxic
+    bot refuse toxic
+    stop
+
+define flow check encoding injection
+  user ...
+  $is_encoded = execute check_encoding_action
+  if $is_encoded
+    bot refuse encoding
+    stop
+
+define flow check factuality
+  bot ...
+  $is_unfactual = execute check_factuality_action
+  if $is_unfactual
+    bot refuse unfactual
+    stop
+
+define flow check hallucination
+  bot ...
+  $is_hallucination = execute check_hallucination_action
+  if $is_hallucination
+    bot refuse hallucination
+    stop
+
+define bot refuse jailbreak
+  "I cannot comply with requests attempting to bypass safety directives."
+
+define bot refuse toxic
+  "I cannot generate toxic, harmful, or abusive content."
+
+define bot refuse encoding
+  "Potentially dangerous obfuscated or encoded prompt injection detected."
+
+define bot refuse unfactual
+  "Output rejected due to potential factual inaccuracies."
+
+define bot refuse hallucination
+  "Output rejected due to detected hallucination or unsubstantiated claims."

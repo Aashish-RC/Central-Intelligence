@@ -19,6 +19,11 @@ from .jailbreak import JailbreakDetector
 from .detector import PIIDetector
 from .audit import GuardrailAuditLogger
 
+try:
+    from ..nemo.nemo_adapter import NeMoGuardrailsAdapter
+except ImportError:
+    NeMoGuardrailsAdapter = None
+
 
 class GuardrailsEngine:
     """
@@ -34,11 +39,18 @@ class GuardrailsEngine:
         audit_logger: Optional[GuardrailAuditLogger] = None,
         severity_threshold: Optional[SeverityLevel] = None,
         rules_client: Optional[Any] = None,
+        nemo_adapter: Optional[Any] = None,
     ):
         self.crisis_handler = crisis_handler or CrisisHandler()
         self.jailbreak_detector = jailbreak_detector or JailbreakDetector()
         self.pii_detector = pii_detector or PIIDetector()
         self.audit_logger = audit_logger or GuardrailAuditLogger()
+        if nemo_adapter is not None:
+            self.nemo_adapter = nemo_adapter
+        elif NeMoGuardrailsAdapter is not None:
+            self.nemo_adapter = NeMoGuardrailsAdapter(enable_nemorails=False)
+        else:
+            self.nemo_adapter = None
         self._compiled_rule_patterns: Dict[str, Any] = {}
         self.rules_client = None
 
@@ -187,6 +199,23 @@ class GuardrailsEngine:
             self._log_if_needed(request, result)
             return result
 
+        # Gate 2.1: NeMo Guardrails Input Rail (Catches encoding-based attacks: base64, hex, rot13, leetspeak, url)
+        if self.nemo_adapter:
+            nemo_res = self.nemo_adapter.check_input(text)
+            if not nemo_res.allowed:
+                action_nemo: SafetyAction = "block" if (is_strict or SEVERITY_ORDER["block"] >= threshold_rank) else "warn"
+                result = SafetyCheckResult(
+                    action=action_nemo,
+                    severity="strict" if is_strict else "block",
+                    threat_category="prompt_injection" if nemo_res.threat_category in ("encoding_injection", "jailbreak") else cast(ThreatCategory, "rule_violation"),
+                    sanitized_prompt=None if action_nemo == "block" else text,
+                    reason=nemo_res.reason,
+                    crisis_response=None,
+                    matched_patterns=nemo_res.matched_patterns,
+                )
+                self._log_if_needed(request, result)
+                return result
+
         # Gate 2.5: Dynamic Compiled Rules Gate (from Rules Layer)
         rule_blocked, rule_reason, rule_matches = self._evaluate_compiled_rules(text)
         if rule_blocked:
@@ -226,6 +255,32 @@ class GuardrailsEngine:
             threat_category="none",
             sanitized_prompt=text,
             reason="Prompt passed all safety evaluations cleanly.",
+            crisis_response=None,
+            matched_patterns=[],
+        )
+
+    def evaluate_output(self, text: str, context: Optional[str] = None) -> SafetyCheckResult:
+        """
+        Evaluates model output using NeMo output guardrails (factuality, hallucination, system token leaks).
+        """
+        if self.nemo_adapter:
+            nemo_res = self.nemo_adapter.check_output(text, context=context)
+            if not nemo_res.allowed:
+                return SafetyCheckResult(
+                    action="block",
+                    severity="block",
+                    threat_category=cast(ThreatCategory, "hallucination" if "hallucination" in nemo_res.threat_category else "rule_violation"),
+                    sanitized_prompt=None,
+                    reason=nemo_res.reason,
+                    crisis_response=None,
+                    matched_patterns=nemo_res.matched_patterns,
+                )
+        return SafetyCheckResult(
+            action="allow",
+            severity="allow",
+            threat_category="none",
+            sanitized_prompt=text,
+            reason="Output passed safety checks cleanly.",
             crisis_response=None,
             matched_patterns=[],
         )
