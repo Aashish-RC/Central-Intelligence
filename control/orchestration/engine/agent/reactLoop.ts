@@ -18,6 +18,7 @@ import { browserSessionManager } from '../../../../cognitive/action/connectors/p
 import { ModelEngine } from '../index.js';
 import type { EngineMessage } from '../types.js';
 import { defaultKillSwitchTS } from './killSwitch.js';
+import { defaultOverRelianceGuardTS } from '../../../../cognitive/reasoning/src/security/wellbeing.js';
 
 export interface AgentTool {
   id: string; // e.g. "piece:email:send_email" or "mcp:filesystem:read_file"
@@ -605,6 +606,14 @@ export async function runReActLoop(
   if (currentStep > maxSteps && !finalText) {
     terminatedReason = 'max_steps_reached';
     finalText = `Agent loop stopped: reached maximum step limit (${maxSteps}) without finishing.`;
+  }
+
+  // Wellbeing Over-Reliance Guard Check (Feature 10.55)
+  if (options.userId) {
+    const relCheck = defaultOverRelianceGuardTS.recordTurn(options.userId, userPrompt);
+    if (relCheck.warn && relCheck.warning) {
+      finalText = `${relCheck.warning}\n\n${finalText}`;
+    }
   }
 
   return {
