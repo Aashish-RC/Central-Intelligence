@@ -25,7 +25,7 @@ The Observability layer provides comprehensive telemetry, distributed tracing, l
    - **Per-App Dashboard (`14.17`)**: Breakdown by application / agent service with PostHog feature invocation analytics.
    - **Executive Dashboard (`14.18`)**: High-level KPIs, total cost, aggregate usage trends, and model spend breakdown.
 
-5. **Operator Usage Analytics (`control/observability/operator/`)**
+5. **Operator Usage Analytics (`control/observability/admin_console/`)**
    - Cross-tenant usage inspection and heavy user identification.
    - Wires directly into Layer 12 IAM `OperatorConsole` for supervisory interventions.
 

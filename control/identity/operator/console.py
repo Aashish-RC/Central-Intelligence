@@ -121,7 +121,7 @@ class OperatorConsole:
 
     def get_analytics(self) -> Any:
         """Retrieves Layer 14 Operator Analytics wired to this console."""
-        from control.observability.operator.operator_analytics import OperatorAnalytics
+        from control.observability.admin_console.operator_analytics import OperatorAnalytics
         return OperatorAnalytics(operator_console=self)
 
     def get_cross_tenant_usage(self, window_seconds: float = 86400.0) -> Any:

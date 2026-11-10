@@ -1,6 +1,5 @@
-"""Operator Analytics & Supervisory Observability (Layer 14: Feature 14.24)."""
-
-from control.observability.operator.operator_analytics import (
+"""Operator analytics and admin console for observability."""
+from .operator_analytics import (
     CrossTenantUsageReport,
     OperatorAnalytics,
     TenantAggregateUsage,
@@ -15,4 +14,3 @@ __all__ = [
     "UserUsageProfile",
     "default_operator_analytics",
 ]
-

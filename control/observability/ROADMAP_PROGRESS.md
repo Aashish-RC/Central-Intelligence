@@ -33,4 +33,4 @@
 | **14.21** | Component Health & Status Page | **built** | Adapted (MIT - Uptime Kuma) | no | `uptime/tests/test_uptime_kuma.py` |
 | **14.22** | Privacy-Preserving Funnels (Differential Privacy) | **built** | Own implementation & PostHog | no | `privacy/tests/test_privacy_funnels.py` |
 | **14.23** | Per-Feature & Per-App Product Analytics | **built** | Adapted (MIT - PostHog) | no | `posthog/tests/test_posthog.py` |
-| **14.24** | Operator Usage Analytics | **built** | Own implementation & L12 Wire | no | `operator/tests/test_operator_analytics.py` |
+| **14.24** | Operator Usage Analytics | **built** | Own implementation & L12 Wire | no | `admin_console/tests/test_operator_analytics.py` |
