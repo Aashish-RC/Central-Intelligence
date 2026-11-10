@@ -30,10 +30,12 @@ class FourTierPIIScrubber:
         self,
         config: Optional[ScrubberConfig] = None,
         unified_ledger: Optional[Any] = None,
+        consent_adapter: Optional[Any] = None,
     ):
         self.config = config or ScrubberConfig()
         self.detector = PIIDetector()
         self.redactor = Redactor(self.detector)
+        self.consent_adapter = consent_adapter
 
         retention = self.config.default_retention
         self.tier1 = Tier1TelemetrySink(default_ttl_days=retention.telemetry_ttl)
@@ -57,6 +59,10 @@ class FourTierPIIScrubber:
     ) -> ScrubbedData:
         """Sanitizes sensitive data and dispatches to the specified retention tier."""
         policy = retention_policy or self.config.default_retention
+
+        # Enforce Privacy Mode override if active for this user (Feature 10.35)
+        if self.consent_adapter and self.consent_adapter.is_privacy_mode(user_id, tenant_id):
+            data_class = DataClass.ZDR
 
         # Normalize text representation for hashing and PII scanning
         if isinstance(data, str):

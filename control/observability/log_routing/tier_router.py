@@ -19,6 +19,12 @@ from uuid import uuid4
 from control.observability.signoz import SigNozAdapter
 from control.safety.pii import DataClass, FourTierPIIScrubber, RetentionPolicy, ScrubbedData
 
+try:
+    from control.safety.consent.c15t_adapter import C15tConsentAdapter, get_default_consent_adapter
+except ImportError:
+    C15tConsentAdapter = None
+    get_default_consent_adapter = lambda: None
+
 logger = logging.getLogger("control.observability.logging")
 
 
@@ -41,9 +47,11 @@ class TieredLogRouter:
         self,
         scrubber: Optional[FourTierPIIScrubber] = None,
         signoz: Optional[SigNozAdapter] = None,
+        consent_adapter: Optional[Any] = None,
     ):
         self.scrubber = scrubber or FourTierPIIScrubber()
         self.signoz = signoz or SigNozAdapter()
+        self.consent_adapter = consent_adapter or (get_default_consent_adapter() if get_default_consent_adapter else None)
         self._routed_logs: List[Dict[str, Any]] = []
 
     def route(
@@ -54,8 +62,12 @@ class TieredLogRouter:
         retention_policy: Optional[RetentionPolicy] = None,
     ) -> ScrubbedData:
         """Routes log payload through the 4-tier PII scrubber to appropriate destination."""
-        # Privacy mode (Feature 10.35) forces Zero-Data Retention (Tier 4)
-        target_class = DataClass.ZDR if privacy_mode else data_class
+        # Privacy mode (Feature 10.35) or c15t consent check
+        user_in_privacy = privacy_mode
+        if not user_in_privacy and self.consent_adapter:
+            user_in_privacy = self.consent_adapter.is_privacy_mode(entry.user_id, entry.tenant_id)
+
+        target_class = DataClass.ZDR if user_in_privacy else data_class
 
         # 1. Scrub through 4-Tier PII scrubber
         scrubbed = self.scrubber.scrub(
