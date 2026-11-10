@@ -31,6 +31,6 @@
 | **14.19** | 🚩 4-Tier Structured Log Router (Shared Crown Jewel) | **pending** | Shared with L10 (Feature 10.30) | no | Task 14.4 |
 | **14.20** | Configurable Log Retention Scheduler | **pending** | Own implementation | no | Task 14.5 |
 | **14.21** | Component Health & Status Page | **built** | Adapted (MIT - Uptime Kuma) | no | `uptime/tests/test_uptime_kuma.py` |
-| **14.22** | Privacy-Preserving Funnels (Differential Privacy) | **pending** | Adapted (MIT - PostHog) | no | Task 14.9 |
-| **14.23** | Per-Feature & Per-App Product Analytics | **pending** | Adapted (MIT - PostHog) | no | Task 14.3 |
-| **14.24** | Operator Usage Analytics | **pending** | Own implementation | no | Task 14.8 |
+| **14.22** | Privacy-Preserving Funnels (Differential Privacy) | **built** | Adapted (MIT - PostHog) | no | `posthog/tests/test_posthog.py` |
+| **14.23** | Per-Feature & Per-App Product Analytics | **built** | Adapted (MIT - PostHog) | no | `posthog/tests/test_posthog.py` |
+| **14.24** | Operator Usage Analytics | **built** | Adapted (MIT - PostHog) | no | `posthog/tests/test_posthog.py` |
