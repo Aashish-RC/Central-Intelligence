@@ -135,6 +135,7 @@ def test_audit_logger_singleton_and_recording():
 
 
 def test_cross_module_audit_logging_and_chain_verification(tmp_path):
+    pytest.importorskip("storage.core.engine", reason="Cross-module storage engine not installed")
     ledger = UnifiedAuditLedger(db_path=":memory:")
     logger = AuditLogger(ledger=ledger)
     set_audit_logger(logger)
