@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from platform.data.sync.cross_device_reconciler import (
+from platform_infra.data.sync.cross_device_reconciler import (
     CrossDeviceReconciler,
     MessageItem,
 )

@@ -33,7 +33,7 @@ htmlcov/
 *.log
 logs/
 data/
-!platform/data/
+!platform_infra/data/
 wal/
 
 # IDE & OS

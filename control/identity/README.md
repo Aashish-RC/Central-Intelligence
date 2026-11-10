@@ -37,7 +37,7 @@ Multi-tenant organization hierarchies, passwordless passkeys, enterprise SSO, OA
 ### `control.identity.financial`
 - Bridges directly to L5 Financial Authority Guard for transaction approvals, spend thresholds, and receipts.
 
-### `control.identity.operator`
+### `control.identity.operator_console`
 - Administrative controls to pause/override agent actions.
 - Tamper-evident audited support impersonation.
 

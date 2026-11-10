@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
-from control.identity.operator.console import OperatorConsole
+from control.identity.operator_console.console import OperatorConsole
 from control.observability.signoz.signoz_adapter import SigNozAdapter
 
 logger = logging.getLogger("control.observability.admin_console.analytics")

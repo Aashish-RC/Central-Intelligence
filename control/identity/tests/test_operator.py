@@ -1,8 +1,8 @@
 """Tests for Operator Console & Audited Support Impersonation (Task 12.11)."""
 
 import pytest
-from control.identity.operator.console import OperatorConsole
-from control.identity.operator.impersonation import ImpersonationManager
+from control.identity.operator_console.console import OperatorConsole
+from control.identity.operator_console.impersonation import ImpersonationManager
 from control.safety.audit.ledger import UnifiedAuditLedger
 
 

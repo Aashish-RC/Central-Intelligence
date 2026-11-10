@@ -9,6 +9,7 @@ if str(root_dir) not in sys.path:
 
 cognitive_dir = root_dir / "cognitive"
 control_dir = root_dir / "control"
+platform_infra_dir = root_dir / "platform_infra"
 surface_dir = root_dir / "surface"
 
 for p in [
@@ -28,17 +29,13 @@ for p in [
     control_dir / "evaluation",
     control_dir / "identity",
     control_dir / "identity" / "secrets",
+    platform_infra_dir,
+    platform_infra_dir / "data",
+    platform_infra_dir / "compute",
+    platform_infra_dir / "release",
     surface_dir,
     surface_dir / "interaction",
     surface_dir / "federation",
 ]:
     if p.exists() and str(p) not in sys.path:
         sys.path.insert(0, str(p))
-
-# Ensure platform package namespace works even if pytest pre-imported stdlib platform
-platform_dir = root_dir / "platform"
-if platform_dir.exists():
-    import platform as _std_platform
-    if not hasattr(_std_platform, "__path__"):
-        _std_platform.__path__ = [str(platform_dir)]
-

@@ -30,7 +30,7 @@ def test_switch_from_guided_to_pro_and_inspect_transparency_panel(switcher: Dept
     # Simulate turn execution recording sources & memories
     sources = [
         {"title": "Postgres RLS Documentation", "url": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"},
-        {"file": "platform/data/supabase/supabase_adapter.py", "lines": "10-45"},
+        {"file": "platform_infra/data/supabase/supabase_adapter.py", "lines": "10-45"},
     ]
     memories = [
         {"memory_id": "mem_pref_001", "content": "User prefers async Python idioms."},

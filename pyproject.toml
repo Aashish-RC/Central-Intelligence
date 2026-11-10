@@ -48,6 +48,8 @@ pythonpath = [
     "cognitive/memory/storage",
     "cognitive/knowledge",
     "cognitive/action",
+    "cognitive/output",
+    "cognitive/learning",
     "control",
     "control/orchestration",
     "control/safety",
@@ -55,8 +57,19 @@ pythonpath = [
     "control/evaluation",
     "control/context",
     "control/identity",
+    "control/billing",
+    "control/observability",
+    "platform_infra",
+    "surface/interaction",
+    "surface/federation",
 ]
-testpaths = ["cognitive", "control"]
+testpaths = ["cognitive", "control", "platform_infra", "surface"]
+norecursedirs = [
+    "node_modules",
+    ".git",
+    ".venv",
+    "cognitive/knowledge/rag_api",
+]
 asyncio_mode = "auto"
 markers = [
     "live: marks tests requiring an actual browser environment (excluded from default CI)",

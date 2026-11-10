@@ -4,7 +4,7 @@ Unit tests for Operator Analytics & Cross-Tenant Inspection (14.24).
 
 import time
 import pytest
-from control.identity.operator.console import OperatorConsole, InterventionState
+from control.identity.operator_console.console import OperatorConsole, InterventionState
 from control.observability.admin_console.operator_analytics import (
     OperatorAnalytics,
     UserUsageProfile,
