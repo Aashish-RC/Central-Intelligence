@@ -36,15 +36,15 @@ services:
     volumes:
       - meili_data:/meili_data
 
-  # Working Memory Cache & Key-Value Store
-  redis:
-    image: redis:7-alpine
-    container_name: central-redis
+  # High-throughput In-Memory Cache & Pub/Sub (Dragonfly - Task 15.2)
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: central-dragonfly
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - dragonfly_data:/data
 
   # Alternative Vector Store for Offline Mode
   chroma:
@@ -197,7 +197,7 @@ volumes:
   qdrant_data:
   ollama_models:
   meili_data:
-  redis_data:
+  dragonfly_data:
   chroma_data:
   memgraph_data:
   falkordb_data:
