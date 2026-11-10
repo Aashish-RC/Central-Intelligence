@@ -21,6 +21,12 @@ try:
 except ImportError:
     _SAFETY_AUDIT_AVAILABLE = False
 
+try:
+    from control.safety.pii import FourTierPIIScrubber, DataClass
+    _PII_SCRUBBER_AVAILABLE = True
+except ImportError:
+    _PII_SCRUBBER_AVAILABLE = False
+
 
 def utc_iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -45,9 +51,15 @@ class ContextAuditRecord:
 class ContextAuditLog:
     """Tamper-evident audit store for model context payloads."""
 
-    def __init__(self, db_path: Optional[str] = None, safety_ledger: Optional[Any] = None):
+    def __init__(
+        self,
+        db_path: Optional[str] = None,
+        safety_ledger: Optional[Any] = None,
+        pii_scrubber: Optional[Any] = None,
+    ):
         self.db_path = db_path or ":memory:"
         self.safety_ledger = safety_ledger
+        self.pii_scrubber = pii_scrubber
         self._init_db()
 
     def _init_db(self) -> None:
@@ -86,6 +98,20 @@ class ContextAuditLog:
         """Stores a byte-for-byte record of the prompt and writes an entry to the Merkle ledger."""
         sources_included = sources_included or []
         metadata = metadata or {}
+
+        # 4-Tier PII Scrubber integration (Layer 10 Feature 10.30)
+        if self.pii_scrubber is not None:
+            scrubbed = self.pii_scrubber.scrub(
+                data=raw_prompt,
+                data_class=DataClass.DIAGNOSTIC,
+                user_id=user_id or "anon",
+                tenant_id=tenant_id,
+                session_id=session_id,
+                metadata=metadata,
+            )
+            raw_prompt = scrubbed.data
+            metadata["pii_findings_count"] = len(scrubbed.findings)
+            metadata["pii_scrubbed_tier"] = scrubbed.tier
 
         # Compute deterministic SHA-256 over raw UTF-8 prompt
         prompt_bytes = raw_prompt.encode("utf-8")

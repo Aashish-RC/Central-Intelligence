@@ -280,3 +280,29 @@ export class PIIMaskingEngine {
     return sum % 10 === 0;
   }
 }
+
+/**
+ * 4-Tier PII & Telemetry classification definitions (Layer 10 Feature 10.30; Layer 14 Feature 14.19).
+ */
+export type DataClassTier = 'telemetry' | 'diagnostic' | 'audit' | 'zdr';
+
+export interface TierClassification {
+  tier: number;
+  dataClass: DataClassTier;
+  retainedDays: number;
+  description: string;
+}
+
+export function classifyPayloadTier(dataClass: DataClassTier): TierClassification {
+  switch (dataClass) {
+    case 'telemetry':
+      return { tier: 1, dataClass: 'telemetry', retainedDays: 90, description: 'Non-PII technical metrics only' };
+    case 'diagnostic':
+      return { tier: 2, dataClass: 'diagnostic', retainedDays: 14, description: 'Redacted chat snippets' };
+    case 'audit':
+      return { tier: 3, dataClass: 'audit', retainedDays: 365, description: 'Tamper-proof encrypted action ledger' };
+    case 'zdr':
+      return { tier: 4, dataClass: 'zdr', retainedDays: 0, description: 'Zero-data retention (RAM only, 0 disk)' };
+  }
+}
+
