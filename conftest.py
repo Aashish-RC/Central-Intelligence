@@ -9,6 +9,7 @@ if str(root_dir) not in sys.path:
 
 cognitive_dir = root_dir / "cognitive"
 control_dir = root_dir / "control"
+surface_dir = root_dir / "surface"
 
 for p in [
     cognitive_dir,
@@ -27,6 +28,9 @@ for p in [
     control_dir / "evaluation",
     control_dir / "identity",
     control_dir / "identity" / "secrets",
+    surface_dir,
+    surface_dir / "interaction",
+    surface_dir / "federation",
 ]:
     if p.exists() and str(p) not in sys.path:
         sys.path.insert(0, str(p))
