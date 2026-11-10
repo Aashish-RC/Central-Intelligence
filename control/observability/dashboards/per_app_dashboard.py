@@ -134,3 +134,4 @@ class PerAppDashboard:
             total_cost_usd=round(total_cost, 4),
             features_invoked=features_invoked,
         )
+

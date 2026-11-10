@@ -119,3 +119,4 @@ class RealtimeDashboard:
             total_cost_usd=round(total_cost, 4),
             active_spans_count=active_spans,
         )
+

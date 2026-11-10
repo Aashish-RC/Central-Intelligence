@@ -103,3 +103,4 @@ def test_posthog_wiring():
     assert report.steps[0].step_name == "onboarding_start"
     assert report.steps[1].step_name == "onboarding_complete"
     assert report.privacy_guaranteed is True
+

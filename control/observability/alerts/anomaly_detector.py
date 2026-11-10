@@ -183,3 +183,4 @@ class AnomalyDetector:
 
 # Global default anomaly detector
 default_anomaly_detector = AnomalyDetector()
+

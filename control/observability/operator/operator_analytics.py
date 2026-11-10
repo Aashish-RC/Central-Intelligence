@@ -238,3 +238,4 @@ class OperatorAnalytics:
 
 # Global default operator analytics instance
 default_operator_analytics = OperatorAnalytics()
+

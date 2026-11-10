@@ -143,3 +143,4 @@ def test_executive_dashboard(populated_signoz):
     assert summary.top_tenants_by_spend[0]["tenant_id"] == "tenant_beta"
     assert summary.top_tenants_by_spend[0]["spend_usd"] == pytest.approx(0.015, rel=1e-3)
     assert summary.top_tenants_by_spend[1]["tenant_id"] == "tenant_alpha"
+

@@ -98,3 +98,4 @@ def test_operator_console_wire_integration(populated_telemetry):
     heavy = console.identify_heavy_users()
     assert len(heavy) >= 1
     assert heavy[0].user_id == "heavy_user_1"
+

@@ -137,3 +137,4 @@ class ExecutiveDashboard:
             average_system_latency_ms=round(avg_latency, 2),
             overall_error_rate=round(overall_error_rate, 4),
         )
+

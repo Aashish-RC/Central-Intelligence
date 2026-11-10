@@ -189,3 +189,4 @@ class PrivacyFunnels:
 
 # Global default privacy funnels instance
 default_privacy_funnels = PrivacyFunnels(epsilon=1.0)
+

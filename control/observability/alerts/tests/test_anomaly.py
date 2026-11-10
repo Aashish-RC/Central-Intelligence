@@ -86,3 +86,4 @@ def test_signoz_integration():
     alert = detector.feed_metric(spike_rec.name, spike_rec.value)
     assert alert is not None
     assert alert.z_score > 3.0
+

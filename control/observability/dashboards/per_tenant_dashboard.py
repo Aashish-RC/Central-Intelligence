@@ -113,3 +113,4 @@ class PerTenantDashboard:
             error_rate=round(error_rate, 4),
             models_breakdown=models_breakdown,
         )
+
