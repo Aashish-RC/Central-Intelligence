@@ -74,3 +74,4 @@ def test_independent_concurrent_edits():
 
     merged = resolver.resolve_concurrent_edits(base_text, op1, op2)
     assert merged == "Init: Alpha Beta Gamma Done."
+

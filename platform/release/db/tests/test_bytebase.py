@@ -50,3 +50,4 @@ def test_migration_lifecycle_create_review_apply_rollback(bytebase: BytebaseAdap
     rolled_back = bytebase.rollback_migration(mig.migration_id)
     assert rolled_back.execution_status == MigrationStatus.ROLLED_BACK
     assert bytebase.is_version_applied(db, v) is False
+

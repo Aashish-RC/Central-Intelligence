@@ -156,3 +156,4 @@ class CapabilityExpander:
             s for s in self.candidate_skills.values()
             if s.status == SkillStatus.ACTIVATED and (not user_id or s.user_id == user_id)
         ]
+

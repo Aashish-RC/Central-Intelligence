@@ -154,3 +154,4 @@ class SharingGate:
             logger.warning("Promotion of '%s' to '%s' REJECTED: %s", req.entity_id, req.target_scope.value, notes)
 
         return req
+

@@ -23,3 +23,4 @@ Layer 18 provides cross-platform client interaction surfaces across Web, Desktop
 pytest surface/interaction/ -v
 node control/orchestration/node_modules/tsx/dist/cli.mjs --test surface/interaction/terminal/tests/opencode.test.ts surface/interaction/ide/tests/zed.test.ts
 ```
+

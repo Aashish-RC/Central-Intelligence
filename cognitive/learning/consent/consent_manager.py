@@ -73,3 +73,4 @@ class TrainingConsentManager:
                 approved_samples.append(item)
 
         return approved_samples
+

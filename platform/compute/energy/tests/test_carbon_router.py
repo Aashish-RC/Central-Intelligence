@@ -65,3 +65,4 @@ def test_energy_joules_tracking(router: CarbonEnergyRouter):
     # 10,000 tokens * 0.02 J/token = 200 Joules
     assert pytest.approx(joules, rel=1e-2) == 200.0
     assert carbon > 0.0
+

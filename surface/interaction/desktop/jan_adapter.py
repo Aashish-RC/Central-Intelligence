@@ -89,3 +89,4 @@ class JanDesktopAdapter:
 
     def get_local_history(self) -> List[Dict[str, str]]:
         return list(self._local_history)
+

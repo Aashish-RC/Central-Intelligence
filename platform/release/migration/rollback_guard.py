@@ -136,3 +136,4 @@ class MigrationRollbackGuard:
                 "destructive": dry_result.is_destructive,
             },
         )
+

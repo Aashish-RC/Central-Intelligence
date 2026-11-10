@@ -75,3 +75,4 @@ def test_deterministic_user_evaluation(growthbook: GrowthBookAdapter):
     assert res1.is_on == res2.is_on
     assert res1.value == res2.value
     assert res1.bucket_hash == res2.bucket_hash
+

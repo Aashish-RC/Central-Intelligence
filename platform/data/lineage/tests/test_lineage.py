@@ -85,3 +85,4 @@ def test_trace_full_lineage_metadata(tracker: DataLineageTracker):
     assert lineage["total_consumers"] == 1
     assert lineage["sources"][0]["node_id"] == "src_db"
     assert lineage["consumers"][0]["node_id"] == "export_csv_job"
+

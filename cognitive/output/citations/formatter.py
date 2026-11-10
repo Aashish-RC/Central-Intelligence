@@ -196,3 +196,4 @@ class CitationFormatter:
             key=lambda s: s.authors[0] if s.authors else s.title
         )
         return [self.format(s, style) for s in sorted_sources]
+

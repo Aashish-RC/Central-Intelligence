@@ -190,3 +190,4 @@ class ModelCatalog:
             key=lambda m: (m.pricing.blended_cost_per_mtoken, m.pricing.input_cost_per_mtoken)
         )
         return candidates[0]
+

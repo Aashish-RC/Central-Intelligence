@@ -188,3 +188,4 @@ class OutputFormatNegotiator:
             is_interactive=False,
             metadata={"speech_rate": "1.0"},
         )
+

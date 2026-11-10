@@ -40,3 +40,4 @@ def test_zero_downtime_ci_deploy(kamal: KamalAdapter):
     active = kamal.get_active_versions()
     assert active["10.0.0.1"] == target_tag
     assert active["10.0.0.2"] == target_tag
+

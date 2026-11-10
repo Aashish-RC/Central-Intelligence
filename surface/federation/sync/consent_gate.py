@@ -41,3 +41,4 @@ class ConsentGate:
         """Check if consent grant exists for this brain and data type."""
         brain_grants = self._grants.get(brain_id, set())
         return data_type in brain_grants or "*" in brain_grants
+

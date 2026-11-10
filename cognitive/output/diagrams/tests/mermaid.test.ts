@@ -38,3 +38,4 @@ describe('Mermaid Diagram Adapter', () => {
     assert.equal(empty.valid, false);
   });
 });
+

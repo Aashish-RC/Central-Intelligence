@@ -37,3 +37,4 @@ describe('Zed IDE Adapter (Task 18.4)', () => {
     assert.equal(edit.newText, 'async function fetchData() { return null; }');
   });
 });
+

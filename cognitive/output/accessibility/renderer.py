@@ -145,3 +145,4 @@ class AccessibleOutputRenderer:
             lines.append(f"{speaker_prefix}{cue.text}")
             lines.append("")
         return "\n".join(lines).strip()
+

@@ -196,3 +196,4 @@ class DeviceActuationController:
 
     def get_command(self, command_id: str) -> Optional[ActuationCommand]:
         return self._commands.get(command_id)
+

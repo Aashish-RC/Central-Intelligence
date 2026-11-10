@@ -114,3 +114,4 @@ class SpecializedBrainFactory:
 
     def list_active_brains(self) -> List[SpecializedBrain]:
         return [b for b in self._brains.values() if b.status != BrainLifecycleStatus.RETIRED]
+

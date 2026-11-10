@@ -101,3 +101,4 @@ def test_apache_age_graph_queries():
     assert record["p"]["name"] == "Alice"
     assert record["r"] == "LEADS"
     assert record["proj"]["name"] == "Central Intelligence"
+

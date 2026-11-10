@@ -175,3 +175,4 @@ class CarbonEnergyRouter:
 
     def get_history(self) -> List[Dict[str, Any]]:
         return list(self._execution_history)
+

@@ -71,3 +71,4 @@ def test_can_generate_a_5_section_report_with_toc_from_a_template():
     assert "## <a id='10-executive-summary'></a>1.0 Executive Summary" in doc.full_markdown
     assert "![Layer 6 Output Generation Pipeline]" in doc.full_markdown
     assert "Vaswani et al. (2017)" in doc.full_markdown
+

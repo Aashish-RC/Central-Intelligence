@@ -250,3 +250,4 @@ class SupabaseAdapter:
                         results.append({node1_var: node.properties})
 
         return results
+

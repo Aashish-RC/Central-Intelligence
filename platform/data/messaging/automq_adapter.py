@@ -224,3 +224,4 @@ class AutoMQAdapter:
 
         self._dlq[dlq_topic] = remaining
         return replayed, still_failing
+

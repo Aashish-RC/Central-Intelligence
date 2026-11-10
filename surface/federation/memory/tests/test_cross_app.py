@@ -52,3 +52,4 @@ def test_app_a_can_access_preferences_but_not_app_b_private_content(sharing: Cro
     # 4. App B can access its own private content freely
     app_b_access = sharing.get_memory(requester_app_id=app_b, memory_id=private_item.memory_id)
     assert app_b_access.value["bid_millions"] == 450
+

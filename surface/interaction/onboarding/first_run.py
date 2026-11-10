@@ -68,3 +68,4 @@ class FirstRunWizard:
 
     def get_credential(self, provider: str) -> Optional[str]:
         return self._credentials.get(provider)
+

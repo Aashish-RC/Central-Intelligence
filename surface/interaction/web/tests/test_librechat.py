@@ -46,3 +46,4 @@ def test_chat_with_multiple_providers_in_one_ui(librechat: LibreChatAdapter):
 
     providers_used = {m.provider for m in saved_conv.messages if m.role == "assistant"}
     assert providers_used == {"anthropic", "openai", "ollama"}
+

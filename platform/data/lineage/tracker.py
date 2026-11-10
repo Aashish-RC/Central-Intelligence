@@ -259,3 +259,4 @@ class DataLineageTracker:
             "total_sources": len(sources),
             "total_consumers": len(consumers),
         }
+

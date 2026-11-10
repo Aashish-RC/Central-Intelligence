@@ -111,3 +111,4 @@ class ConversationContinuityEngine:
         """Get active draft for surface."""
         session = self._ensure_session(session_id, surface_type)
         return session.active_draft
+

@@ -60,3 +60,4 @@ def test_daily_brief_at_9_am(nudge_engine: ProactiveNudgeEngine):
     assert due_on_time[0].title == "Morning Intelligence Digest"
     assert due_on_time[0].dispatched is True
     assert len(delivered) == 1
+

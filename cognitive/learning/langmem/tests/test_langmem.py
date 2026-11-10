@@ -53,3 +53,4 @@ def test_extract_memories_from_conversation():
     assert len(extracted) == 1
     assert "uv instead of standard pip" in extracted[0].content
     assert "user_preference" in extracted[0].tags
+

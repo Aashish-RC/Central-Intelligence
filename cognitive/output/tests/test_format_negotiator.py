@@ -66,3 +66,4 @@ def test_voice_surface_negotiation():
     assert out_voice.format_type == "ssml_text"
     assert out_voice.formatted_content.startswith("<speak>")
     assert out_voice.formatted_content.endswith("</speak>")
+

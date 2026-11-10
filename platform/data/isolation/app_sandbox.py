@@ -201,3 +201,4 @@ class AppSandbox:
     def get_audit_log(self) -> List[Dict[str, Any]]:
         """Fetch audit log of cross-app requests."""
         return list(self._audit_log)
+

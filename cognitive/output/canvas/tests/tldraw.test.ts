@@ -64,3 +64,4 @@ describe('Tldraw Infinite Canvas Adapter', () => {
     assert.ok(json.includes('ci-whiteboard'));
   });
 });
+

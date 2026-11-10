@@ -97,3 +97,4 @@ def test_route_with_hardware_profile(dispatcher: HardwareTierDispatcher):
         profile=profile,
     )
     assert target == ComputeTarget.LOCAL_OLLAMA
+

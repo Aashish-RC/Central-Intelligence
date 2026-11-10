@@ -150,3 +150,4 @@ class CoolifyAdapter:
         self._deployments[rollback_dep_uuid] = rollback_result
         app["current_deployment"] = rollback_dep_uuid
         return rollback_result
+

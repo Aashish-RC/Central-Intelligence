@@ -87,3 +87,4 @@ class DepthLevelSwitcher:
         elif self.current_level == DepthLevel.PRO:
             return "Provide concise, expert-level technical answers with full architectural precision, code diffs, and exact algorithms."
         return "Provide balanced, clear, and comprehensive assistance."
+

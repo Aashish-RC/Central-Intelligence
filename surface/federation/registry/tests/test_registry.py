@@ -57,3 +57,4 @@ def test_malicious_unauthorized_pack_quarantined(registry: SkillPackRegistry):
     stored = registry.get_pack("pack_suspicious_trojan")
     assert stored is not None
     assert stored.status == PackStatus.QUARANTINED
+

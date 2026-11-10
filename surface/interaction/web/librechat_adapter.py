@@ -111,3 +111,4 @@ class LibreChatAdapter:
 
     def get_conversation(self, conversation_id: str) -> Optional[ChatConversation]:
         return self._conversations.get(conversation_id)
+

@@ -80,3 +80,4 @@ def test_concurrent_hot_swap_execution(manager: ModelHotSwapManager):
     assert gpt4_serviced > 0
     assert claude_serviced + gpt4_serviced == total_requests
     assert manager.get_in_flight_count() == 0
+

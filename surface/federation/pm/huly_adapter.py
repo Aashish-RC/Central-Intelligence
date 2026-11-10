@@ -146,3 +146,4 @@ class HulyAdapter:
 
     def get_doc(self, doc_id: str) -> Optional[HulyDoc]:
         return self._docs.get(doc_id)
+

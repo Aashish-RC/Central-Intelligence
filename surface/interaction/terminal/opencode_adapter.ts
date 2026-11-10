@@ -121,3 +121,4 @@ export class OpenCodeAdapter {
     return [...this.history];
   }
 }
+

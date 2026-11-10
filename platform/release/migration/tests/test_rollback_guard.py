@@ -67,3 +67,4 @@ def test_compatible_migration_passes(guard: MigrationRollbackGuard):
     result = guard.validate(safe_migration, active_sessions=[session_1])
     assert result.safe is True
     assert "compatible" in result.reason
+

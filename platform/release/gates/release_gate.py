@@ -94,3 +94,4 @@ class PlatformReleaseGate:
 
     def get_history(self) -> List[GateDecision]:
         return list(self._history)
+

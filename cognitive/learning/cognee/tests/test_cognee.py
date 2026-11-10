@@ -55,3 +55,4 @@ def test_cognee_remember_recall_improve_forget():
     assert forgotten is True
     assert node.id not in adapter.graph.nodes
     assert not any(e.source_id == node.id or e.target_id == node.id for e in adapter.graph.edges)
+

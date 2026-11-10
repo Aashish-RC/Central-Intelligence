@@ -76,3 +76,4 @@ def test_wires_l3_knowledge_provenance():
     assert "(2026)." in citation
     assert "Central Intelligence Neural Router." in citation
     assert "License: Apache-2.0" in citation
+

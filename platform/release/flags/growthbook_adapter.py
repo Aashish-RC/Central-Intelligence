@@ -116,3 +116,4 @@ class GrowthBookAdapter:
     def is_on(self, key: str, user_id: str) -> bool:
         """Convenience method checking boolean flag status."""
         return self.evaluate(key, user_id).is_on
+

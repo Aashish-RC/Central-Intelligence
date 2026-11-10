@@ -51,3 +51,4 @@ def test_softmax_probabilities_reflect_learning():
 
     probs = adjuster.get_normalized_probabilities("reasoning", ["gpt-4o", "other-model"])
     assert probs["gpt-4o"] > probs["other-model"]
+

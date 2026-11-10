@@ -84,3 +84,4 @@ def test_expired_access_grant(sandbox: AppSandbox):
 
     with pytest.raises(PermissionDeniedError):
         sandbox.get("app_hr", "salaries", "s_1", requester_app_id="app_auditor")
+

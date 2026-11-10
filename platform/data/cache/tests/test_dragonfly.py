@@ -88,3 +88,4 @@ def test_flushdb(cache: DragonflyAdapter):
     cache.flushdb()
     assert cache.get("k1") is None
     assert cache.get("k2") is None
+

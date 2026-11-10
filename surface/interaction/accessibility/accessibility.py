@@ -46,3 +46,4 @@ class AccessibilityManager:
         if self.profile.screen_reader_enabled:
             attrs["aria-live"] = "polite"
         return attrs
+

@@ -6,3 +6,4 @@ from cognitive.learning.langmem.langmem_adapter import (
 )
 
 __all__ = ["LangMemAdapter", "MemoryItem"]
+

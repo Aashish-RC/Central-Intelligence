@@ -231,3 +231,4 @@ export class TldrawCanvasAdapter {
     return JSON.stringify(canvas, null, 2);
   }
 }
+

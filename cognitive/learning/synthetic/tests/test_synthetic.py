@@ -85,3 +85,4 @@ def test_labeling_workflow_review_and_approval():
     approved = queue.get_approved_examples()
     assert len(approved) == 1
     assert "aggregate fees paid" in approved[0].messages[-1]["content"]
+

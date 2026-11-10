@@ -83,3 +83,4 @@ def test_confirmation_across_surfaces(universal: UniversalSurfaceAdapter):
     for surface in ["web", "desktop", "terminal", "ide"]:
         confirmed = universal.confirm("execute_db_migration", surface_type=surface)
         assert confirmed is True
+

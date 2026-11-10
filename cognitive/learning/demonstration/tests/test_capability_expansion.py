@@ -75,3 +75,4 @@ def test_user_rejection_of_suggested_skill():
     assert rejected is False
     assert candidate.status == SkillStatus.REJECTED
     assert len(expander.list_activated_skills(user)) == 0
+

@@ -139,3 +139,4 @@ class AgentaAdapter:
     def list_agents(self, workspace_id: str) -> List[AgentaApp]:
         """List all agents belonging to a specific workspace."""
         return [app for app in self.apps.values() if app.workspace_id == workspace_id]
+

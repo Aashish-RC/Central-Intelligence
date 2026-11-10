@@ -7,3 +7,4 @@ from cognitive.output.collaboration.conflict_resolver import (
 )
 
 __all__ = ["ConflictResolver", "TextOperation", "OpType"]
+

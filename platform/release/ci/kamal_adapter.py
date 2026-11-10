@@ -124,3 +124,4 @@ class KamalAdapter:
     def get_active_versions(self) -> Dict[str, str]:
         """Get live running container version per host server."""
         return dict(self._server_versions)
+

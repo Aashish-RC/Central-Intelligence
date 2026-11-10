@@ -32,3 +32,4 @@ def test_run_as_desktop_app_with_local_models(jan_app: JanDesktopAdapter):
     # Test window lifecycle
     assert jan_app.minimize_to_tray() == DesktopAppState.MINIMIZED
     assert jan_app.quit() == DesktopAppState.STOPPED
+

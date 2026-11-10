@@ -53,3 +53,4 @@ def test_wake_word_activates_listening_and_presence_indicator(ambient: AmbientMo
     ambient.disarm()
     assert ambient.state == AmbientState.IDLE_DISABLED
     assert ambient.presence.is_active is False
+

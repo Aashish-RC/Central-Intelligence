@@ -36,3 +36,4 @@ describe('OpenCode Terminal Adapter (Task 18.3)', () => {
     assert.ok(res.output.includes('On branch main'));
   });
 });
+

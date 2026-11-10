@@ -53,3 +53,4 @@ def test_deploy_and_rollback(coolify: CoolifyAdapter):
     rb = coolify.rollback(app_id)
     assert rb.status == DeploymentStatus.ROLLED_BACK
     assert rb.commit_sha == "commit_v1"
+

@@ -52,3 +52,4 @@ def test_agent_in_private_cannot_be_shared_with_team_without_review(gate: Sharin
 
     # 5. But still CANNOT be shared with org without separate org-level review
     assert gate.can_share_with_scope(agent_id, PromotionScope.ORG) is False
+

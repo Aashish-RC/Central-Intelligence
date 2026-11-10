@@ -122,3 +122,4 @@ class FederatedLearningManager:
         self._received_deltas.clear()
         logger.info("Completed FedAvg round %d. Updated global weights.", self.current_round - 1)
         return self.global_weights
+

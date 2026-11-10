@@ -65,3 +65,4 @@ def test_agent_variant_and_deployment():
     assert deployed is True
     assert agent.variants["candidate_v2"].is_deployed is True
     assert agent.variants["candidate_v2"].environment == "production"
+

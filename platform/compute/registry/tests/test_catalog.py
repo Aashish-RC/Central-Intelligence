@@ -55,3 +55,4 @@ def test_register_and_filter_custom_model(catalog: ModelCatalog):
     found = catalog.find_models(capability="sql")
     assert len(found) == 1
     assert found[0].model_id == "custom-finetune-sql"
+

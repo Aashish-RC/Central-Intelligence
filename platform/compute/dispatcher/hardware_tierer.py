@@ -96,3 +96,4 @@ class HardwareTierDispatcher:
             battery_pct=profile.battery_pct if not profile.is_plugged_in else 100.0,
             prefer_local=prefer_local,
         )
+

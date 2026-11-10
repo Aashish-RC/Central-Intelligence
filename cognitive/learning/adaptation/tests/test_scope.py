@@ -90,3 +90,4 @@ def test_profession_and_app_scope_isolation():
     # For an engineer
     eng_prompt = applier.apply_to_prompt("Analyze symptoms", profession="software_engineer")
     assert "ICD-10" not in eng_prompt
+

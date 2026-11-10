@@ -92,3 +92,4 @@ class ClaimDiffPatcher:
             unchanged_count=unchanged_count,
             patches=patches,
         )
+

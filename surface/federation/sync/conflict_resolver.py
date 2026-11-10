@@ -41,3 +41,4 @@ class BrainConflictResolver:
             if isinstance(local_data.payload, dict) and isinstance(remote_data.payload, dict):
                 merged.payload = {**local_data.payload, **remote_data.payload}
         return merged
+

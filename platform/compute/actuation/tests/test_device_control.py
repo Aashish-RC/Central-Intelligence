@@ -89,3 +89,4 @@ def test_actuation_rate_limiter(controller: DeviceActuationController):
     cmd_exceeded = controller.propose_command("toggle_relay", "power_on", {"power": "on_6"}, requires_confirmation=False)
     with pytest.raises(RateLimitExceededError, match="Actuation rate limit exceeded"):
         controller.confirm_and_execute(cmd_exceeded.command_id)
+

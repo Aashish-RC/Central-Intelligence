@@ -212,3 +212,4 @@ class UniversalSurfaceAdapter:
             raise ValueError(f"No renderer registered for surface '{key}'")
 
         return renderer.request_confirmation(action)
+

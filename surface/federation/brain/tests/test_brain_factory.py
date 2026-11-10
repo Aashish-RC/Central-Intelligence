@@ -66,3 +66,4 @@ def test_brain_health_monitoring_and_retirement(factory: SpecializedBrainFactory
     assert retired.status == BrainLifecycleStatus.RETIRED
     assert len(retired.archived_learnings) == 1
     assert "CRDT optimizations" in retired.archived_learnings[0]["summary"]
+

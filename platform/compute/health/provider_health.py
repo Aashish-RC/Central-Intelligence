@@ -149,3 +149,4 @@ class ProviderHealthTracker:
     def get_report(self, provider_id: str) -> ProviderHealthReport:
         """Get full health report object."""
         return self._get_or_create(provider_id)
+

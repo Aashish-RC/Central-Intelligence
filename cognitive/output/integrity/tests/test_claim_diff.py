@@ -73,3 +73,4 @@ def test_claim_diff_patcher_no_refuted_claims():
     original = "System operations are 100% within acceptable safety margins."
     patched = patcher.patch(original, [], {})
     assert patched == original
+

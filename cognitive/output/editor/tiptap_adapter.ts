@@ -222,3 +222,4 @@ export class TipTapAdapter {
     return htmlParts.join('\n');
   }
 }
+

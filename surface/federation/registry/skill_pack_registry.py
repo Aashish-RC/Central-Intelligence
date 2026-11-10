@@ -89,3 +89,4 @@ class SkillPackRegistry:
         """Check if pack is active and properly sandboxed."""
         pack = self._packs.get(pack_id)
         return bool(pack and pack.status == PackStatus.ACTIVE and pack.is_sandboxed)
+

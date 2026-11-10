@@ -126,3 +126,4 @@ class AmbientModeManager:
                 last_updated=time.time(),
             )
             self._notify()
+

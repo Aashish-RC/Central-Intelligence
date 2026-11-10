@@ -150,3 +150,4 @@ class BytebaseAdapter:
 
     def is_version_applied(self, database_name: str, version: str) -> bool:
         return self._schema_state.get(database_name, {}).get(version) == "applied"
+

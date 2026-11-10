@@ -70,3 +70,4 @@ class LocalizationManager:
         """Fetch localized string for active language."""
         lang_dict = self._translations.get(self.locale.language_code, self._translations["en"])
         return lang_dict.get(key, default or key)
+

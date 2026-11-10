@@ -49,3 +49,4 @@ def test_unified_settings_center_and_rtl_localization(settings: SettingsCenter):
     assert snapshot.locale.is_rtl is True
     assert snapshot.onboarding.is_completed is True
     assert snapshot.api_keys_configured.get("anthropic") is True
+

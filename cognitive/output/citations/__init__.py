@@ -7,3 +7,4 @@ from cognitive.output.citations.formatter import (
 )
 
 __all__ = ["CitationFormatter", "CitationSource", "CitationStyle"]
+

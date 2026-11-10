@@ -92,3 +92,4 @@ class SyntheticDatasetGenerator:
             lines.append(example.to_json())
 
         return "\n".join(lines)
+

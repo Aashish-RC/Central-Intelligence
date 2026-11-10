@@ -149,3 +149,4 @@ def test_version_conflict_resolution(
     assert resolved is not None
     assert resolved.version == 2
     assert resolved.payload["spec"] == "v2 gRPC + REST API with RLS"
+

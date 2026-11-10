@@ -58,3 +58,4 @@ def test_create_and_read_huly_doc(huly: HulyAdapter):
     assert fetched is not None
     assert fetched.title == "L19 Federation Protocol Architecture"
     assert "cryptographic envelopes" in fetched.content_markdown
+

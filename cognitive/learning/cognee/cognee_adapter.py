@@ -170,3 +170,4 @@ class CogneeAdapter:
     def get_graph(self) -> CogneeKnowledgeGraph:
         """Return the current semantic knowledge graph."""
         return self.graph
+

@@ -8,3 +8,4 @@ from platform.data.supabase.supabase_adapter import (
 )
 
 __all__ = ["SupabaseAdapter", "VectorRecord", "GraphNode", "GraphEdge"]
+

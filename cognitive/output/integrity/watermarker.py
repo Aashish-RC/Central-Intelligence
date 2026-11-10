@@ -146,3 +146,4 @@ class CryptographicWatermarker:
             ai_generated=payload.ai_generated,
             payload=payload,
         )
+

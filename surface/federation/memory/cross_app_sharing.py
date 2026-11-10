@@ -110,3 +110,4 @@ class CrossAppMemorySharing:
             if self.can_access(requester_app_id, item):
                 results.append(item)
         return results
+

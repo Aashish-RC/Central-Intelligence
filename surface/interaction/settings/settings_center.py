@@ -60,3 +60,4 @@ class SettingsCenter:
             onboarding=self.onboarding.state,
             api_keys_configured={p: True for p in self._provider_keys},
         )
+

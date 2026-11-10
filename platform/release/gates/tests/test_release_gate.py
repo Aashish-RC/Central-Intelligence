@@ -82,3 +82,4 @@ def test_hallucination_spike_is_blocked(gate: PlatformReleaseGate):
     assert decision.passed is False
     assert decision.status == GateStatus.BLOCKED
     assert any("Hallucination rate 12.00% exceeds maximum" in r for r in decision.reasons)
+

@@ -136,3 +136,4 @@ class ProactiveNudgeEngine:
 
     def get_dispatched_history(self) -> List[Nudge]:
         return list(self._dispatched_nudges)
+

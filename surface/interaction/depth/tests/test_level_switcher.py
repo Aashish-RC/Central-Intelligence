@@ -52,3 +52,4 @@ def test_switch_from_guided_to_pro_and_inspect_transparency_panel(switcher: Dept
     assert panel.memories_recalled[0]["memory_id"] == "mem_pref_001"
     assert panel.estimated_cost_usd == 0.0042
     assert panel.latency_ms == 310.0
+

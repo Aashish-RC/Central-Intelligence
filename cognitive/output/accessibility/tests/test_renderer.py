@@ -63,3 +63,4 @@ def test_generated_audio_includes_captions_vtt_and_srt():
 
     # Screen reader transcript
     assert "[Operator]: Central Intelligence system boot sequence initiated." in audio_out.transcript_text
+

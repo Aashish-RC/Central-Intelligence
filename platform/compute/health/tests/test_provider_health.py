@@ -66,3 +66,4 @@ def test_rate_limiting_cooldown(tracker: ProviderHealthTracker):
     # Now available again for probing
     assert tracker.is_available(provider) is True
     assert tracker.get_status(provider) in (ProviderStatus.DEGRADED, ProviderStatus.HEALTHY)
+

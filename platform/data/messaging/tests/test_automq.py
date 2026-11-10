@@ -126,3 +126,4 @@ def test_dead_letter_queue_handling_and_replay(automq: AutoMQAdapter):
     assert still_failing == 0
     assert processed == [100, 250, 50]
     assert len(automq.get_dlq_records(topic)) == 0
+

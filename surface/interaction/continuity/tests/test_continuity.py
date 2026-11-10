@@ -44,3 +44,4 @@ def test_conversation_started_on_web_continues_on_desktop(engine: ConversationCo
     web_history = engine.handoff_session(session_id, from_surface=desktop, to_surface=web)
     assert len(web_history) == 4
     assert [m.message_id for m in web_history] == ["msg_1", "msg_2", "msg_3", "msg_4"]
+

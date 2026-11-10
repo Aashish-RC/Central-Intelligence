@@ -137,3 +137,4 @@ class ConflictResolver:
         # Both paths MUST converge to identical state (OT convergence property)
         assert res_a_then_b == res_b_then_a, f"OT divergence: '{res_a_then_b}' != '{res_b_then_a}'"
         return res_a_then_b
+

@@ -106,3 +106,4 @@ class AdaptationScopeApplier:
             return base_prompt
 
         return f"{base_prompt}\n\nScoped Behavioral Adaptations:\n" + "\n".join(modifications)
+
