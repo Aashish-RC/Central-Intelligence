@@ -28,9 +28,9 @@ class GuardrailsClient:
         req = SafetyCheckRequest(prompt=prompt, actor=actor)
         return self.engine.evaluate(req)
 
-    def check_output(self, generated_text: str) -> OutputCheckResult:
-        """Scans model-generated output for prohibited material or secret leaks."""
-        return self._output_guard.evaluate(generated_text)
+    def check_output(self, generated_text: str, sources: Optional[Any] = None) -> OutputCheckResult:
+        """Scans model-generated output for prohibited material, secret leaks, and copyright infringement."""
+        return self._output_guard.evaluate(generated_text, sources=sources)
 
     def check_tool_output(self, tool_output: Any, tool_name: str = "tool") -> ToolOutputScanResult:
         """Scans tool return values for indirect prompt injection before feeding into model context."""

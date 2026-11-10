@@ -213,3 +213,8 @@ class LicenseProvenanceTagger:
             copyright_notices=notices,
             flags=flags,
         )
+
+    def enforce_content_rights(self, text: str, sources: Optional[List[dict]] = None):
+        """Delegates to Layer 10 Content Rights Enforcer (Features 10.56, 10.57)."""
+        from control.safety.rights.content_rights import default_content_rights_enforcer
+        return default_content_rights_enforcer.evaluate_output(text, sources=sources)

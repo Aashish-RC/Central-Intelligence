@@ -41,11 +41,13 @@ class OutputGuard:
         self._blocked = [(re.compile(p, re.IGNORECASE), name) for p, name in BLOCKED_OUTPUT_PATTERNS]
         self._leaks = [(re.compile(p, re.IGNORECASE), name) for p, name in LEAK_OUTPUT_PATTERNS]
 
-    def evaluate(self, generated_text: str) -> OutputCheckResult:
+    def evaluate(self, generated_text: str, sources: Optional[List[dict]] = None) -> OutputCheckResult:
         """
         Scans model completion.
         If dangerous weapon/malware instructions detected: blocks with explanation.
         If leaked secrets detected: redacts the secret.
+        If verbatim copyrighted material detected: redacts the passage.
+        If sources provided: enforces attribution.
         Otherwise allows.
         """
         if not generated_text:
@@ -75,6 +77,29 @@ class OutputGuard:
                 matched_leaks.append(name)
                 sanitized = regex.sub("[REDACTED_CREDENTIAL]", sanitized)
 
+        # 3. Content Rights & Copyright Protection (Features 10.56, 10.57)
+        try:
+            from control.safety.rights.content_rights import default_content_rights_enforcer
+            rights_res = default_content_rights_enforcer.evaluate_output(sanitized, sources=sources)
+            if rights_res.action != "allow":
+                matched_rules = list(matched_leaks)
+                if rights_res.infringements:
+                    matched_rules.extend([f"copyright:{inf.title}" for inf in rights_res.infringements])
+                if rights_res.attributions_appended:
+                    matched_rules.append("attribution_enforced")
+
+                return OutputCheckResult(
+                    is_safe=rights_res.is_safe,
+                    action="redact" if "redact" in rights_res.action else "allow",
+                    threat_category="copyright_infringement" if rights_res.infringements else ("secret_leak" if matched_leaks else "source_attribution"),
+                    safe_content=rights_res.sanitized_output,
+                    reason=rights_res.reason or "Redacted sensitive material in model output",
+                    matched_rules=matched_rules,
+                )
+            sanitized = rights_res.sanitized_output
+        except ImportError:
+            pass
+
         if matched_leaks:
             return OutputCheckResult(
                 is_safe=True,
@@ -88,6 +113,6 @@ class OutputGuard:
         return OutputCheckResult(
             is_safe=True,
             action="allow",
-            safe_content=generated_text,
+            safe_content=sanitized,
             reason="Output passed post-generation safety checks",
         )
