@@ -5,5 +5,17 @@ from cognitive.output.integrity.claim_diff_patcher import (
     RefutedClaim,
     ClaimPatchResult,
 )
+from cognitive.output.integrity.watermarker import (
+    CryptographicWatermarker,
+    WatermarkPayload,
+    ProvenanceVerificationResult,
+)
 
-__all__ = ["ClaimDiffPatcher", "RefutedClaim", "ClaimPatchResult"]
+__all__ = [
+    "ClaimDiffPatcher",
+    "RefutedClaim",
+    "ClaimPatchResult",
+    "CryptographicWatermarker",
+    "WatermarkPayload",
+    "ProvenanceVerificationResult",
+]
