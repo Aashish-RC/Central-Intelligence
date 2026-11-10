@@ -192,6 +192,18 @@ services:
     volumes:
       - supabase_data:/var/lib/postgresql/data
 
+  # Unified Project Management & Docs Workspace (Huly - Task 19.1)
+  huly:
+    image: hcengineering/platform:latest
+    container_name: central-huly
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      - HULY_ENV=production
+    volumes:
+      - huly_data:/var/lib/huly
+
 
 volumes:
   qdrant_data:
@@ -208,3 +220,4 @@ volumes:
   openfga_data:
   infisical_data:
   supabase_data:
+  huly_data:
