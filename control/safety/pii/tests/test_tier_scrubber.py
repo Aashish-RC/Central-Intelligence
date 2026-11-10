@@ -214,3 +214,4 @@ def test_8_partial_masking_utility():
     assert "****-****-****-5674" in masked
     assert "***-**-6789" in masked
     assert "t***@company.com" in masked
+

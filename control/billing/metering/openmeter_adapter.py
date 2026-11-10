@@ -151,3 +151,4 @@ class OpenMeterAdapter:
             result[app_name] = s
 
         return result
+

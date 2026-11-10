@@ -102,3 +102,4 @@ def test_6_invoice_generation(lago):
     assert inv.amount_cents == 2000
     assert inv.status == "open"
     assert len(inv.line_items) == 2
+

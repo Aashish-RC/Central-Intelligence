@@ -225,3 +225,4 @@ class LagoAdapter:
         )
         self._invoices.append(inv)
         return inv
+

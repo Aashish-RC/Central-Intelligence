@@ -77,3 +77,4 @@ class Redactor:
             result = result[:f.start] + masked + result[f.end:]
 
         return result
+

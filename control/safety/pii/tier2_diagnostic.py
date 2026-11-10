@@ -82,3 +82,4 @@ class Tier2DiagnosticStore:
         for rid in expired:
             del self._records[rid]
         return len(expired)
+

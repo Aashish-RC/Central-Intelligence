@@ -39,3 +39,4 @@
 | **10.57** | Source Attribution Enforcer | **pending** | Own implementation | no | Task 10.12 |
 | **10.58** | Third-Party Personal Data Minimizer | **pending** | Own implementation | no | Task 10.13 |
 | **10.59** | Non-User Data Minimization Rules | **pending** | Own implementation | no | Task 10.13 |
+

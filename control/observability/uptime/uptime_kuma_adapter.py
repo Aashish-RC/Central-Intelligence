@@ -196,3 +196,4 @@ class UptimeKumaAdapter:
                 for inc in active_incidents
             ],
         }
+

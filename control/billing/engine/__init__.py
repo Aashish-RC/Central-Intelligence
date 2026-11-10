@@ -3,3 +3,4 @@
 from .lago_adapter import CustomerSubscription, LagoAdapter, PlanDefinition
 
 __all__ = ["LagoAdapter", "PlanDefinition", "CustomerSubscription"]
+

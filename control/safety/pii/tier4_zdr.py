@@ -75,3 +75,4 @@ class Tier4ZDR:
     def active_count(self) -> int:
         self._evict_expired()
         return len(self._ram_buffer)
+

@@ -159,3 +159,4 @@ class PostHogAdapter:
             }
             for k, v in breakdown.items()
         }
+

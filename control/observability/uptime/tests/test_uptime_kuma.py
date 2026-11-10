@@ -78,3 +78,4 @@ def test_5_uptime_percentage_calculation(kuma):
     kuma.ping_monitor(mon.monitor_id, custom_checker=lambda: (False, 0.0))
 
     assert mon.uptime_percentage == 75.0
+

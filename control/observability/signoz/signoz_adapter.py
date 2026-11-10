@@ -189,3 +189,4 @@ class SigNozAdapter:
             "layers_involved": list(set(s.layer for s in spans)),
             "attributes": root.attributes,
         }
+

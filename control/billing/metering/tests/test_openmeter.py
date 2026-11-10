@@ -115,3 +115,4 @@ def test_4_tenant_per_app_breakdown(adapter):
     assert "data_analysis_bot" in breakdown
     assert breakdown["customer_service_bot"].total_tokens == 400
     assert breakdown["data_analysis_bot"].total_tokens == 2000
+

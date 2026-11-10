@@ -83,3 +83,4 @@ class BillingInvoice:
     paid_at: Optional[str] = None
     line_items: List[Dict[str, Any]] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+

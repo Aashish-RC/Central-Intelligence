@@ -84,3 +84,4 @@ class Tier1TelemetrySink:
         initial_len = len(self._records)
         self._records = [r for r in self._records if r.user_hash != u_hash]
         return initial_len - len(self._records)
+

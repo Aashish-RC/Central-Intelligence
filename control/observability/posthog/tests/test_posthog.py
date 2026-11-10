@@ -91,3 +91,4 @@ def test_4_session_replay_stream(posthog):
     assert len(stream) == 3
     assert stream[0]["event_type"] == "click"
     assert stream[2]["payload"]["token"] == " world!"
+

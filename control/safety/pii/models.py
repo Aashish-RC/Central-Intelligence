@@ -55,3 +55,4 @@ class ScrubberConfig:
     default_retention: RetentionPolicy = field(default_factory=RetentionPolicy)
     encryption_key: Optional[bytes] = None
     enabled_detectors: Optional[List[str]] = None
+
