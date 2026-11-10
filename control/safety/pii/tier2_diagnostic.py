@@ -83,3 +83,15 @@ class Tier2DiagnosticStore:
             del self._records[rid]
         return len(expired)
 
+    def delete_expired(self, current_time: Optional[float] = None) -> int:
+        """Evicts expired records past their TTL."""
+        now = current_time if current_time is not None else time.time()
+        expired = [
+            rid for rid, r in self._records.items()
+            if (r.expires_at and now > r.expires_at) or (r.created_at and (now - r.created_at) > (r.ttl_days * 86400))
+        ]
+        for rid in expired:
+            del self._records[rid]
+        return len(expired)
+
+

@@ -25,6 +25,18 @@ class RetentionPolicy:
     diagnostic_ttl: int = 14     # Days (14-30 days)
     audit_ttl: int = 365         # Days (default 1 year compliance retention)
     zdr_ttl_seconds: int = 30    # Seconds (ephemeral in-memory lifetime)
+    ttl_days: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.ttl_days is not None:
+            self.telemetry_ttl = self.ttl_days
+            self.diagnostic_ttl = self.ttl_days
+            self.audit_ttl = self.ttl_days
+            if self.ttl_days == 0:
+                self.zdr_ttl_seconds = 0
+        else:
+            self.ttl_days = self.diagnostic_ttl
+
 
 
 @dataclass

@@ -85,3 +85,14 @@ class Tier1TelemetrySink:
         self._records = [r for r in self._records if r.user_hash != u_hash]
         return initial_len - len(self._records)
 
+    def delete_expired(self, current_time: Optional[float] = None) -> int:
+        """Purges telemetry records older than their retained_days."""
+        now = current_time if current_time is not None else time.time()
+        initial_len = len(self._records)
+        self._records = [
+            r for r in self._records
+            if not (r.timestamp and (now - r.timestamp) > (r.retained_days * 86400))
+        ]
+        return initial_len - len(self._records)
+
+

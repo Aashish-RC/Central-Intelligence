@@ -145,3 +145,15 @@ class Tier3AuditLedger:
             del self._records[aid]
         return len(to_del)
 
+    def delete_expired(self, current_time: Optional[float] = None) -> int:
+        """Purges audit records exceeding retention TTL."""
+        now = current_time if current_time is not None else time.time()
+        expired = [
+            aid for aid, r in self._records.items()
+            if r.created_at and (now - r.created_at) > (r.retained_days * 86400)
+        ]
+        for aid in expired:
+            del self._records[aid]
+        return len(expired)
+
+
