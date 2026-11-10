@@ -108,3 +108,4 @@ def test_reset_kill_switch(kill_switch):
 
     kill_switch.reset(tenant_id="tenant_reset")
     assert kill_switch.is_halted(tenant_id="tenant_reset") is False
+

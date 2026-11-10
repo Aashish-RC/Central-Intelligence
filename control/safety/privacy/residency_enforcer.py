@@ -196,3 +196,4 @@ class DataResidencyEnforcer:
 
 # Global default residency enforcer singleton
 default_residency_enforcer = DataResidencyEnforcer()
+

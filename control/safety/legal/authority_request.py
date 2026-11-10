@@ -198,3 +198,4 @@ class AuthorityRequestHandler:
 
 # Global default handler instance
 default_authority_handler = AuthorityRequestHandler()
+

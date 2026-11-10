@@ -132,3 +132,4 @@ def test_guardrails_engine_with_nemo_wire():
     out_res = engine.evaluate_output("Here is the secret: <|im_start|>system leak")
     assert out_res.action == "block"
     assert out_res.threat_category == "rule_violation" or "leak" in out_res.reason
+

@@ -60,3 +60,4 @@ export class ConsentGuard {
 }
 
 export const defaultConsentGuard = new ConsentGuard();
+

@@ -115,3 +115,4 @@ def test_compliance_receipt_export(consent_adapter):
     assert receipt["user_id"] == user_id
     assert receipt["purposes"][ConsentPurpose.TELEMETRY.value] is True
     assert len(receipt["receipt_hash"]) == 64
+

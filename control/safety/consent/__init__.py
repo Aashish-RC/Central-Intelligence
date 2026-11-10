@@ -17,3 +17,4 @@ __all__ = [
     "get_default_consent_adapter",
     "set_default_consent_adapter",
 ]
+

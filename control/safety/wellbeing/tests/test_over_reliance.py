@@ -85,3 +85,4 @@ def test_user_and_tenant_isolation(guard):
     assert guard.get_state(user2, "tenant_A").consecutive_deferrals == 0
     # user1 in tenant_B has 0
     assert guard.get_state(user1, "tenant_B").consecutive_deferrals == 0
+

@@ -64,3 +64,4 @@ export class ModelResidencyRouter {
 }
 
 export const defaultResidencyRouter = new ModelResidencyRouter();
+

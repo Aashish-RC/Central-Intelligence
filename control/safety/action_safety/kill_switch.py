@@ -254,3 +254,4 @@ class AgentKillSwitch:
 
 # Default process-level kill switch singleton
 default_kill_switch = AgentKillSwitch()
+

@@ -47,3 +47,4 @@ define bot refuse unfactual
 
 define bot refuse hallucination
   "Output rejected due to detected hallucination or unsubstantiated claims."
+

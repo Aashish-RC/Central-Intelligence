@@ -155,3 +155,4 @@ def test_authority_request_fulfillment_and_export(authority_handler, ledger):
     assert trail["chain_valid"] is True
     assert trail["request"]["case"] == "AZ 12 O 458/26"
     assert len(trail["audit_events"]) >= 2
+
