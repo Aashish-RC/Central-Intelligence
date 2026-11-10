@@ -1,0 +1,9 @@
+{
+  "name": "@central-intelligence/output",
+  "version": "1.0.0",
+  "description": "Output Generation & Generative UI (Layer 6)",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  }
+}
