@@ -2,7 +2,17 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any
+
+try:
+    from control.safety.guardrails.core.indirect_injection import (
+        IndirectInjectionDetector,
+        IndirectInjectionFinding,
+        default_indirect_detector,
+    )
+except ImportError:
+    IndirectInjectionDetector = None
+    default_indirect_detector = None
 
 
 @dataclass
@@ -106,3 +116,12 @@ class InjectionDetector:
         sanitized = re.sub(r"(?i)\bsystem:\s*", "[FLAGGED_ROLE: System] ", sanitized)
 
         return sanitized
+
+    def scan_indirect(self, retrieved_content: str, source_uri: Optional[str] = None) -> Any:
+        """
+        Extends injection detector to inspect 3rd party retrieved content (Feature 10.04).
+        Delegates to L10 IndirectInjectionDetector.
+        """
+        if default_indirect_detector:
+            return default_indirect_detector.scan(retrieved_content, source_uri=source_uri)
+        return self.detect(retrieved_content)

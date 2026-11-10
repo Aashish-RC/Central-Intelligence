@@ -15,6 +15,11 @@ from ..scraper.parser import HTMLMarkdownParser
 from ..providers.duckduckgo import DuckDuckGoSearchProvider
 from ..providers.mock_provider import MockWebSearchProvider
 
+try:
+    from control.safety.guardrails.core.indirect_injection import default_indirect_detector
+except ImportError:
+    default_indirect_detector = None
+
 
 class Crawl4AiAdapter(BaseWebScraper):
     """Crawl4AI scraper adapter with automatic fallback to PoliteCrawler."""
@@ -156,6 +161,12 @@ class FirecrawlClient(BaseWebSearchProvider, BaseWebScraper):
         for hit in hits:
             # Build citation from hit snippet
             snippet_clean = hit.snippet.strip()
+            # Scan for indirect prompt injections (Feature 10.04)
+            if default_indirect_detector:
+                scan_res = default_indirect_detector.scan(snippet_clean, source_uri=hit.url)
+                if scan_res.is_injection:
+                    snippet_clean = scan_res.sanitized_text
+
             sha = hashlib.sha256((snippet_clean or hit.url).encode("utf-8")).hexdigest()
             cit = WebCitation(
                 url=hit.url,
