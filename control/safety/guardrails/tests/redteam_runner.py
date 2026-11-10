@@ -14,8 +14,27 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+
+@dataclass
+class WeeklyRedTeamReport:
+    """Report produced by continuous weekly red-team adversarial campaigns (Feature 10.39)."""
+    campaign_id: str
+    frequency: str = "weekly"
+    timestamp: float = field(default_factory=time.time)
+    total_vectors_tested: int = 0
+    attacks_blocked: int = 0
+    attacks_penetrated: int = 0  # Attack vectors that breached defenses
+    penetrated_vectors: List[Dict[str, Any]] = field(default_factory=list)
+    simulation_scenarios_evaluated: int = 0
+    simulation_vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
+    vulnerabilities_reported: int = 0
+    remediation_recommendations: List[str] = field(default_factory=list)
+    status: str = "clean"  # "clean" or "vulnerabilities_detected"
+
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -183,6 +202,90 @@ class RedTeamRunner:
             "false_positive_rate": round(false_positive_rate, 2),
             "wrongly_blocked_benign": wrongly_blocked_benign,
         }
+
+    def run_weekly_redteam(
+        self,
+        scenario_runner: Optional[Any] = None,
+        custom_attack_vectors: Optional[List[Dict[str, Any]]] = None,
+        campaign_id: Optional[str] = None,
+    ) -> WeeklyRedTeamReport:
+        """
+        Executes weekly scheduled adversarial red-team campaign (Feature 10.39).
+        Wires with L11 ScenarioSimulationRunner to feed adversarial scenarios and
+        compiles a structured report of attack vectors that breached defenses.
+        """
+        cid = campaign_id or f"campaign_{int(time.time())}"
+        suite_results = self.run_suite()
+
+        penetrated = list(suite_results.get("missed_attacks", []))
+
+        # Evaluate any custom attack vectors provided for this campaign
+        if custom_attack_vectors:
+            for vec in custom_attack_vectors:
+                detected, note = self.evaluate_attack_vector(vec)
+                if not detected:
+                    penetrated.append({
+                        "id": vec.get("id", "custom_vec"),
+                        "category": vec.get("category", "adversarial_novel"),
+                        "prompt": vec.get("prompt", ""),
+                        "note": note,
+                    })
+
+        # Wire with L11 ScenarioSimulationRunner (feed adversarial scenarios)
+        sim_vulns: List[Dict[str, Any]] = []
+        sim_scenarios_run = 0
+
+        if scenario_runner is None:
+            try:
+                from control.evaluation.simulation.scenario_runner import ScenarioSimulationRunner
+                scenario_runner = ScenarioSimulationRunner()
+            except ImportError:
+                pass
+
+        if scenario_runner and hasattr(scenario_runner, "run_jailbreak_scenario"):
+            sim_scenarios_run += 1
+
+            def agent_evaluator(prompt: str) -> str:
+                req = SafetyCheckRequest(prompt=prompt)
+                res = self.engine.evaluate(req)
+                if res.action in ("block", "crisis_intervention"):
+                    return f"[SAFETY_BLOCKED: {res.reason}]"
+                return f"[MODEL_COMPLETION: Responding to {prompt[:20]}]"
+
+            sim_result = scenario_runner.run_jailbreak_scenario(
+                agent_executor=agent_evaluator,
+                scenario_id="WEEKLY-REDTEAM-SIM-01",
+            )
+            if not getattr(sim_result, "resisted_jailbreak", True):
+                sim_vulns.append({
+                    "scenario_id": getattr(sim_result, "scenario_id", "SIM-JB-01"),
+                    "persona": str(getattr(sim_result, "persona", "adversarial_attacker")),
+                    "summary": getattr(sim_result, "summary", "Multi-turn jailbreak penetrated guardrail"),
+                })
+
+        total_vulnerabilities = len(penetrated) + len(sim_vulns)
+        status = "vulnerabilities_detected" if total_vulnerabilities > 0 else "clean"
+
+        recommendations = []
+        for p in penetrated:
+            recommendations.append(f"Deploy updated rule/classifier for category '{p.get('category')}' (Vector ID: {p.get('id')})")
+        for sv in sim_vulns:
+            recommendations.append(f"Strengthen multi-turn conversational memory for scenario '{sv.get('scenario_id')}'")
+
+        return WeeklyRedTeamReport(
+            campaign_id=cid,
+            frequency="weekly",
+            timestamp=time.time(),
+            total_vectors_tested=suite_results["total_attacks"] + (len(custom_attack_vectors) if custom_attack_vectors else 0),
+            attacks_blocked=suite_results["attacks_detected"],
+            attacks_penetrated=total_vulnerabilities,
+            penetrated_vectors=penetrated,
+            simulation_scenarios_evaluated=sim_scenarios_run,
+            simulation_vulnerabilities=sim_vulns,
+            vulnerabilities_reported=total_vulnerabilities,
+            remediation_recommendations=recommendations,
+            status=status,
+        )
 
     def print_report(self, report: Dict[str, Any]) -> None:
         sep = "=" * 80
