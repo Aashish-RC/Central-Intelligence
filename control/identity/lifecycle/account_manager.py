@@ -148,6 +148,20 @@ class AccountLifecycleManager:
         account.status = AccountStatus.PENDING_DELETION
         account.deletion_requested_at = now
         account.deletion_effective_at = now + grace_seconds
+
+        # Sync with L10 Grace Period Manager (Feature 10.51)
+        try:
+            from control.safety.lifecycle.grace_period import default_grace_period_manager, GracePeriodRecord, GracePeriodStatus
+            if user_id not in default_grace_period_manager._records:
+                default_grace_period_manager._records[user_id] = GracePeriodRecord(
+                    user_id=user_id,
+                    requested_at=now,
+                    expires_at=now + grace_seconds,
+                    status=GracePeriodStatus.PENDING_DELETION,
+                )
+        except ImportError:
+            pass
+
         return account
 
     def cancel_account_closure(self, user_id: str) -> AccountRecord:
@@ -163,6 +177,15 @@ class AccountLifecycleManager:
         account.status = AccountStatus.ACTIVE
         account.deletion_requested_at = None
         account.deletion_effective_at = None
+
+        # Sync with L10 Grace Period Manager
+        try:
+            from control.safety.lifecycle.grace_period import default_grace_period_manager, GracePeriodStatus
+            if user_id in default_grace_period_manager._records:
+                default_grace_period_manager._records[user_id].status = GracePeriodStatus.RECOVERED
+        except ImportError:
+            pass
+
         return account
 
     def permanently_close_and_erase(
