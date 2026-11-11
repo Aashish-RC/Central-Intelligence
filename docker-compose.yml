@@ -12,9 +12,9 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
-  # Local Model Serving for Offline / Dev Execution
+  # Local Model Serving for Offline / Dev Execution (MIT)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.16
     container_name: central-ollama
     restart: unless-stopped
     ports:
@@ -22,7 +22,7 @@ services:
     volumes:
       - ollama_models:/root/.ollama
 
-  # Global Fast Search Engine
+  # Global Fast Search Engine (MIT)
   meilisearch:
     image: getmeili/meilisearch:v1.7.3
     container_name: central-meilisearch
@@ -30,15 +30,16 @@ services:
     ports:
       - "7700:7700"
     environment:
-      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY:-masterKeyCentral2026}
+      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY:?MEILISEARCH_MASTER_KEY must be set}
       - MEILI_ENV=development
       - MEILI_NO_ANALYTICS=true
     volumes:
       - meili_data:/meili_data
 
   # High-throughput In-Memory Cache & Pub/Sub (Dragonfly - Task 15.2)
+  # LICENSE NOTICE: BSL-1.1 (source-available, non-OSI; converts to Apache-2.0 after 4 years; Redis/Valkey BSD-3-Clause compatible)
   dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1
     container_name: central-dragonfly
     restart: unless-stopped
     ports:
@@ -46,7 +47,7 @@ services:
     volumes:
       - dragonfly_data:/data
 
-  # Alternative Vector Store for Offline Mode
+  # Alternative Vector Store for Offline Mode (Apache-2.0)
   chroma:
     image: chromadb/chroma:0.4.22
     container_name: central-chroma
@@ -56,9 +57,9 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
 
-  # Graph Memory Tier (Tier 4)
+  # Graph Memory Tier (Tier 4) (BSL-1.1 / Apache-2.0 components)
   memgraph:
-    image: memgraph/memgraph-platform:latest
+    image: memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1
     container_name: central-memgraph
     restart: unless-stopped
     ports:
@@ -70,8 +71,9 @@ services:
       - memgraph_data:/var/lib/memgraph
 
   # GraphRAG Engine for L3 Knowledge
+  # LICENSE NOTICE: SSPL-v1 (non-OSI; quarantined behind network boundary; alternative: Apache AGE / Memgraph)
   falkordb:
-    image: falkordb/falkordb:latest
+    image: falkordb/falkordb:v4.22.3
     container_name: central-falkordb
     restart: unless-stopped
     ports:
@@ -80,21 +82,22 @@ services:
       - falkordb_data:/data
 
   # Nango Federated OAuth Gateway for L5 Action
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; cannot be offered as a hosted/managed multi-tenant Nango service)
   nango:
-    image: nangohq/nango:latest
+    image: nangohq/nango-server:hosted-0.72.4
     container_name: central-nango
     restart: unless-stopped
     ports:
       - "3003:3003"
       - "8080:8080"
     environment:
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-centralIntelligenceNangoSecret}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:?NANGO_SECRET_KEY must be set}
     volumes:
       - nango_data:/data
 
-  # Temporal Server for L8 Durable Workflow Execution
+  # Temporal Server for L8 Durable Workflow Execution (MIT)
   temporal:
-    image: temporalio/auto-setup:latest
+    image: temporalio/auto-setup:1.23.1
     container_name: central-temporal
     restart: unless-stopped
     ports:
@@ -107,8 +110,9 @@ services:
       - temporal_data:/etc/temporal/config/dynamicconfig
 
   # Arize Phoenix for L11 Evaluation, Hallucination Detection & Tracing
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; OTLP sidecar boundary only)
   phoenix:
-    image: arizephoenix/phoenix:latest
+    image: arizephoenix/phoenix:version-21.0.0
     container_name: central-phoenix
     restart: unless-stopped
     ports:
@@ -116,23 +120,23 @@ services:
     volumes:
       - phoenix_data:/root/.phoenix
 
-  # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys)
+  # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys) (Apache-2.0)
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    image: quay.io/keycloak/keycloak:26.8.2
     container_name: central-keycloak
     restart: unless-stopped
     command: start-dev
     ports:
       - "8085:8080"
     environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:?KEYCLOAK_ADMIN must be set}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD must be set}
     volumes:
       - keycloak_data:/opt/keycloak/data
 
-  # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization
+  # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
   openfga:
-    image: openfga/openfga:latest
+    image: openfga/openfga:v1.22.1
     container_name: central-openfga
     restart: unless-stopped
     command: run
@@ -144,32 +148,32 @@ services:
     volumes:
       - openfga_data:/var/lib/openfga
 
-  # Infisical Vault for L12 Secret Management & Key Rotation
+  # Infisical Vault for L12 Secret Management & Key Rotation (MIT)
   infisical:
-    image: infisical/infisical:latest
+    image: infisical/infisical:v0.167.8
     container_name: central-infisical
     restart: unless-stopped
     ports:
       - "8083:8083"
     environment:
-      - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:-centralIntelligenceInfisicalKey32BytesLong!}
+      - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:?INFISICAL_ENCRYPTION_KEY must be set}
     volumes:
       - infisical_data:/data
 
-  # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13)
+  # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13) (Apache-2.0)
   hyperswitch:
-    image: juspaydotin/hyperswitch:latest
+    image: juspaydotin/hyperswitch-router:v1.129.0-standalone
     container_name: central-hyperswitch
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8090:8080"
     environment:
       - ROUTER_PORT=8080
       - ENVIRONMENT=sandbox
 
-  # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1)
+  # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1) (Apache-2.0)
   livekit:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:v1.13.11
     container_name: central-livekit
     restart: unless-stopped
     ports:
@@ -177,9 +181,9 @@ services:
       - "7881:7881"
       - "7882:7882/udp"
     environment:
-      - LIVEKIT_KEYS=${LIVEKIT_KEYS:-devkey: secret}
+      - LIVEKIT_KEYS=${LIVEKIT_KEYS:?LIVEKIT_KEYS must be set}
 
-  # Supabase Postgres + pgvector + Apache AGE + RLS for L15 Data (Task 15.1)
+  # Supabase Postgres + pgvector + Apache AGE + RLS for L15 Data (Task 15.1) (Apache-2.0 / PostgreSQL)
   supabase-db:
     image: supabase/postgres:15.1.1.78
     container_name: central-supabase-db
@@ -187,18 +191,18 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
     volumes:
       - supabase_data:/var/lib/postgresql/data
 
-  # Unified Project Management & Docs Workspace (Huly - Task 19.1)
+  # Unified Project Management & Docs Workspace (Huly - Task 19.1) (EPL-2.0)
   huly:
-    image: hcengineering/platform:latest
+    image: hardcoreeng/front:v0.7.432
     container_name: central-huly
     restart: unless-stopped
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       - HULY_ENV=production
     volumes:

@@ -1,51 +1,33 @@
-# Central Intelligence — Aevum CI Brain (Layers 1-11)
+# Central Intelligence — Aevum CI Brain (Layers 1–19)
 
-Central Intelligence is the unified cognitive infrastructure and AI runtime for the Aevum CI ecosystem. It consolidates all perception, memory, knowledge, reasoning, agency, learning, orchestration, safety, and evaluation layers into a single decoupled, high-performance monorepo.
+Central Intelligence is the unified cognitive infrastructure and AI runtime for the Aevum CI ecosystem. It organizes all 19 architectural layers across four domains (`cognitive/`, `control/`, `platform_infra/`, `surface/`) into a single decoupled monorepo.
 
 ---
 
-## Architecture Overview (Layers 1-11)
+## Architecture Overview (Layers 1–19)
+
+For the canonical layer specification and balance analysis, see [docs/architecture.md](docs/architecture.md).
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Central Intelligence                       │
-│                     The Brain (Layers 1-11)                     │
-├───────────────────────────────┬─────────────────────────────────┤
-│ Cognitive (Layers 1-7)        │ Control (Layers 8-11)           │
-├───────────────────────────────┼─────────────────────────────────┤
-│ L1 Perception                 │ L8 Orchestration                │
-│   • Translation & Audio/Video │   • Workflow Builder & Engines  │
-│   • Speech-to-Text (STT)      │   • OmniRoute Multi-Strategy    │
-│                               │   • 109 Workflow Nodes          │
-│ L2 Memory                     │                                 │
-│   • 4-Tier Memory Engine      │ L9 Context Engineering          │
-│   • 4 Graph Stitches          │   • Context Synthesizer         │
-│   • FastAPI & MCP Server      │   • Compaction & Summarization  │
-│                               │                                 │
-│ L3 Knowledge                  │ L10 Safety                      │
-│   • RAG Pipelines & APIs      │   • Guardrails & PII Filter     │
-│   • Local & Web Search        │   • Secret / Injection Defense  │
-│   • 3-Source RRF & FalkorDB   │   • Merkle Audit & Approval     │
-│                               │                                 │
-│ L4 Reasoning                  │ L11 Evaluation                  │
-│   • Model Gateway (47 Feat.)  │   • Evaluation Datasets & Bench │
-│   • 4-Path Routing & BYOK     │   • Performance & Drift Tracker │
-│   • Multi-Provider Adapters   │   • Langfuse OpenTelemetry OTel │
-│                               │                                 │
-│ L5 Action                     │                                 │
-│   • ReAct Agents & Builder    │                                 │
-│   • Tool / MCP Connector Hub  │                                 │
-│   • Sandboxes & Browser Auto  │                                 │
-│                               │                                 │
-│ L6 Output                     │                                 │
-│   • Media Generation          │                                 │
-│   • Text-to-Speech (TTS)      │                                 │
-│   • Image & Multimodal Output │                                 │
-│                               │                                 │
-│ L7 Learning                   │                                 │
-│   • Recommender Subsystem     │                                 │
-│   • Skills Packaging & Dist   │                                 │
-└───────────────────────────────┴─────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                   Central Intelligence — The Brain (L1–L19)               │
+├─────────────────────────────────────┬─────────────────────────────────────┤
+│ Cognitive (L1–L7)                   │ Control (L8–L14)                    │
+├─────────────────────────────────────┼─────────────────────────────────────┤
+│ L1  Perception (cognitive/perception)│ L8  Orchestration (control/orchestration) │
+│ L2  Memory (cognitive/memory)       │ L9  Context Eng. (control/context)  │
+│ L3  Knowledge (cognitive/knowledge) │ L10 Safety & Trust (control/safety) │
+│ L4  Reasoning (cognitive/reasoning) │ L11 Evaluation (control/evaluation) │
+│ L5  Action (cognitive/action)       │ L12 Identity & IAM (control/identity) │
+│ L6  Output (cognitive/output)       │ L13 Billing (control/billing)       │
+│ L7  Learning (cognitive/learning)   │ L14 Observability (control/observability) │
+├─────────────────────────────────────┼─────────────────────────────────────┤
+│ Platform Infra (L15–L17)            │ Surface & Ecosystem (L18–L19)       │
+├─────────────────────────────────────┼─────────────────────────────────────┤
+│ L15 Data & Messaging (platform_infra/data)   │ L18 Interaction (surface/interaction) │
+│ L16 Compute & Serving (platform_infra/compute)│ L19 Federation (surface/federation)  │
+│ L17 Release & Lifecycle (platform_infra/release)│                                  │
+└─────────────────────────────────────┴─────────────────────────────────────┘
 ```
 
 ---
@@ -54,54 +36,97 @@ Central Intelligence is the unified cognitive infrastructure and AI runtime for 
 
 ```
 central-intelligence/
-├── README.md                    # System documentation
-├── package.json                 # Monorepo root workspace (pnpm, turbo)
-├── pnpm-workspace.yaml          # Workspace definitions
-├── turbo.json                   # Turbo pipeline orchestration
-├── pyproject.toml               # Python project configuration
-├── requirements.txt             # Unified Python dependencies
-├── docker-compose.yml           # Local infrastructure (Qdrant, Ollama, Meilisearch, Redis, Chroma)
+├── README.md                     # Repository overview (Layers 1–19)
+├── LICENSE                       # Apache License 2.0
+├── NOTICE                        # Third-party attribution notices
+├── .env.example                  # Required environment variables & secrets template
+├── .github/workflows/ci.yml      # CI workflow (pytest, TypeScript tests, license check)
+├── package.json                  # Monorepo root workspace (pnpm, turbo)
+├── pnpm-workspace.yaml           # Workspace definitions
+├── turbo.json                    # Turbo pipeline orchestration
+├── pyproject.toml                # Python project & pytest configuration
+├── requirements.txt              # Unified Python dependencies
+├── docker-compose.yml            # Version-pinned local infrastructure services
+├── scripts/
+│   └── check_licenses.py         # License, compose tag, and secret hygiene verifier
 ├── docs/
-│   └── architecture.md          # Comprehensive architectural reference
-├── cognitive/                   # Layers 1-7 (Python + TypeScript)
-│   ├── perception/              # L1 Perception (translation, voice_speech STT)
-│   ├── memory/                  # L2 Memory (3-tier memory engine + 4 stitches)
-│   ├── knowledge/               # L3 Knowledge (RAG, search, web_search, rag_api)
-│   ├── reasoning/               # L4 Reasoning (model-gateway, providers, routing)
-│   ├── action/                  # L5 Action (agents, tools, sandboxes, connectors)
-│   ├── output/                  # L6 Output (media_gen, TTS voice, image_gen)
-│   └── learning/                # L7 Learning (recommender, skills packaging)
-└── control/                     # Layers 8-11 (Python + TypeScript)
-    ├── orchestration/           # L8 Orchestration (engine, workflow, nodes, debugger)
-    ├── context/                 # L9 Context Engineering (compaction, summarization)
-    ├── safety/                  # L10 Safety (guardrails, rules, audit, auth, approval)
-    └── evaluation/              # L11 Evaluation (tracker, langfuse telemetry)
+│   ├── architecture.md           # Single-source 19-layer architecture & balance notes
+│   ├── LICENSE_AUDIT.md          # Dependency, node provenance, and compose license audit
+│   └── DEFERRED_ITEMS.md         # Hardware-dependent & external integration deferrals
+├── cognitive/                    # Layers 1–7 (Python + TypeScript)
+│   ├── perception/               # L1  Perception (documents, voice, translation, accessibility)
+│   ├── memory/                   # L2  Memory (4-tier engine, graph stitches, portability)
+│   ├── knowledge/                # L3  Knowledge (RAG pipelines, local & web search)
+│   ├── reasoning/                # L4  Reasoning (Model Gateway, routing, BYOK adapters)
+│   ├── action/                   # L5  Action (ReAct agents, builder, sandboxes, connectors)
+│   ├── output/                   # L6  Output (media_gen, TTS, image route, widgets)
+│   └── learning/                 # L7  Learning (recommender, skills packaging & distillation)
+├── control/                      # Layers 8–14 (Python + TypeScript)
+│   ├── orchestration/            # L8  Orchestration (DAG runner, Rivet nodes, notifications)
+│   ├── context/                  # L9  Context Engineering (synthesizer, compaction, cache)
+│   ├── safety/                   # L10 Safety, Trust & Privacy (guardrails, audit, approval)
+│   ├── evaluation/               # L11 Evaluation & Quality (benchmarks, A/B, Langfuse OTel)
+│   ├── identity/                 # L12 Identity & Access Management (auth, Vault, OpenFGA)
+│   ├── billing/                  # L13 Entitlements & Billing (Lago, Hyperswitch, budgets)
+│   └── observability/            # L14 Observability (OpenTelemetry, Phoenix, SLOs, replay)
+├── platform_infra/               # Layers 15–17 (Python)
+│   ├── data/                     # L15 Data & Messaging (AutoMQ, Supabase/RLS, sync, lineage)
+│   ├── compute/                  # L16 Compute & Model Serving (vLLM, Ollama, GPU pools)
+│   └── release/                  # L17 Release & Lifecycle (CI gates, flags, schema guards)
+└── surface/                      # Layers 18–19 (Python + TypeScript)
+    ├── interaction/              # L18 Interaction (universal adapters, streaming, desktop/web)
+    └── federation/               # L19 Specialization & Federation (brain factory, sync, Huly)
+```
+
+---
+
+## Setup
+
+```bash
+# 1. Configure required secrets and environment variables
+cp .env.example .env
+
+# 2. Install Python dependencies
+pip install -r requirements.txt
+
+# 3. Install Node/TypeScript workspace dependencies
+pnpm install
 ```
 
 ---
 
 ## Testing & Verification
 
-### Python Test Suites
+### Python Test Suite (Layers 1–19)
 ```bash
-# L2 Memory Engine Tests
-python -m pytest cognitive/memory/tests/ -q
+# Run the full Python suite (local/offline unit & integration suite)
+python -m pytest -q
 
-# L10 Safety & Guardrails Tests
+# Target a single layer suite
+python -m pytest cognitive/memory/tests/ -q
 python -m pytest control/safety/guardrails/tests/ -q
 ```
 
 ### TypeScript Test Suites
 ```bash
-# L4 Reasoning Model-Gateway (137 tests / 47 features)
-pnpm --filter @central-intelligence/reasoning test
+# Workspace suites (L4 Reasoning, L6 Output, L8 Orchestration scenario smoke)
+pnpm test
 
-# L8 Orchestration Engine (14 Scenarios)
-pnpm --filter @central-intelligence/orchestration test
+# L5 Action connectors Vitest suite
+pnpm run test:connectors
+
+# L8 Orchestration full scenario runner
+pnpm run test:orchestration
+
+# L18 Interaction surface adapter tests
+pnpm run test:surface
 ```
 
-### Infrastructure Startup
+### License & Infrastructure Checks
 ```bash
-# Spin up Qdrant, Ollama, Meilisearch, Redis, and Chroma
-docker compose up -d
+# Verify LICENSE/NOTICE, pinned compose tags, secret requirements, and Python dep licenses
+python scripts/check_licenses.py
+
+# Validate docker-compose configuration (with .env populated)
+docker compose config -q
 ```

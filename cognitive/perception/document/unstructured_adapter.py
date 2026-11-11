@@ -137,9 +137,11 @@ class UnstructuredAdapter:
             except Exception as e:
                 logger.debug("Unstructured partition failed on %s: %s", path.name, e)
 
-        # Fallback for PDF documents using pypdf
-        if ext == "pdf" and _PYPDF_AVAILABLE:
-            return self._parse_pdf_pypdf(path)
+        # Fallback for PDF documents using pypdf (or pure-Python PDF stream parser)
+        if ext == "pdf":
+            if _PYPDF_AVAILABLE:
+                return self._parse_pdf_pypdf(path)
+            return self._parse_pdf_text_operators(path)
 
         # Generic text fallback
         try:
@@ -162,6 +164,46 @@ class UnstructuredAdapter:
                 metadata={"error": str(e)},
             )
 
+    def _extract_elements_from_lines(
+        self,
+        lines: List[str],
+        page_number: int,
+    ) -> tuple[List[DocumentElement], List[Dict[str, Any]]]:
+        """Group extracted page lines into structured elements and tables."""
+        elements: List[DocumentElement] = []
+        tables: List[Dict[str, Any]] = []
+        current_table_lines: List[str] = []
+
+        def flush_table() -> None:
+            if not current_table_lines:
+                return
+            tbl_text = "\n".join(current_table_lines)
+            t_elem = DocumentElement(type="Table", text=tbl_text, metadata={"page_number": page_number})
+            elements.append(t_elem)
+            tables.append({
+                "element_id": t_elem.element_id,
+                "table_text": tbl_text,
+                "page_number": page_number,
+            })
+            current_table_lines.clear()
+
+        for line in lines:
+            if "|" in line or "\t" in line:
+                current_table_lines.append(line)
+            else:
+                flush_table()
+                elem_type = "Title" if len(line) < 60 and not line.endswith(".") else "NarrativeText"
+                elements.append(
+                    DocumentElement(
+                        type=elem_type,
+                        text=line,
+                        metadata={"page_number": page_number},
+                    )
+                )
+
+        flush_table()
+        return elements, tables
+
     def _parse_pdf_pypdf(self, path: Path) -> ParsedDocument:
         """Parses PDF via pypdf and extracts text and structured tables."""
         reader = pypdf.PdfReader(str(path.resolve()))
@@ -170,44 +212,10 @@ class UnstructuredAdapter:
 
         for idx, page in enumerate(reader.pages):
             page_text = page.extract_text() or ""
-            lines = [l.strip() for l in page_text.splitlines() if l.strip()]
-
-            current_table_lines: List[str] = []
-            for line in lines:
-                # Detect table rows by delimiters (|, tabs, or columnar spaces)
-                if "|" in line or "\t" in line:
-                    current_table_lines.append(line)
-                else:
-                    if current_table_lines:
-                        # Flush table
-                        tbl_text = "\n".join(current_table_lines)
-                        t_elem = DocumentElement(type="Table", text=tbl_text, metadata={"page_number": idx + 1})
-                        elements.append(t_elem)
-                        tables.append({
-                            "element_id": t_elem.element_id,
-                            "table_text": tbl_text,
-                            "page_number": idx + 1,
-                        })
-                        current_table_lines = []
-
-                    elem_type = "Title" if len(line) < 60 and not line.endswith(".") else "NarrativeText"
-                    elements.append(
-                        DocumentElement(
-                            type=elem_type,
-                            text=line,
-                            metadata={"page_number": idx + 1},
-                        )
-                    )
-
-            if current_table_lines:
-                tbl_text = "\n".join(current_table_lines)
-                t_elem = DocumentElement(type="Table", text=tbl_text, metadata={"page_number": idx + 1})
-                elements.append(t_elem)
-                tables.append({
-                    "element_id": t_elem.element_id,
-                    "table_text": tbl_text,
-                    "page_number": idx + 1,
-                })
+            lines = [line.strip() for line in page_text.splitlines() if line.strip()]
+            page_elems, page_tables = self._extract_elements_from_lines(lines, page_number=idx + 1)
+            elements.extend(page_elems)
+            tables.extend(page_tables)
 
         return ParsedDocument(
             filename=path.name,
@@ -215,6 +223,25 @@ class UnstructuredAdapter:
             elements=elements,
             tables=tables,
             metadata={"parser": "pypdf", "pages": len(reader.pages)},
+        )
+
+    def _parse_pdf_text_operators(self, path: Path) -> ParsedDocument:
+        """Pure-Python fallback extracting PDF Tj/TJ text operators and tables when pypdf is unavailable."""
+        import re
+
+        raw = path.read_bytes().decode("latin-1", errors="ignore")
+        lines = [
+            match.group(1).replace(r"\(", "(").replace(r"\)", ")").strip()
+            for match in re.finditer(r"\(([^()]*)\)\s*Tj", raw)
+        ]
+        lines = [line for line in lines if line]
+        elements, tables = self._extract_elements_from_lines(lines, page_number=1)
+        return ParsedDocument(
+            filename=path.name,
+            file_type="pdf",
+            elements=elements,
+            tables=tables,
+            metadata={"parser": "pdf_stream_fallback", "pages": 1},
         )
 
     def parse_pdf(self, file_path: str | Path) -> ParsedDocument:

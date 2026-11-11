@@ -12,7 +12,6 @@ cognitive_dir = action_dir.parent
 root_dir = cognitive_dir.parent
 
 for p in [
-    agent_dir,
     action_dir / "sandboxes",
     action_dir,
     cognitive_dir / "memory" / "storage",

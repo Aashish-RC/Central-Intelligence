@@ -4,7 +4,10 @@
   "description": "Output Generation & Generative UI (Layer 6)",
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "tsx --test canvas/tests/tldraw.test.ts diagrams/tests/mermaid.test.ts editor/tests/tiptap.test.ts generative_ui/tests/copilotkit.test.ts generative_ui/ag_ui_adapters/tests/ag_ui.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1"
   }
 }
 

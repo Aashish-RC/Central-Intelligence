@@ -20,7 +20,7 @@ from media_gen.core.models import (
 )
 from media_gen.core.safety import SafetyModerator
 from media_gen.engines.image_engine import ImageGenerationEngine
-from guardrails.core.output_guard import OutputGuard
+from control.safety.guardrails.core.output_guard import OutputGuard
 
 
 class SafetyPolicyViolationError(Exception):

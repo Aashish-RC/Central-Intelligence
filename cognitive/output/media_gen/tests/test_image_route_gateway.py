@@ -8,7 +8,7 @@ from media_gen.core.image_route import (
     ImageGenerationRoute,
     SafetyPolicyViolationError,
 )
-from guardrails.core.output_guard import OutputGuard
+from control.safety.guardrails.core.output_guard import OutputGuard
 
 
 # 1x1 transparent PNG encoded in base64

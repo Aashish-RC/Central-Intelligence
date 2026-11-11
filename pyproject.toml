@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "central-intelligence"
 version = "1.0.0"
-description = "Central Intelligence — Aevum CI Brain (Layers 1-11)"
+description = "Central Intelligence — Aevum CI Brain (Layers 1-19)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -24,6 +24,13 @@ dependencies = [
     "tiktoken>=0.6.0",
     "jsonschema>=4.21.0",
     "pyyaml>=6.0.0",
+    "beautifulsoup4>=4.12.0",
+    "pillow>=10.0.0",
+    "networkx>=3.2.0",
+    "pypdf>=4.0.0",
+    "qdrant-client>=1.8.0",
+    "redis>=5.0.0",
+    "nest-asyncio>=1.5.0",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +71,7 @@ pythonpath = [
     "surface/federation",
 ]
 testpaths = ["cognitive", "control", "platform_infra", "surface"]
+python_files = ["test_*.py"]
 norecursedirs = [
     "node_modules",
     ".git",
@@ -73,5 +81,6 @@ norecursedirs = [
 asyncio_mode = "auto"
 markers = [
     "live: marks tests requiring an actual browser environment (excluded from default CI)",
+    "disallow_local: marks tests disallowing local sandbox fallback",
 ]
 addopts = "-m 'not live' -p no:phoenix"

@@ -1,7 +1,7 @@
 {
   "name": "central-intelligence",
   "version": "1.0.0",
-  "description": "Central Intelligence — Aevum CI Brain (Layers 1-11)",
+  "description": "Central Intelligence — Aevum CI Brain (Layers 1-19)",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,10 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "test:reasoning": "pnpm --filter @central-intelligence/reasoning test",
-    "test:orchestration": "pnpm --filter @central-intelligence/orchestration test",
+    "test:output": "pnpm --filter @central-intelligence/output test",
+    "test:connectors": "vitest run cognitive/action/connectors/__tests__",
+    "test:orchestration": "pnpm --filter @central-intelligence/orchestration run test:all",
+    "test:surface": "node control/orchestration/node_modules/tsx/dist/cli.mjs --test surface/interaction/terminal/tests/opencode.test.ts surface/interaction/ide/tests/zed.test.ts",
     "test:memory": "python -m pytest cognitive/memory/tests/ -q",
     "test:guardrails": "python -m pytest control/safety/guardrails/tests/ -q"
   },

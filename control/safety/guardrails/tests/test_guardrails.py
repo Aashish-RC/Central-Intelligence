@@ -7,16 +7,16 @@ Includes >= 50 named test cases across all threat categories and multi-turn cont
 import sys
 import json
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
 
 import pytest
-from guardrails.models import SafetyCheckRequest
-from guardrails.core.crisis import CrisisHandler, CRISIS_INTERVENTION_NOTICE
-from guardrails.core.jailbreak import JailbreakDetector
-from guardrails.core.detector import PIIDetector
-from guardrails.core.engine import GuardrailsEngine
-from guardrails.core.context_guard import MultiTurnContextGuard
-from guardrails.client import GuardrailsClient
+from control.safety.guardrails.models import SafetyCheckRequest
+from control.safety.guardrails.core.crisis import CrisisHandler, CRISIS_INTERVENTION_NOTICE
+from control.safety.guardrails.core.jailbreak import JailbreakDetector
+from control.safety.guardrails.core.detector import PIIDetector
+from control.safety.guardrails.core.engine import GuardrailsEngine
+from control.safety.guardrails.core.context_guard import MultiTurnContextGuard
+from control.safety.guardrails.client import GuardrailsClient
 
 
 def load_attack_vectors():

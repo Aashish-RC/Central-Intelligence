@@ -209,11 +209,11 @@ class MemoryEngine:
         client = getattr(self, "guardrails_client", None)
         if client is None:
             try:
-                from guardrails.client import GuardrailsClient
+                from control.safety.guardrails.client import GuardrailsClient
                 client = GuardrailsClient()
             except ImportError:
                 try:
-                    from control.safety.guardrails.client import GuardrailsClient
+                    from guardrails.client import GuardrailsClient
                     client = GuardrailsClient()
                 except ImportError:
                     client = None

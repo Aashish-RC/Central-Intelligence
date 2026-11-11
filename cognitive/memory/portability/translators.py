@@ -1,6 +1,7 @@
 """Translators for ChatGPT, Claude, and CI Standard Memory Formats (Features 2.46, 2.50)."""
 
 import json
+from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 from memory.portability.models import (
@@ -11,14 +12,16 @@ from memory.portability.models import (
 )
 
 
-class BaseTranslator:
-    """Base interface for format-specific memory translators."""
+class BaseTranslator(ABC):
+    """Abstract base interface for format-specific memory translators."""
 
+    @abstractmethod
     def parse(self, raw_data: Any, user_id: str) -> Tuple[List[StandardTurnRecord], List[StandardFactRecord]]:
-        raise NotImplementedError
+        """Parse a raw source export payload into standardized turn and fact records."""
 
+    @abstractmethod
     def format(self, turns: List[StandardTurnRecord], facts: List[StandardFactRecord], user_id: str) -> Dict[str, Any]:
-        raise NotImplementedError
+        """Format standardized turn and fact records into the target assistant export schema."""
 
 
 class StandardCITranslator(BaseTranslator):

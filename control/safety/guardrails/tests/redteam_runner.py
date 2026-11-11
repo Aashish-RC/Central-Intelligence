@@ -37,14 +37,14 @@ class WeeklyRedTeamReport:
 
 
 # Ensure repository root is on sys.path
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from guardrails.core.context_guard import MultiTurnContextGuard
-from guardrails.core.engine import GuardrailsEngine
-from guardrails.core.tool_output_guard import ToolOutputGuard
-from guardrails.models import SafetyCheckRequest
+from control.safety.guardrails.core.context_guard import MultiTurnContextGuard
+from control.safety.guardrails.core.engine import GuardrailsEngine
+from control.safety.guardrails.core.tool_output_guard import ToolOutputGuard
+from control.safety.guardrails.models import SafetyCheckRequest
 
 
 def load_json_dataset(path: Path) -> List[Dict[str, Any]]:
