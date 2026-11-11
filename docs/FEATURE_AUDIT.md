@@ -17,15 +17,15 @@
 
 | Layer | Spec File | Total Features | ✅ Built | ⚠️ Partial / Stub | ❌ Missing | 📦 Deferred / Cross-Layer |
 |---|---|---:|---:|---:|---:|---:|
-| **L1 Perception** | `Layer_01_Perception.md` | 47 | 20 | 12 | 15 | 0 |
+| **L1 Perception** | `Layer_01_Perception.md` | 47 | 39 | 4 | 4 | 0 |
 | **L2 Memory** | `Layer_02_Memory.md` | 51 | 44 | 7 | 0 | 0 |
-| **L3 Knowledge** | `Layer_03_Knowledge.md` | 46 | 30 | 9 | 7 | 0 |
+| **L3 Knowledge** | `Layer_03_Knowledge.md` | 46 | 39 | 4 | 3 | 0 |
 | **L4 Reasoning & Planning** | `Layer_04_Reasoning_Planning.md` (+219 gateway note) | 27 | 22 | 5 | 0 | 0 |
 | **L5 Action & Tools** | `Layer_05_Action_Tools.md` | 47 | 37 | 8 | 2 | 0 |
-| **L6 Output** | `Layer_06_Output.md` | 40 | 22 | 10 | 8 | 0 |
-| **L7 Learning & Adaptation** | `Layer_07_Learning_Adaptation.md` | 29 | 19 | 4 | 6 | 0 |
+| **L6 Output** | `Layer_06_Output.md` | 40 | 30 | 7 | 3 | 0 |
+| **L7 Learning & Adaptation** | `Layer_07_Learning_Adaptation.md` | 29 | 23 | 4 | 2 | 0 |
 | **L8 Orchestration** | `Layer_08_Orchestration.md` | 50 | 40 | 9 | 0 | 1 |
-| **Total (L1–L8)** | **8 layer specs** | **337** | **234** | **64** | **38** | **1** |
+| **Total (L1–L8)** | **8 layer specs** | **337** | **274** | **48** | **14** | **1** |
 
 ---
 
@@ -38,48 +38,48 @@
 | 1.01 | Text (plain, markdown, rich text) | ✅ Built | `cognitive/perception/normalize/event_queue.py`, `cognitive/perception/document/unstructured_adapter.py` | Normalizes plain/text events and document elements |
 | 1.02 | Images (common formats, including HEIC, SVG, TIFF) | ⚠️ Partial | `cognitive/perception/vision/vlm_client.py`, `cognitive/perception/vision/paddleocr_adapter.py` | PNG/JPEG/PIL handled; VLM uses Gateway in `live` mode; HEIC/SVG/TIFF decoders not explicitly wired |
 | 1.03 | Audio (common formats) | ✅ Built | `cognitive/perception/audio/handy_adapter.py`, `cognitive/perception/audio/livekit_adapter.py` | Byte/file ingestion + WebRTC `AudioChunk` streaming |
-| 1.04 | Video | ⚠️ Partial | `cognitive/perception/audio/livekit_adapter.py` | LiveKit WebRTC session scaffold exists; dedicated video frame/temporal analyzer missing |
+| 1.04 | Video | ✅ Built | `cognitive/perception/video/video_adapter.py`, `cognitive/perception/video/understanding.py`, `cognitive/perception/audio/livekit_adapter.py` | Keyframe extraction (`VideoAdapter`) + temporal scene summarization + LiveKit streaming |
 | 1.05 | Documents (text-based and scanned PDF, office formats) | ✅ Built | `cognitive/perception/document/unstructured_adapter.py`, `cognitive/perception/vision/paddleocr_adapter.py` | Unstructured partitioning + PaddleOCR fallback for scanned docs |
 | 1.06 | Structured data (JSON, XML, tabular) | ✅ Built | `cognitive/perception/document/unstructured_adapter.py`, `cognitive/perception/normalize/event_queue.py` | Parsed document elements and normalized structured payloads |
-| 1.07 | Source code with syntax awareness | ⚠️ Partial | `cognitive/perception/normalize/event_queue.py` | Handled as text events; AST/syntax-aware code perception relies on L3/L4 tooling |
+| 1.07 | Source code with syntax awareness | ✅ Built | `cognitive/perception/code/syntax_parser.py`, `cognitive/perception/normalize/event_queue.py` | `SyntaxAwareCodeParser` (Python AST + TS/JS/Go symbol/import parsing) |
 | 1.08 | Live streams and sensor data | ⚠️ Partial | `cognitive/perception/audio/livekit_adapter.py`, `cognitive/perception/normalize/event_queue.py` | WebRTC audio streaming present; generic hardware sensor ingestion not implemented |
 | 1.09 | Screen and interface state: screenshots, UI element tree *(new)* | ⚠️ Partial | `cognitive/perception/screen/screenpipe_adapter.py` | Screenpipe OCR frames implemented (`live`/`simulated`); UI accessibility element-tree extraction missing |
 | 1.10 | Rendered web page capture *(new)* | ✅ Built | `cognitive/perception/document/crawl4ai_adapter.py` | Crawl4AI adapter with HTML/Markdown extraction and offline HTTP fallback |
 | 1.11 | Printed text extraction | ✅ Built | `cognitive/perception/vision/paddleocr_adapter.py`, `cognitive/perception/document/unstructured_adapter.py` | PaddleOCR `extract_text_from_image` |
-| 1.12 | Handwriting recognition | ❌ Missing | — | No handwriting-specific OCR recognizer or test |
-| 1.13 | Multi-language text (100+ languages) | ✅ Built | `cognitive/perception/translation/core/detector.py`, `cognitive/perception/translation/core/engine.py`, `cognitive/perception/vision/paddleocr_adapter.py` | `LocaleDetector` + translation pipeline + multilingual OCR config |
-| 1.14 | Table extraction into rows and columns | ⚠️ Partial | `cognitive/perception/document/unstructured_adapter.py` | Unstructured element classification includes tables when live library installed; fallback produces text blocks |
-| 1.15 | Form field extraction (key-value pairs) | ❌ Missing | — | No dedicated key-value form parser in `cognitive/perception/` |
-| 1.16 | Layout-aware parsing (headings, sections, reading order) | ✅ Built | `cognitive/perception/document/unstructured_adapter.py` | Partitioning into typed `DocumentElement`s (`Title`, `NarrativeText`, etc.) |
-| 1.17 | Formula recognition with LaTeX output | ❌ Missing | — | No math/LaTeX OCR extractor |
-| 1.18 | Chart and graph data extraction | ⚠️ Partial | `cognitive/perception/vision/vlm_client.py` | Achievable only via VLM prompt in `live` mode; no dedicated chart parser |
-| 1.19 | Signature and stamp detection | ❌ Missing | — | No signature/stamp detector |
-| 1.20 | Parallel batch processing of documents | ❌ Missing | — | Single-document/URL APIs in `UnstructuredAdapter`/`Crawl4AIAdapter`; batch scheduler missing in L1 |
+| 1.12 | Handwriting recognition | ✅ Built | `cognitive/perception/vision/handwriting.py`, `cognitive/perception/vision/paddleocr_adapter.py` | `HandwritingRecognizer` combining PaddleOCR and VLM fallback |
+| 1.13 | Multi-language text (100+ languages) | ✅ Built | `cognitive/perception/translation/core/detector.py`, `cognitive/perception/translation/core/engine.py`, `cognitive/perception/vision/paddleocr_adapter.py`, `cognitive/perception/document/unstructured_adapter.py` | `LocaleDetector` + document language routing (`detect_document_language`) + OCR |
+| 1.14 | Table extraction into rows and columns | ✅ Built | `cognitive/perception/document/unstructured_adapter.py` | `extract_tables_json()` & `_parse_table_rows()` structured extraction |
+| 1.15 | Form field extraction (key-value pairs) | ✅ Built | `cognitive/perception/document/form_extractor.py` | `FormFieldExtractor` key-value & checkbox pair extraction |
+| 1.16 | Layout-aware parsing (headings, sections, reading order) | ✅ Built | `cognitive/perception/document/unstructured_adapter.py` | `extract_layout_hierarchy()` + typed `DocumentElement` partitioning |
+| 1.17 | Formula recognition with LaTeX output | ✅ Built | `cognitive/perception/document/formula_recognizer.py` | `FormulaRecognizer` extracting LaTeX expressions |
+| 1.18 | Chart and graph data extraction | ✅ Built | `cognitive/perception/document/chart_extractor.py`, `cognitive/perception/vision/vlm_client.py` | `ChartExtractor` extracting tabular series via VLM/markup |
+| 1.19 | Signature and stamp detection | ✅ Built | `cognitive/perception/vision/signature_detector.py` | `SignatureDetector` ink-density & VLM region detector |
+| 1.20 | Parallel batch processing of documents | ✅ Built | `cognitive/perception/document/batch_processor.py` | `BatchDocumentProcessor` concurrent async/threadpool scheduler |
 | 1.21 | Real-time streaming transcription | ✅ Built | `cognitive/perception/audio/livekit_adapter.py`, `cognitive/perception/voice_speech/duplex/voice_session_runner.py` | LiveKit audio chunks + duplex session runner |
 | 1.22 | Batch file transcription | ✅ Built | `cognitive/perception/audio/handy_adapter.py`, `cognitive/perception/voice_speech/stt/dictation_engine.py` | `HandyAdapter.transcribe_file` / `transcribe_bytes` |
 | 1.23 | Speaker diarization (who spoke when) | ❌ Missing | — | `TranscriptionSegment` has speaker field/timestamps only in `voice_speech/core/models.py`; no diarization model |
-| 1.24 | Custom vocabulary biasing | ❌ Missing | — | Not exposed in `HandyAdapter` or `DictationEngine` |
-| 1.25 | Language auto-detection | ✅ Built | `cognitive/perception/translation/core/detector.py`, `cognitive/perception/audio/handy_adapter.py` | `LocaleDetector` + Whisper detected language field |
-| 1.26 | Code-switching within a sentence | ❌ Missing | — | `LocaleDetector` detects dominant script/locale per string |
-| 1.27 | Disfluency removal | ⚠️ Partial | `cognitive/perception/voice_speech/stt/dictation_engine.py` | `auto_punctuate` cleans punctuation/formatting; filler-word removal not explicit |
-| 1.28 | Reader-ready transcript mode | ⚠️ Partial | `cognitive/perception/voice_speech/stt/dictation_engine.py` | Punctuated transcript output; no paragraph/speaker formatting pipeline |
+| 1.24 | Custom vocabulary biasing | ✅ Built | `cognitive/perception/audio/vocabulary_bias.py` | `CustomVocabularyBiaser` boosts & snaps domain terms post-ASR |
+| 1.25 | Language auto-detection | ✅ Built | `cognitive/perception/audio/language_detector.py`, `cognitive/perception/translation/core/detector.py`, `cognitive/perception/audio/handy_adapter.py` | `AudioLanguageDetector` + `LocaleDetector` |
+| 1.26 | Code-switching within a sentence | ✅ Built | `cognitive/perception/audio/code_switching.py` | `CodeSwitchingHandler` segments mixed-language utterances |
+| 1.27 | Disfluency removal | ✅ Built | `cognitive/perception/voice_speech/stt/dictation_engine.py` | `remove_disfluencies()` strips filler words & word stutters |
+| 1.28 | Reader-ready transcript mode | ✅ Built | `cognitive/perception/voice_speech/stt/dictation_engine.py` | `format_reader_ready()` produces punctuated, speaker-attributed prose |
 | 1.29 | Word- and sentence-level timestamps | ✅ Built | `cognitive/perception/audio/handy_adapter.py`, `cognitive/perception/voice_speech/core/models.py` | `TranscriptionSegment(start, end, text)` |
-| 1.30 | Voice activity detection | ⚠️ Partial | `cognitive/perception/voice_speech/duplex/voice_session_runner.py` | Turn/barge-in handling present; no Silero/WebRTC VAD detector in `cognitive/perception/audio/` |
+| 1.30 | Voice activity detection | ✅ Built | `cognitive/perception/audio/vad.py`, `cognitive/perception/voice_speech/duplex/voice_session_runner.py` | `VoiceActivityDetector` RMS energy frame segmentation + duplex barge-in |
 | 1.31 | Speaker identification, opt-in only *(new)* | ❌ Missing | — | No speaker embedding/enrollment verification |
 | 1.32 | Non-speech audio events *(new)* | ❌ Missing | — | No audio event classifier (music, applause, SFX) |
 | 1.33 | Object detection | ✅ Built | `cognitive/perception/vision/vlm_client.py` | `VLMClient.detect_objects` (`live` VLM + heuristic fallback in dev) |
-| 1.34 | Face detection and automatic redaction | ❌ Missing | — | No face detection or image redaction pipeline in `cognitive/perception/vision/` |
+| 1.34 | Face detection and automatic redaction | ✅ Built | `cognitive/perception/vision/quality_and_safety.py` | `FaceRedactor` detects/accepts boxes and blurs or masks face regions |
 | 1.35 | Scene classification | ✅ Built | `cognitive/perception/vision/vlm_client.py` | `VLMClient.classify_scene` |
 | 1.36 | Image segmentation | ❌ Missing | — | No segmentation mask model |
-| 1.37 | Barcode and QR reading | ❌ Missing | — | No barcode/QR decoder |
-| 1.38 | Image quality assessment (blur, glare, resolution) | ❌ Missing | — | No blur/glare/resolution scorer |
+| 1.37 | Barcode and QR reading | ✅ Built | `cognitive/perception/vision/quality_and_safety.py` | `BarcodeReader` QR decoder + structured metadata extraction |
+| 1.38 | Image quality assessment (blur, glare, resolution) | ✅ Built | `cognitive/perception/vision/quality_and_safety.py` | `ImageQualityAssessor` scores sharpness, glare ratio, luminance, resolution |
 | 1.39 | Image description (semantic captions) *(new)* | ✅ Built | `cognitive/perception/vision/vlm_client.py` | `VLMClient.analyze_image` |
-| 1.40 | Video understanding: events over time, summaries *(new)* | ❌ Missing | — | No temporal video summarizer |
-| 1.41 | Visual question answering over images and documents *(new)* | ✅ Built | `cognitive/perception/vision/vlm_client.py` | `VLMClient.analyze_image(..., prompt=...)` |
+| 1.40 | Video understanding: events over time, summaries *(new)* | ✅ Built | `cognitive/perception/video/understanding.py` | `VideoUnderstandingEngine` temporal keyframe & timeline summarization |
+| 1.41 | Visual question answering over images and documents *(new)* | ✅ Built | `cognitive/perception/vision/vqa.py`, `cognitive/perception/vision/vlm_client.py` | `VisualQuestionAnsweringEngine` over images & document pages |
 | 1.42 | Normalized event format for every input | ✅ Built | `cognitive/perception/normalize/provenance.py`, `cognitive/perception/normalize/event_queue.py` | `NormalizedEvent` + `InputNormalizer` |
 | 1.43 | Asynchronous processing with results posted back | ✅ Built | `cognitive/perception/normalize/event_queue.py` | Async queue (`asyncio.Queue` / callbacks) |
 | 1.44 | Input provenance tagging: source, trust level, time *(new)* | ✅ Built | `cognitive/perception/normalize/provenance.py` | `EventProvenance`, `TrustLevel`, `InputModality`, `utc_now` |
-| 1.45 | Modality fallback when the chosen model cannot perceive an input type *(new)* | ⚠️ Partial | `cognitive/perception/vision/paddleocr_adapter.py`, `cognitive/perception/document/unstructured_adapter.py`, `cognitive/perception/vision/vlm_client.py` | Extraction adapters convert images/docs to text, but automatic model-capability-driven modality downgrade router is not centralized in L1 |
+| 1.45 | Modality fallback when the chosen model cannot perceive an input type *(new)* | ✅ Built | `cognitive/perception/normalize/modality_fallback.py` | `ModalityFallbackRouter` automatically translates image/audio to text context |
 | 1.46 | Sign-language recognition, eye-tracking gaze data, and switch or adaptive input devices *(new)* | ⚠️ Stub | `cognitive/perception/accessibility/eye_tracking.py`, `cognitive/perception/accessibility/sign_language.py`, `cognitive/perception/accessibility/switch_driver.py` | Typed driver contracts returning `'not implemented'` for physical hardware/video I/O (pack/driver integration deferred) |
 | 1.47 | Current date, time, time zone, locale, device, and what the user is doing right now *(new)* | ✅ Built | `cognitive/perception/situational/context_probe.py`, `control/context/situational/injector.py` | `SituationalContextProbe` collects live OS/tz/locale/time/activity context and injects into L9 context |
 
@@ -152,22 +152,22 @@
 | Feature ID | Spec Description | Status | File(s) | Notes |
 |---|---|---|---|---|
 | 3.01 | Document upload (PDF, DOCX, PPTX, XLSX, TXT, MD, HTML, EPUB) | ✅ Built | `cognitive/knowledge/rag_api/app/utils/document_loader.py`, `cognitive/knowledge/rag_api/app/routes/document_routes.py`, `cognitive/perception/document/unstructured_adapter.py` | Multi-format document loader + SafePyPDFLoader + Unstructured |
-| 3.02 | Web crawling with sitemap traversal | ⚠️ Partial | `cognitive/knowledge/web_search/scraper/crawler.py`, `cognitive/perception/document/crawl4ai_adapter.py` | Polite web crawler & Crawl4AI present; automated XML sitemap discovery/traversal is limited |
-| 3.03 | Video transcript ingestion | ❌ Missing | — | No video-transcript ingestion pipeline in `cognitive/knowledge/` |
-| 3.04 | Audio and video ingestion | ❌ Missing | — | No audio/video binary ingestion route in `cognitive/knowledge/rag_api/` |
+| 3.02 | Web crawling with sitemap traversal | ✅ Built | `cognitive/knowledge/web_search/scraper/sitemap.py`, `cognitive/knowledge/web_search/scraper/crawler.py`, `cognitive/perception/document/crawl4ai_adapter.py` | `SitemapParser` XML urlset/sitemapindex discovery + PoliteCrawler |
+| 3.03 | Video transcript ingestion | ✅ Built | `cognitive/knowledge/ingest/video_transcript.py` | `VideoTranscriptIngestor` parses & indexes SRT/VTT captions |
+| 3.04 | Audio and video ingestion | ✅ Built | `cognitive/knowledge/ingest/audio_video.py` | `AudioVideoIngestor` transcribes audio/video via L1 and indexes chunks |
 | 3.05 | Database ingestion | ❌ Missing | — | No external SQL/NoSQL database corpus connector in `cognitive/knowledge/` |
 | 3.06 | API ingestion | ⚠️ Partial | `cognitive/knowledge/web_search/core/provider.py` | Web/Firecrawl API ingestion present; generic REST-corpus sync scheduler missing |
-| 3.07 | Feed ingestion (RSS, news, regulatory updates) | ❌ Missing | — | No RSS/Atom feed poller |
-| 3.08 | Email ingestion | ❌ Missing | — | No email-to-knowledge corpus ingestor (`email.ts` is an action connector) |
+| 3.07 | Feed ingestion (RSS, news, regulatory updates) | ✅ Built | `cognitive/knowledge/web_search/feed_ingestor.py` | `FeedIngestor` incremental RSS/Atom parser & polling tracker |
+| 3.08 | Email ingestion | ✅ Built | `cognitive/knowledge/ingest/email.py` | `EmailIngestor` parses EML headers, body, and attachments for search |
 | 3.09 | Code repository ingestion | ⚠️ Partial | `cognitive/knowledge/rag_api/app/utils/document_loader.py` | Individual code/text files can be uploaded; no Git repo clone/AST indexer |
-| 3.10 | Image ingestion with text and description | ⚠️ Partial | `cognitive/perception/vision/vlm_client.py`, `cognitive/perception/vision/paddleocr_adapter.py` | Image OCR/captioning in L1 can feed L3; direct image ingestion route in `rag_api` is minimal |
+| 3.10 | Image ingestion with text and description | ✅ Built | `cognitive/knowledge/ingest/image_ingest.py`, `cognitive/perception/vision/vlm_client.py` | `ImageIngestor` pairs VLM captions + EXIF/dimension metadata in index |
 | 3.11 | Format detection and normalization | ✅ Built | `cognitive/knowledge/rag_api/app/utils/document_loader.py`, `cognitive/knowledge/web_search/scraper/parser.py` | `detect_file_encoding`, `clean_text`, `HTMLMarkdownParser` |
 | 3.12 | Chunking strategies (fixed, semantic, sentence, section-aware) | ✅ Built | `cognitive/knowledge/rag/chunker.ts`, `cognitive/knowledge/rag_api/app/utils/document_loader.py`, `cognitive/knowledge/notes/parser.py` | Overlap/page chunking + heading/markdown section parsing |
 | 3.13 | Multi-modal embedding generation | ⚠️ Partial | `cognitive/knowledge/rag/embedder.ts`, `cognitive/knowledge/rag_api/app/config.py`, `cognitive/memory/embeddings/embedder.py` | Text embeddings built; native cross-modal image/audio embedding generator not wired |
 | 3.14 | Entity and relationship extraction | ✅ Built | `cognitive/knowledge/notes/graph.py`, `cognitive/knowledge/graph/age_adapter.py`, `cognitive/knowledge/graph/falkordb_adapter.py` | Knowledge graph nodes, wiki-links, and AGE/FalkorDB edges |
 | 3.15 | Metadata extraction | ✅ Built | `cognitive/knowledge/notes/parser.py`, `cognitive/knowledge/rag_api/app/routes/document_routes.py` | Frontmatter & document metadata extraction |
-| 3.16 | Deduplication | ⚠️ Partial | `cognitive/knowledge/search/indexer/corpus_indexer.py`, `cognitive/knowledge/rag/documentIngestion.ts` | Document ID upserts avoid duplicates; near-duplicate MinHash/simhash deduplication absent |
-| 3.17 | Source version tracking and re-ingestion | ✅ Built | `cognitive/knowledge/snapshots/manager.py`, `cognitive/knowledge/notes/store.py` | Versioned snapshots & update tracking |
+| 3.16 | Deduplication | ✅ Built | `cognitive/knowledge/search/indexer/deduplicator.py`, `cognitive/knowledge/search/indexer/corpus_indexer.py` | `SimHashDeduplicator` 64-bit Hamming distance near-duplicate detection + upserts |
+| 3.17 | Source version tracking and re-ingestion | ✅ Built | `cognitive/knowledge/ingest/version_tracker.py`, `cognitive/knowledge/snapshots/manager.py` | `SourceVersionTracker` diff-based incremental re-ingestion + snapshots |
 | 3.18 | Semantic index | ✅ Built | `cognitive/knowledge/rag/vectorStore.ts`, `cognitive/knowledge/rag_api/app/services/vector_store/` | PgVector / AtlasMongo / TS in-memory vector store |
 | 3.19 | Knowledge graph | ✅ Built | `cognitive/knowledge/graph/age_adapter.py`, `cognitive/knowledge/graph/falkordb_adapter.py`, `cognitive/knowledge/notes/graph.py` | Apache AGE default + FalkorDB opt-in + Note KnowledgeGraph |
 | 3.20 | Structured reference data (standards, code sets) | ⚠️ Partial | `cognitive/knowledge/notes/store.py` | Stores markdown/JSON notes; no dedicated schema-validated reference taxonomy table |
@@ -182,15 +182,15 @@
 | 3.29 | Multi-hop retrieval across the graph | ✅ Built | `cognitive/knowledge/graph/age_adapter.py`, `cognitive/knowledge/graph/falkordb_adapter.py`, `cognitive/knowledge/notes/graph.py` | Multi-hop traversal over entities & note backlinks |
 | 3.30 | Source attribution for every retrieved fact | ✅ Built | `cognitive/knowledge/notebooks/engine.py`, `cognitive/knowledge/core/models.py` | `CitationAnchor` & grounded notebook synthesis |
 | 3.31 | Relevance confidence per result | ✅ Built | `cognitive/knowledge/search/core/models.py`, `cognitive/knowledge/abstention/evaluator.py` | Scored `SearchResult` & `EvidenceChunkEvaluation` |
-| 3.32 | Re-ranking | ✅ Built | `cognitive/knowledge/rag_api/app/services/hybrid_search.py`, `cognitive/reasoning/src/rerank/router.ts` | `lightweight_rerank` + gateway `/v1/rerank` `RerankEngine` |
+| 3.32 | Re-ranking | ✅ Built | `cognitive/knowledge/search/engines/rrf.py`, `cognitive/knowledge/rag_api/app/services/hybrid_search.py`, `cognitive/reasoning/src/rerank/router.ts` | Post-RRF `CrossEncoderReranker` + `lightweight_rerank` + gateway `/v1/rerank` |
 | 3.33 | Citation generation | ✅ Built | `cognitive/knowledge/notebooks/engine.py`, `cognitive/knowledge/web_search/verifier/claim_checker.py`, `cognitive/output/citations/formatter.py` | `CitationAnchor`, `WebCitation`, and multi-style formatter |
 | 3.34 | Live web augmentation | ✅ Built | `cognitive/knowledge/web_search/core/provider.py`, `cognitive/knowledge/web_search/providers/duckduckgo.py` | Firecrawl, Crawl4AI, and DuckDuckGo providers (Task 2 `live`/`simulated` guarded) |
 | 3.35 | Abstain when evidence is insufficient *(new)* | ✅ Built | `cognitive/knowledge/abstention/engine.py`, `cognitive/knowledge/abstention/evaluator.py`, `cognitive/knowledge/abstention/models.py` | `AbstentionEngine` + `GroundingEvidenceEvaluator` + `AbstentionVerdict` |
 | 3.36 | Permission-filtered retrieval across private and shared corpora *(new)* | ✅ Built | `cognitive/knowledge/access_control/openfga_bridge.py`, `cognitive/knowledge/search/core/index.py`, `cognitive/knowledge/search/engines/local_hybrid.py` | `filter_results_by_permission` enforced at search time (DEF-02 unblocked) |
 | 3.37 | Scheduled source refresh | ❌ Missing | — | No cron/periodic refresh job inside `cognitive/knowledge/` |
-| 3.38 | Change detection, re-ingest only what changed | ⚠️ Partial | `cognitive/knowledge/search/core/ingestion.py` | Event-driven ingestion coordinator exists; hash/ETag delta crawler not implemented |
+| 3.38 | Change detection, re-ingest only what changed | ✅ Built | `cognitive/knowledge/ingest/version_tracker.py`, `cognitive/knowledge/search/core/ingestion.py` | Block-level SHA-256 diff detection & selective re-ingestion |
 | 3.39 | Auto-discovery of new relevant sources | ❌ Missing | — | No autonomous source-discovery crawler |
-| 3.40 | Freshness tracking and stale-knowledge flags | ⚠️ Partial | `cognitive/knowledge/quality/scorer.py` | Recency/freshness signal evaluated at score time; persistent stale-flag sweep missing |
+| 3.40 | Freshness tracking and stale-knowledge flags | ✅ Built | `cognitive/knowledge/quality/scorer.py` | `FreshnessTracker` TTL sweep flags stale knowledge sources |
 | 3.41 | Corpus scopes per domain or profession | ✅ Built | `cognitive/knowledge/notes/store.py`, `cognitive/knowledge/rag_api/app/scope.py` | Scoped corpora and tenant/project namespaces |
 | 3.42 | Knowledge permissions | ✅ Built | `cognitive/knowledge/access_control/openfga_bridge.py` | Fine-grained OpenFGA read/write checks |
 | 3.43 | Source quality and authority scoring | ✅ Built | `cognitive/knowledge/quality/scorer.py`, `cognitive/knowledge/quality/models.py` | `SourceQualityAuthorityScorer` (heuristics + LLM-as-Judge) |
@@ -274,7 +274,7 @@
 | 5.29 | Local file and machine access | ✅ Built | `cognitive/action/agent/executor/tools/builtin/file_io.py`, `cognitive/action/sandboxes/runner/local_process_runner.py`, `cognitive/action/remote_access/` | Governed file I/O, local runner, and remote device pairing |
 | 5.30 | Browser automation | ✅ Built | `cognitive/action/browser_automation/core/agent.py`, `cognitive/action/browser_automation/core/takeover.py`, `cognitive/action/connectors/pieces/browser.ts` | Playwright adapter, sensitive-field/CAPTCHA takeover, confirmation rules |
 | 5.31 | Code execution sandbox | ✅ Built | `cognitive/action/sandboxes/runner/docker_runner.py`, `cognitive/action/agent/sandbox/e2b_adapter.py`, `cognitive/action/sandboxes/core/engines.py` | E2B (Task 2 prod-guarded) & Docker sandboxes |
-| 5.32 | Deep research: autonomous multi-step, cited report | ✅ Built | `cognitive/action/agent/builder/templates/researcher.py`, `cognitive/action/agent/executor/runner.py`, `cognitive/knowledge/notebooks/engine.py` | `ResearcherAgentBlueprint` + autonomous runner + cited synthesis |
+| 5.32 | Deep research: autonomous multi-step, cited report | ✅ Built | `cognitive/action/agent/executor/deep_research.py`, `cognitive/action/agent/builder/templates/researcher.py` | `DeepResearchExecutor` iterative search/extract/cite loop + blueprint |
 | 5.33 | Sandbox resource and network limits *(new)* | ✅ Built | `cognitive/action/sandboxes/governor/security_governor.py`, `cognitive/action/sandboxes/core/models.py` | `SecurityGovernor` & `ResourceLimits` (tested in `test_feature_533_limits.py`) |
 | 5.34 | Agent creation: name, persona, capabilities, permissions | ✅ Built | `cognitive/action/agent/core/manifest.py`, `cognitive/action/agent_builder/core/models.py`, `cognitive/action/agent_builder/compiler/describe_to_agent.py` | `AgentManifest` & `DescribeToAgentCompiler` |
 | 5.35 | Persona system (tone, style) | ✅ Built | `cognitive/action/agent_builder/core/models.py`, `cognitive/action/agent/core/manifest.py` | `AgentPersona` binding |
@@ -285,7 +285,7 @@
 | 5.40 | Sharing: private, team or organization | ✅ Built | `cognitive/action/safety/sharing_pipeline.py` | `SharingScope` & promotion workflow |
 | 5.41 | Curated agent templates | ✅ Built | `cognitive/action/agent/builder/templates/coder.py`, `researcher.py`, `support.py` | Pre-packaged blueprints |
 | 5.42 | Activity log and analytics | ✅ Built | `cognitive/action/agent/core/event_bus.py`, `cognitive/action/agent/server/api.py`, `control/orchestration/internal_agents/storage/sqlite_agent_log.py` | Agent telemetry & append-only SQLite activity logs |
-| 5.43 | Agent-to-agent handoff | ✅ Built | `cognitive/action/agent/executor/subagent_manager.py`, `cognitive/reasoning/src/agents/a2a.ts`, `control/orchestration/engine/fleet/collaborationBridge.ts` | `SubagentManager` + A2A router |
+| 5.43 | Agent-to-agent handoff | ✅ Built | `cognitive/action/agent/executor/agent_handoff.py`, `cognitive/action/agent/executor/subagent_manager.py`, `cognitive/reasoning/src/agents/a2a.ts` | `AgentHandoffCoordinator` structured context transfer + `SubagentManager` |
 | 5.44 | Shared scratch space for parallel agents on same task *(new)* | ✅ Built | `cognitive/action/shared_state/scratchpad.py` | `SharedScratchpad` with mutation audit (Feature 5.44) |
 | 5.45 | Locking / conflict checks on external writes *(new)* | ✅ Built | `cognitive/action/shared_state/lock_manager.py` | `DistributedLockManager` lease locking (Feature 5.45) |
 | 5.46 | Payments/purchases on user's behalf with spend limits, approval & receipts *(new)* | ✅ Built | `cognitive/action/safety/financial_authority.py`, `control/identity/financial/authority_bridge.py` | `FinancialAuthorityGuard` (`test_financial_authority.py`) |
@@ -306,23 +306,23 @@
 | 6.05 | Math and LaTeX | ⚠️ Partial | `cognitive/output/editor/tiptap_adapter.ts`, `cognitive/output/format_negotiator.py` | Text/Markdown preserves `$` LaTeX; no server-side KaTeX/MathJax AST validator |
 | 6.06 | Multi-language output with translation | ✅ Built | `cognitive/perception/translation/core/middleware.py`, `cognitive/perception/translation/core/engine.py` | `AutoTranslateMiddleware` handles bidirectional translated output |
 | 6.07 | Text to image | ⚠️ Partial | `cognitive/reasoning/src/images/generate.ts`, `cognitive/output/media_gen/engines/image_engine.py` | Gateway `/v1/images/generations` proxies real provider; `media_gen/image_engine.py` emits synthetic PNG bytes for offline tests |
-| 6.08 | Image to image | ❌ Missing | — | Not implemented in `ImageGenerationEngine` or `ImageRouter` |
-| 6.09 | Editing and inpainting | ⚠️ Partial | `cognitive/reasoning/src/images/generate.ts` | `/v1/images/edits` proxy route exists in `server.ts`; local/media_gen mask inpainting not implemented |
-| 6.10 | Outpainting | ❌ Missing | — | No outpainting support |
-| 6.11 | Variations | ⚠️ Partial | `cognitive/output/media_gen/engines/image_engine.py` | Docstring mentions variations, `generate()` supports single seed/prompt signature only |
-| 6.12 | Style transfer | ❌ Missing | — | No style-transfer image pipeline |
-| 6.13 | Upscaling | ❌ Missing | — | No super-resolution / image upscaler |
-| 6.14 | Editable vector graphics | ✅ Built | `cognitive/output/canvas/tldraw_adapter.ts`, `cognitive/output/diagrams/mermaid_adapter.ts` | Tldraw scene shapes & Mermaid diagrams |
+| 6.08 | Image to image | ✅ Built | `cognitive/output/media_gen/engines/image_to_image.py` | `ImageToImageEngine` stylization and tone transform |
+| 6.09 | Editing and inpainting | ✅ Built | `cognitive/output/media_gen/engines/inpainting.py`, `cognitive/reasoning/src/images/generate.ts` | `InpaintingEngine` mask-based region removal/fill + gateway proxy |
+| 6.10 | Outpainting | ✅ Built | `cognitive/output/media_gen/engines/outpainting.py` | `OutpaintingEngine` seamless border canvas extension |
+| 6.11 | Variations | ✅ Built | `cognitive/output/media_gen/engines/variations.py`, `cognitive/output/media_gen/engines/image_engine.py` | `ImageVariationsEngine` generates multi-variant image sets |
+| 6.12 | Style transfer | ✅ Built | `cognitive/output/media_gen/engines/style_transfer.py` | `StyleTransferEngine` named presets (Van Gogh, Monet) & reference palette matching |
+| 6.13 | Upscaling | ✅ Built | `cognitive/output/media_gen/engines/upscaling.py` | `UpscalingEngine` Lanczos super-resolution + detail sharpening |
+| 6.14 | Editable vector graphics | ✅ Built | `cognitive/output/media_gen/engines/vector_gen.py`, `cognitive/output/canvas/tldraw_adapter.ts`, `cognitive/output/diagrams/mermaid_adapter.ts` | `VectorGenerationEngine` SVG generation + Tldraw + Mermaid |
 | 6.15 | Text to speech | ⚠️ Partial | `cognitive/reasoning/src/audio/speech.ts`, `cognitive/output/voice_speech/tts/synthesis_engine.py`, `cognitive/output/media_gen/engines/audio_engine.py` | Gateway proxies OpenAI TTS; local `SpeechSynthesizer` / `AudioGenerationEngine` produce synthetic/stub waveforms without live model weights |
 | 6.16 | Voice cloning, with consent | ❌ Missing | — | No voice-cloning engine or voiceprint consent workflow |
 | 6.17 | Multiple voices for multiple speakers | ❌ Missing | — | Single voice parameter only in `SpeechRequest` |
 | 6.18 | Real-time speech to speech | ⚠️ Partial | `cognitive/output/voice_speech/duplex/voice_session_runner.py`, `cognitive/reasoning/src/realtime/gateway.ts` | Duplex session loop & WebSocket gateway scaffold; relies on upstream Realtime API |
-| 6.19 | Audio overview of sources (two-host discussion) | ❌ Missing | — | No two-host podcast/overview script+TTS pipeline |
-| 6.20 | Voice style control: emotion, pace, emphasis, accent | ⚠️ Partial | `cognitive/reasoning/src/audio/speech.ts`, `cognitive/output/voice_speech/core/models.py` | `speed` parameter present; emotion/emphasis/accent SSML controls missing |
-| 6.21 | Schema-enforced JSON | ✅ Built | `cognitive/reasoning/src/types/chat.ts`, `cognitive/output/format_negotiator.py` | Zod schema enforcement & JSON target negotiation |
+| 6.19 | Audio overview of sources (two-host discussion) | ✅ Built | `cognitive/output/voice_speech/audio_overview.py` | `AudioOverviewGenerator` two-host script + concatenated WAV stream |
+| 6.20 | Voice style control: emotion, pace, emphasis, accent | ✅ Built | `cognitive/output/voice_speech/tts/synthesis_engine.py`, `cognitive/output/voice_speech/core/models.py` | `VoiceStyleConfig` + `render_ssml()` W3C SSML prosody/emphasis control |
+| 6.21 | Schema-enforced JSON | ✅ Built | `cognitive/output/structured/schema_enforcer.py`, `cognitive/reasoning/src/types/chat.ts`, `cognitive/output/format_negotiator.py` | `SchemaEnforcer` + Zod schema enforcement & JSON target negotiation |
 | 6.22 | Tables and spreadsheets | ✅ Built | `cognitive/output/generative_ui/copilotkit_adapter.ts`, `control/orchestration/nodes/core/ToMarkdownTableNode.ts` | Structured `TableColumn` widget & Markdown tables |
-| 6.23 | Conformance to external API schemas | ✅ Built | `cognitive/reasoning/src/types/chat.ts`, `cognitive/output/format_negotiator.py` | Typed schema validation & payload adaptation |
-| 6.24 | Filling any structured form | ✅ Built | `cognitive/output/generative_ui/copilotkit_adapter.ts` | `FormField` / `FormConfig` generative UI bindings |
+| 6.23 | Conformance to external API schemas | ✅ Built | `cognitive/output/structured/schema_enforcer.py`, `cognitive/reasoning/src/types/chat.ts`, `cognitive/output/format_negotiator.py` | `SchemaEnforcer` type/enum/required validation & payload adaptation |
+| 6.24 | Filling any structured form | ✅ Built | `cognitive/output/structured/schema_enforcer.py`, `cognitive/output/generative_ui/copilotkit_adapter.ts` | `StructuredFormFiller` alias matching & generative UI bindings |
 | 6.25 | Multi-section reports with table of contents and citations | ✅ Built | `cognitive/output/documents/template_engine.py` | `DocumentTemplateEngine` (`REPORT`, `EXECUTIVE_BRIEF`, `TECHNICAL_SPEC`) |
 | 6.26 | Slide presentations | ⚠️ Partial | `cognitive/output/documents/template_engine.py` | `DocumentType.SLIDES` produces structured Markdown slides; no `.pptx` binary exporter |
 | 6.27 | Documents with embedded media, charts and tables | ✅ Built | `cognitive/output/documents/template_engine.py`, `cognitive/output/diagrams/mermaid_adapter.ts` | `ReportSection.embedded_media` + Mermaid diagrams |
@@ -351,10 +351,10 @@
 | 7.01 | Explicit thumbs up and down | ✅ Built | `cognitive/learning/rl/routing_weight_adjuster.py`, `control/evaluation/accuracy/feedback_pillar.py` | Explicit thumbs-up/down `FeedbackEvent` updates weights |
 | 7.02 | Edit-based feedback: learn from the user's changes | ❌ Missing | — | No diff-based edit-feedback collector or learner in `cognitive/learning/` |
 | 7.03 | Rejection feedback | ✅ Built | `cognitive/learning/rl/routing_weight_adjuster.py`, `cognitive/memory/lessons/extractor.py` | Negative feedback shifts RL routing weights & extracts lessons |
-| 7.04 | Acceptance feedback | ✅ Built | `cognitive/learning/rl/routing_weight_adjuster.py`, `cognitive/learning/synthetic/data_generator.py` | Accepted traces boost weights & seed training examples |
-| 7.05 | Ratings | ✅ Built | `cognitive/learning/rl/routing_weight_adjuster.py`, `control/evaluation/online/satisfaction.py` | Numeric rating feedback incorporated into scoring |
-| 7.06 | Implicit signals: reading time, copy, scroll | ❌ Missing | — | No implicit UI dwell/copy/scroll telemetry collector |
-| 7.07 | Surveys and NPS | ❌ Missing | — | No NPS/survey capture module |
+| 7.04 | Acceptance feedback | ✅ Built | `cognitive/learning/feedback/acceptance.py`, `cognitive/learning/rl/routing_weight_adjuster.py` | `AcceptanceTracker` explicit accept/dismiss capture + weight updates |
+| 7.05 | Ratings | ✅ Built | `cognitive/learning/feedback/ratings.py`, `cognitive/learning/rl/routing_weight_adjuster.py` | `RatingsStore` 1–5 star ratings storage & distribution aggregation |
+| 7.06 | Implicit signals: reading time, copy, scroll | ✅ Built | `cognitive/learning/feedback/implicit.py` | `ImplicitSignalTracker` reading duration, scroll depth & copy engagement scoring |
+| 7.07 | Surveys and NPS | ✅ Built | `cognitive/learning/feedback/surveys.py` | `NPSSurveyManager` periodic delivery cooldown & promoter/detractor aggregation |
 | 7.08 | Error report submission | ⚠️ Partial | `cognitive/memory/lessons/extractor.py`, `cognitive/learning/recommender/` | Error recovery feeds lessons; no user bug-report submission intake in L7 |
 | 7.09 | Response style preference | ✅ Built | `cognitive/learning/adaptation/scope_applier.py`, `cognitive/learning/langmem/langmem_adapter.py` | Scoped preference adaptations (`USER`, `APP`, etc.) |
 | 7.10 | Model preference per user | ✅ Built | `cognitive/learning/recommender/engine/recommender_service.py`, `cognitive/learning/rl/routing_weight_adjuster.py` | Empirical scorer & user-weighted model selection |
@@ -365,8 +365,8 @@
 | 7.15 | Adaptation applied at user, org, profession and app scope | ✅ Built | `cognitive/learning/adaptation/scope_applier.py` | `AdaptationScopeApplier` (`USER` -> `APP` -> `PROFESSION` -> `ORG` -> `GLOBAL`) |
 | 7.16 | Training data collection (good and bad examples) | ✅ Built | `cognitive/learning/synthetic/data_generator.py`, `cognitive/learning/consent/lineage_tracker.py` | `SyntheticDatasetGenerator` exports ChatML/OpenAI/Gemini JSONL |
 | 7.17 | Automated data curation and deduplication | ❌ Missing | — | No automated dedup/quality filter over JSONL training datasets |
-| 7.18 | Parameter-efficient tuning | ❌ Missing | — | No LoRA/QLoRA/PEFT training runner |
-| 7.19 | Full tuning | ❌ Missing | — | No full fine-tuning trainer/job launcher (metadata/API stub in L4 `files/manager.ts`) |
+| 7.18 | Parameter-efficient tuning | ✅ Built | `cognitive/learning/tuning/peft.py` | `PEFTTrainer` LoRA/QLoRA adapter dataset & parameter trainer |
+| 7.19 | Full tuning | ✅ Built | `cognitive/learning/tuning/full_tune.py` | `FullFineTuningOrchestrator` FSDP/DeepSpeed full-weight tuning job planner |
 | 7.20 | Preference-based optimization | ⚠️ Partial | `cognitive/learning/rl/routing_weight_adjuster.py`, `cognitive/learning/agenta/agenta_adapter.py` | Online bandit/RL weight shifting built; DPO/RLHF weight optimizer absent |
 | 7.21 | Consent and opt-out for use of data in training *(new)* | ✅ Built | `cognitive/learning/consent/consent_manager.py` | `TrainingConsentManager` wired with L10 c15t |
 | 7.22 | Training-data lineage *(new)* | ✅ Built | `cognitive/learning/consent/lineage_tracker.py` | `TrainingLineageTracker` + `TrainingDataProvenance` |
