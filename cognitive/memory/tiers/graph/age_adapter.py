@@ -10,7 +10,8 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional, Tuple
+import secrets
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from memory.core.exceptions import AdapterConnectionError
@@ -18,35 +19,14 @@ from memory.core.interfaces import BaseGraphStore
 from memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 
 
-def _cypher_literal(value: Any) -> str:
-    """Format a Python value as an inline Apache AGE Cypher literal."""
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (int, float)):
-        return str(value)
-    if isinstance(value, (dict, list)):
-        text = json.dumps(value, sort_keys=True)
-    else:
-        text = str(value)
-    escaped = (
-        text.replace("\\", "\\\\")
-        .replace("'", "\\'")
-        .replace("$$", "$ $")
-    )
-    return f"'{escaped}'"
-
-
-def _substitute_cypher_params(query: str, params: Dict[str, Any]) -> str:
-    """Substitute $param placeholders with inline Cypher literals for AGE $$ blocks."""
-    if not params:
-        return query
-    pattern = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
-    return pattern.sub(
-        lambda m: _cypher_literal(params[m.group(1)]) if m.group(1) in params else m.group(0),
-        query,
-    )
+def _make_dollar_tag(cypher: str, tag_prefix: Optional[str] = None) -> str:
+    """Create a per-query PostgreSQL dollar-quote delimiter absent from the Cypher template."""
+    tag = tag_prefix or f"$age_{secrets.token_hex(8)}$"
+    if not re.fullmatch(r"\$[A-Za-z_][A-Za-z0-9_]*\$", tag):
+        raise ValueError(f"Invalid dollar-quote delimiter: {tag!r}")
+    if tag in cypher:
+        raise ValueError("Cypher query unexpectedly contains generated dollar-quote delimiter.")
+    return tag
 
 
 def _split_top_level_commas(expr_list: str) -> List[str]:
@@ -224,16 +204,28 @@ class ApacheAGEAdapter(BaseGraphStore):
         if not self._conn:
             raise AdapterConnectionError("Apache AGE connection is not open.")
 
-        inlined = _substitute_cypher_params(cypher.strip().rstrip(";"), params or {})
-        keys = return_keys or _infer_return_keys(inlined)
+        clean_cypher = cypher.strip().rstrip(";")
+        keys = return_keys or _infer_return_keys(clean_cypher)
         col_defs = ", ".join(f"c{idx} agtype" for idx in range(len(keys)))
-        sql = f"SELECT * FROM ag_catalog.cypher('{self._graph_name}', $${inlined}$$) AS ({col_defs});"
+        tag = _make_dollar_tag(clean_cypher)
 
         cur = self._conn.cursor()
         try:
             cur.execute("LOAD 'age';")
             cur.execute('SET search_path = ag_catalog, "$user", public;')
-            cur.execute(sql)
+            if params:
+                # Pass runtime values out-of-band as a bound agtype parameter ($1 via extended protocol).
+                sql = (
+                    f"SELECT * FROM ag_catalog.cypher('{self._graph_name}', "
+                    f"{tag}{clean_cypher}{tag}, %s) AS ({col_defs});"
+                )
+                cur.execute(sql, (json.dumps(params),))
+            else:
+                sql = (
+                    f"SELECT * FROM ag_catalog.cypher('{self._graph_name}', "
+                    f"{tag}{clean_cypher}{tag}) AS ({col_defs});"
+                )
+                cur.execute(sql)
             rows = cur.fetchall() if cur.description else []
             self._conn.commit()
         except Exception:

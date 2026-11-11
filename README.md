@@ -96,6 +96,11 @@ pip install --require-hashes -r requirements.lock
 pnpm install --frozen-lockfile
 ```
 
+### Default Graph & Infrastructure Stack
+
+- **Default graph backend (L2 Memory & L3 Knowledge):** **PostgreSQL + Apache AGE (`apache-age`, Apache-2.0)** on port `5433` (`MEMORY_GRAPH_BACKEND=postgres_age`, powered by `ApacheAGEAdapter` / `ApacheAGEGraphAdapter`), falling back to in-memory NetworkX when offline or configured with `:memory:`.
+- **Opt-in non-OSI self-hosted graph engines:** FalkorDB (`SSPL-v1`) and Memgraph (`BSL-1.1`) are disabled by default behind `profiles: ["self-hosted-non-osi"]` and require installing the optional `.[graph-non-osi]` extra (`docker compose --profile self-hosted-non-osi up -d`). See [docs/LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md).
+
 ---
 
 ## Testing & Verification
@@ -109,7 +114,7 @@ python -m pytest -q
 python -m pytest cognitive/memory/tests/ -q
 python -m pytest control/safety/guardrails/tests/ -q
 
-# Live Docker Compose E2E tests (starts/uses Qdrant, Temporal, Keycloak, Valkey)
+# Live Docker Compose E2E tests (starts/uses Qdrant, Apache AGE, Temporal, Keycloak, Valkey)
 COMPOSE_E2E_AUTO_START=1 python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v
 ```
 

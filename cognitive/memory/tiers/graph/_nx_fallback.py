@@ -7,6 +7,7 @@ or Cypher emulation logic.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 import re
 from typing import Any, Dict, List, Optional
@@ -249,6 +250,36 @@ class NetworkXGraphFallback:
                         "target": v_name,
                         "relation": data.get("relation", key),
                         "source": u_name,
+                    }
+                )
+            return results
+
+        match_node = re.search(
+            r"MATCH\s*\(\s*(\w+)(?::\w+)?\s*\{\s*name\s*:\s*(?:'([^']+)'|\$([a-zA-Z0-9_]+))",
+            q,
+            re.IGNORECASE,
+        )
+        if match_node:
+            var_name = match_node.group(1)
+            target_name = match_node.group(2) if match_node.group(2) is not None else params.get(match_node.group(3) or "", "")
+            user_filter = params.get("user_id")
+            project_filter = params.get("project_id")
+            structural = {"name", "entity_type", "user_id", "project_id", "created_at", "updated_at"}
+            results = []
+            for _nid, data in self.graph.nodes(data=True):
+                if data.get("name") != target_name:
+                    continue
+                if user_filter is not None and data.get("user_id") != user_filter:
+                    continue
+                if project_filter is not None and data.get("project_id") != project_filter:
+                    continue
+                extra_props = {k: v for k, v in data.items() if k not in structural}
+                results.append(
+                    {
+                        f"{var_name}.name": data.get("name"),
+                        "name": data.get("name"),
+                        f"{var_name}.props_json": json.dumps(extra_props, sort_keys=True),
+                        "props_json": json.dumps(extra_props, sort_keys=True),
                     }
                 )
             return results

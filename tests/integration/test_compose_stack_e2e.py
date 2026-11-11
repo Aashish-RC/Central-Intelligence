@@ -283,6 +283,7 @@ def test_memory_qdrant_adapter_v120_e2e() -> None:
 
 def test_postgres_apache_age_graph_adapters_e2e() -> None:
     """Exercise L2 ApacheAGEAdapter & L3 ApacheAGEGraphAdapter against live apache-age."""
+    import json
     import pg8000.dbapi
     from knowledge.graph import ApacheAGEGraphAdapter
     from memory.tiers.graph.age_adapter import ApacheAGEAdapter
@@ -338,6 +339,21 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
             "MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name"
         )
         assert managers and managers[0]["m.name"] == "Bob"
+
+        # Verify dollar-quote & SQL-injection payloads round-trip unchanged via bound parameters
+        for payload in ("$$$", "$$$$", "'$$; DROP TABLE x; --"):
+            l2_graph.add_entity(
+                user_id="e2e_u",
+                name=payload,
+                properties={"raw": payload},
+            )
+            found = l2_graph.execute_query(
+                "MATCH (n {name: $name, user_id: $user_id}) RETURN n.name AS name, n.props_json AS props_json",
+                params={"name": payload, "user_id": "e2e_u"},
+            )
+            assert len(found) == 1
+            assert found[0]["name"] == payload
+            assert json.loads(found[0]["props_json"])["raw"] == payload
 
         assert l3_graph.is_in_memory is False
         assert l3_graph.check_health() is True

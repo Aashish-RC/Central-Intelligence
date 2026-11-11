@@ -192,3 +192,86 @@ def test_default_memory_engine_uses_apache_age():
     )
     assert engine.query_graph("MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name") == []
 
+
+def test_apache_age_dollar_quote_and_injection_roundtrip():
+    """Values containing $$$, $$$$, and SQL/dollar injection must parameterize & round-trip unchanged."""
+    import json
+    from unittest.mock import MagicMock
+    from memory.tiers.graph.age_adapter import ApacheAGEAdapter, _make_dollar_tag
+
+    adversarial_values = [
+        "$$$",
+        "$$$$",
+        "'$$; DROP TABLE x; --",
+    ]
+
+    # 1. Hermetic round-trip on entities, relationships, properties, and parameterized queries
+    adapter = ApacheAGEAdapter(postgres_url=":memory:")
+    for val in adversarial_values:
+        adapter.add_entity(
+            user_id="sec_user",
+            name=val,
+            entity_type="Entity",
+            properties={"raw": val},
+        )
+        rows = adapter.execute_query(
+            "MATCH (n {name: $name, user_id: $user_id}) RETURN n.name AS name, n.props_json AS props_json",
+            params={"name": val, "user_id": "sec_user"},
+        )
+        assert len(rows) == 1
+        assert rows[0]["name"] == val
+        assert json.loads(rows[0]["props_json"])["raw"] == val
+
+        adapter.add_relationship(
+            user_id="sec_user",
+            source="RootNode",
+            relation="TAGGED",
+            target=val,
+            properties={"marker": val},
+        )
+
+    hops = adapter.multi_hop_query(user_id="sec_user", start_entity="RootNode", relation="TAGGED", hops=1)
+    assert {h["target"] for h in hops} == set(adversarial_values)
+    for hop in hops:
+        assert hop["properties"]["marker"] in adversarial_values
+
+    # 2. Verify live SQL layer uses random dollar-quote tags & out-of-band bound parameters
+    executed: list[tuple[str, object]] = []
+    mock_cursor = MagicMock()
+    mock_cursor.description = [("c0",)]
+    mock_cursor.fetchall.return_value = [('"' + adversarial_values[2] + '"',)]
+
+    def record_execute(sql, args=None):
+        executed.append((sql, args))
+
+    mock_cursor.execute.side_effect = record_execute
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    live_like = ApacheAGEAdapter(postgres_url=":memory:")
+    live_like._is_in_memory = False
+    live_like._conn = mock_conn
+
+    for val in adversarial_values:
+        executed.clear()
+        live_like.add_entity(
+            user_id="sec_user",
+            name=val,
+            properties={"payload": val},
+        )
+        cypher_calls = [(sql, args) for sql, args in executed if "ag_catalog.cypher(" in sql]
+        assert cypher_calls
+        for sql, args in cypher_calls:
+            assert val not in sql
+            assert "$$$" not in sql
+            assert "DROP TABLE" not in sql
+            assert "%s" in sql
+            assert args is not None and len(args) == 1
+            bound = json.loads(args[0])
+            assert bound["name"] == val
+            assert json.loads(bound["props_json"])["payload"] == val
+
+    # 3. Verify explicit dollar-tag collision guard
+    with pytest.raises(ValueError):
+        _make_dollar_tag("MATCH (n {name: '$age_deadbeef$'}) RETURN n", tag_prefix="$age_deadbeef$")
+

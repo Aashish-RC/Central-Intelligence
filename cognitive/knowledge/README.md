@@ -10,27 +10,21 @@ The Knowledge Engine provides unified RAG pipelines, Global Hybrid Search (BM25 
 - **3-Source Reciprocal Rank Fusion (RRF):**
   Fuses ranked candidate lists from lexical search, vector similarity, and knowledge graph traversal:
   $$\text{score}(d) = w_{\text{lex}} \cdot \frac{1}{k + \text{rank}_{\text{lex}}} + w_{\text{vec}} \cdot \frac{1}{k + \text{rank}_{\text{vec}}} + w_{\text{graph}} \cdot \frac{1}{k + \text{rank}_{\text{graph}}}$$
-- **GraphRAG Traversal (FalkorDB Adapter):**
-  Enables multi-hop entity-relationship traversals (e.g. corporate hierarchies, acquisition chains, dependency graphs) via Cypher.
+- **GraphRAG Traversal (PostgreSQL + Apache AGE Default; FalkorDB Opt-In):**
+  Enables multi-hop entity-relationship traversals (e.g. corporate hierarchies, acquisition chains, dependency graphs) via OpenCypher.
 
 ---
 
-## 2. FalkorDB Adapter (GraphRAG)
+## 2. GraphRAG Backends: Apache AGE (Default) & FalkorDB (Opt-In)
 
-- **Repo:** [https://github.com/FalkorDB/FalkorDB](https://github.com/FalkorDB/FalkorDB)
-- **License:** SSPL-1.0
-- **Why Chosen:** Purpose-built in-memory graph database designed specifically for GraphRAG workloads, leveraging Cypher and Redis protocol for ultra-fast multi-hop traversals.
-- **Configuration:**
-  - `FALKORDB_HOST`: Host of FalkorDB server (default: `localhost`, use `:memory:` for hermetic in-memory execution).
-  - `FALKORDB_PORT`: Port (default: `6380`, avoiding Redis on 6379).
-  - Docker Compose: service `falkordb` using image `falkordb/falkordb:latest` on port `6380:6379`.
-
-### Usage Example
+### Default OSI Backend: PostgreSQL + Apache AGE (`ApacheAGEGraphAdapter`)
+- **Image:** `apache/age:release_PG16_1.6.0` (Apache-2.0, service `apache-age` on port `5433` in root `docker-compose.yml`).
+- **Configuration:** `AGE_POSTGRES_URL` (defaults to `postgresql://postgres:postgres@localhost:5433/postgres`; falls back to in-memory NetworkX offline).
 
 ```python
-from knowledge.graph.falkordb_adapter import FalkorDBAdapter
+from knowledge.graph import ApacheAGEGraphAdapter
 
-adapter = FalkorDBAdapter(host="localhost", port=6380)
+adapter = ApacheAGEGraphAdapter()
 
 # Build entity relationships
 adapter.add_relationship(source="Bob", relation="MANAGES", target="Alice")
@@ -41,6 +35,10 @@ adapter.add_relationship(source="Megacorp", relation="ACQUIRED", target="Startup
 acquisitions = adapter.query_manager_company_acquisitions(employee_name="Alice")
 print(acquisitions)  # ['StartupAI']
 ```
+
+### Opt-In Non-OSI Backend: FalkorDB (`FalkorDBAdapter`)
+- **License:** SSPL-v1 (`profiles: ["self-hosted-non-osi"]` in `docker-compose.yml`, image `falkordb/falkordb:v4.22.3`, requires `pip install .[graph-non-osi]`).
+- **Configuration:** `FALKORDB_HOST` (default `localhost`, `:memory:` offline), `FALKORDB_PORT` (default `6380`).
 
 ---
 
