@@ -47,11 +47,21 @@ class TranscriptionResult(BaseModel):
     segments: List[TranscriptionSegment] = Field(default_factory=list)
 
 
+class VoiceStyleConfig(BaseModel):
+    """Fine-grained prosody & voice expression controls (L6 Feature 6.20)."""
+
+    emotion: str = "neutral"  # neutral, cheerful, empathetic, serious
+    pace: str = "medium"      # x-slow, slow, medium, fast
+    emphasis: str = "moderate"  # reduced, none, moderate, strong
+    accent: Optional[str] = None
+
+
 class SpeechSynthesisRequest(BaseModel):
     text: str
     voice_id: str = "aura-orpheus"
     speed: float = 1.0
     audio_format: AudioFormat = AudioFormat.WAV
+    style: Optional[VoiceStyleConfig] = None
 
 
 class SpeechSynthesisResult(BaseModel):

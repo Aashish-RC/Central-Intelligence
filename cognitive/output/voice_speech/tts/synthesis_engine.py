@@ -1,5 +1,6 @@
 """Speech Synthesizer: Converts agent response text into spoken audio waveforms."""
 
+import html
 import os
 import struct
 from typing import Iterator, Optional, Union
@@ -9,6 +10,7 @@ from ..core.models import (
     AudioFormat,
     SpeechSynthesisRequest,
     SpeechSynthesisResult,
+    VoiceStyleConfig,
 )
 
 
@@ -33,6 +35,21 @@ class SpeechSynthesizer(BaseSpeechSynthesizer):
             or os.getenv("MODEL_GATEWAY_URL", "http://localhost:4000")
         ).rstrip("/")
         self.http_client = http_client
+
+    @staticmethod
+    def render_ssml(text: str, style: Optional[VoiceStyleConfig], speed: float = 1.0) -> str:
+        """Render W3C SSML markup encoding emotion, pace, emphasis, and accent (L6 6.20)."""
+        escaped = html.escape(text)
+        if style is None:
+            return f"<speak>{escaped}</speak>"
+        rate_attr = f"{int(speed * 100)}%" if speed != 1.0 else style.pace
+        inner = (
+            f'<prosody rate="{html.escape(rate_attr)}">'
+            f'<emphasis level="{html.escape(style.emphasis)}">{escaped}</emphasis>'
+            f"</prosody>"
+        )
+        accent_attr = f' xml:lang="{html.escape(style.accent)}"' if style.accent else ""
+        return f'<speak{accent_attr} data-emotion="{html.escape(style.emotion)}">{inner}</speak>'
 
     def synthesize(self, request: Union[SpeechSynthesisRequest, str]) -> SpeechSynthesisResult:
         """
