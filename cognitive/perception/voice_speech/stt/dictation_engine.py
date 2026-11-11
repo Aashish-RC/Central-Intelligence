@@ -2,6 +2,7 @@
 
 import io
 import logging
+import re
 from typing import List, Optional
 from ..core.interfaces import BaseDictationEngine
 from ..core.models import (
@@ -39,6 +40,33 @@ def auto_punctuate(text: str) -> str:
         else:
             capitalized += "."
     return capitalized
+
+
+_DISFLUENCY_RE = re.compile(
+    r"\b(?:um+|uh+|er+|ah+|hmm+|you know|i mean|sort of|kind of)\b[,\s]*",
+    re.IGNORECASE,
+)
+
+
+def remove_disfluencies(text: str) -> str:
+    """Strip conversational filler words and collapse immediate word stutters (L1 1.27)."""
+    if not text:
+        return ""
+    cleaned = _DISFLUENCY_RE.sub(" ", text)
+    # Collapse consecutive identical words such as "the the" -> "the"
+    cleaned = re.sub(r"\b(\w+)\s+\1\b", r"\1", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" ,")
+    return cleaned
+
+
+def format_reader_ready(text: str, speaker: Optional[str] = None) -> str:
+    """Produce clean, punctuated reader-ready transcript prose (L1 1.28)."""
+    cleaned = remove_disfluencies(text)
+    if not cleaned:
+        return ""
+    sentences = [auto_punctuate(s) for s in re.split(r"(?<=[.!?])\s+", cleaned) if s.strip()]
+    body = " ".join(sentences)
+    return f"{speaker}: {body}" if speaker else body
 
 
 class DictationEngine(BaseDictationEngine):

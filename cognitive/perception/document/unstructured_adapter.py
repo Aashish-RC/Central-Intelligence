@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from cognitive.perception.translation.core.detector import LocaleDetector
+
 logger = logging.getLogger("cognitive.perception.document.unstructured")
 
 try:
@@ -83,8 +85,91 @@ class UnstructuredAdapter:
     Extracts structured JSON with tables, titles, form fields, and text blocks.
     """
 
-    def __init__(self, strategy: str = "auto") -> None:
+    def __init__(self, strategy: str = "auto", languages: Optional[List[str]] = None) -> None:
         self.strategy = strategy
+        self.languages = list(languages) if languages else ["eng"]
+        self._locale_detector = LocaleDetector()
+
+    @staticmethod
+    def _parse_table_rows(table_text: str) -> List[List[str]]:
+        """Parse pipe- or tab-delimited table text into normalized rows and cells."""
+        rows: List[List[str]] = []
+        for raw_line in table_text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if "|" in line:
+                cells = [c.strip() for c in line.strip("|").split("|")]
+                # Skip markdown separator rows like |---|---|
+                if all(set(c) <= set("-: ") for c in cells):
+                    continue
+                rows.append(cells)
+            elif "\t" in line:
+                rows.append([c.strip() for c in line.split("\t")])
+        return rows
+
+    def detect_document_language(self, doc: ParsedDocument) -> Dict[str, Any]:
+        """Detect dominant language and Unicode script across parsed document elements (1.13)."""
+        sample = doc.full_text[:2000].strip()
+        if not sample:
+            return {"language": "und", "script": "unknown", "confidence": 0.0}
+        res = self._locale_detector.detect(sample)
+        return {
+            "language": res.language,
+            "script": res.script,
+            "confidence": res.confidence,
+        }
+
+    def extract_tables_json(self, doc: ParsedDocument) -> List[Dict[str, Any]]:
+        """Convert parsed document tables into structured row/column JSON dicts (1.14)."""
+        structured: List[Dict[str, Any]] = []
+        for idx, tbl in enumerate(doc.tables):
+            rows = self._parse_table_rows(tbl.get("table_text", ""))
+            headers = rows[0] if rows else []
+            data_rows = rows[1:] if len(rows) > 1 else []
+            structured.append({
+                "table_index": idx,
+                "element_id": tbl.get("element_id"),
+                "page_number": tbl.get("page_number", 1),
+                "headers": headers,
+                "rows": rows,
+                "records": [
+                    {headers[i]: (r[i] if i < len(r) else "") for i in range(len(headers))}
+                    for r in data_rows
+                ] if headers else [],
+                "num_rows": len(rows),
+                "num_cols": max((len(r) for r in rows), default=0),
+            })
+        return structured
+
+    def extract_layout_hierarchy(self, doc: ParsedDocument) -> Dict[str, Any]:
+        """Order elements into reading order and nested sections by heading/title (1.16)."""
+        sections: List[Dict[str, Any]] = []
+        current: Dict[str, Any] = {"heading": None, "level": 0, "elements": []}
+        for order_idx, elem in enumerate(doc.elements):
+            if elem.type in ("Title", "Header"):
+                if current["heading"] or current["elements"]:
+                    sections.append(current)
+                current = {
+                    "heading": elem.text,
+                    "level": 1,
+                    "reading_order": order_idx,
+                    "elements": [],
+                }
+            else:
+                current["elements"].append({
+                    "reading_order": order_idx,
+                    "type": elem.type,
+                    "text": elem.text,
+                    "page_number": elem.metadata.get("page_number", 1),
+                })
+        if current["heading"] or current["elements"]:
+            sections.append(current)
+        return {
+            "filename": doc.filename,
+            "section_count": len(sections),
+            "sections": sections,
+        }
 
     def parse_document(self, file_path: str | Path) -> ParsedDocument:
         """
