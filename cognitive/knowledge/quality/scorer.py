@@ -1,6 +1,8 @@
 """Source Quality and Authority Scorer combining heuristics and LLM-as-Judge (Feature 3.43)."""
 
 import re
+import time
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 from knowledge.quality.models import (
@@ -216,3 +218,52 @@ class SourceQualityAuthorityScorer:
             return 0.65
 
         return 0.75
+
+
+@dataclass
+class FreshnessRecord:
+    """Tracked ingestion freshness state for a knowledge source (L3 Feature 3.40)."""
+
+    source_id: str
+    last_verified_at: float
+    ttl_seconds: float = 86400.0
+    is_stale: bool = False
+
+
+class FreshnessTracker:
+    """Tracks per-source TTL freshness and flags stale knowledge documents."""
+
+    def __init__(self, default_ttl_seconds: float = 86400.0) -> None:
+        self.default_ttl_seconds = default_ttl_seconds
+        self._records: Dict[str, FreshnessRecord] = {}
+
+    def record_ingested(
+        self,
+        source_id: str,
+        ttl_seconds: Optional[float] = None,
+        timestamp: Optional[float] = None,
+    ) -> FreshnessRecord:
+        now = timestamp if timestamp is not None else time.time()
+        rec = FreshnessRecord(
+            source_id=source_id,
+            last_verified_at=now,
+            ttl_seconds=ttl_seconds if ttl_seconds is not None else self.default_ttl_seconds,
+            is_stale=False,
+        )
+        self._records[source_id] = rec
+        return rec
+
+    def sweep_stale_sources(self, now: Optional[float] = None) -> List[str]:
+        """Flag and return all source IDs whose TTL has elapsed."""
+        ref = now if now is not None else time.time()
+        stale_ids: List[str] = []
+        for rec in self._records.values():
+            if (ref - rec.last_verified_at) >= rec.ttl_seconds:
+                rec.is_stale = True
+                stale_ids.append(rec.source_id)
+            else:
+                rec.is_stale = False
+        return stale_ids
+
+    def get_record(self, source_id: str) -> Optional[FreshnessRecord]:
+        return self._records.get(source_id)

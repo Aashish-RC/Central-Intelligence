@@ -13,6 +13,7 @@ from .scraper.parser import HTMLMarkdownParser
 from .scraper.crawler import PoliteCrawler
 from .verifier.claim_checker import SourceSupportVerifier
 from .core.provider import FirecrawlClient, Crawl4AiAdapter, search
+from .feed_ingestor import FeedIngestor, FeedItem, FeedSubscription
 
 __all__ = [
     "WebSearchResultItem",
@@ -28,4 +29,7 @@ __all__ = [
     "FirecrawlClient",
     "Crawl4AiAdapter",
     "search",
+    "FeedIngestor",
+    "FeedItem",
+    "FeedSubscription",
 ]
