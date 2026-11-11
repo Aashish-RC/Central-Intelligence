@@ -28,7 +28,7 @@ from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 pytestmark = pytest.mark.live
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_SERVICES = ["valkey", "qdrant", "temporal", "keycloak"]
+COMPOSE_SERVICES = ["valkey", "qdrant", "supabase-db", "temporal", "keycloak"]
 
 
 @workflow.defn
@@ -219,4 +219,132 @@ def test_keycloak_oidc_and_admin_api_e2e() -> None:
     realms_resp.raise_for_status()
     realm_names = {r["realm"] for r in realms_resp.json()}
     assert "master" in realm_names
+
+
+def test_memory_qdrant_adapter_v120_e2e() -> None:
+    """Exercise the real L2 QdrantAdapter against live Qdrant v1.20.0 (query_points API)."""
+    from memory.core.models import MemoryRecord, utc_now
+    from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
+
+    collection = f"e2e_mem_{uuid4().hex[:8]}"
+    adapter = QdrantAdapter(
+        location=os.getenv("QDRANT_URL", "http://localhost:6333"),
+        collection_name=collection,
+        dim=8,
+        auto_fallback=False,
+    )
+    assert adapter.is_in_memory is False
+    assert adapter.check_health() is True
+
+    rec_id = uuid4()
+    other_id = uuid4()
+    now = utc_now()
+    records = [
+        MemoryRecord(
+            id=rec_id,
+            user_id="e2e_user",
+            text="Apache AGE is our open PostgreSQL graph backend.",
+            embedding=[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            confidence_score=0.95,
+            created_at=now,
+            updated_at=now,
+            last_accessed_at=now,
+        ),
+        MemoryRecord(
+            id=other_id,
+            user_id="e2e_user",
+            text="Valkey handles ephemeral Redis wire sessions.",
+            embedding=[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            confidence_score=0.9,
+            created_at=now,
+            updated_at=now,
+            last_accessed_at=now,
+        ),
+    ]
+    try:
+        upserted = adapter.upsert_vectors(records)
+        assert len(upserted) == 2
+
+        matches = adapter.query_similar(
+            user_id="e2e_user",
+            query_embedding=[0.98, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            top_k=1,
+        )
+        assert len(matches) == 1
+        assert matches[0].id == rec_id
+        assert "Apache AGE" in matches[0].text
+
+        assert adapter.delete("e2e_user", [rec_id, other_id]) is True
+    finally:
+        if adapter._client:
+            adapter._client.delete_collection(collection_name=collection)
+
+
+def test_postgres_apache_age_graph_adapters_e2e() -> None:
+    """Exercise L2 ApacheAGEAdapter & L3 ApacheAGEGraphAdapter against live supabase-db."""
+    import pg8000.dbapi
+    from knowledge.graph import ApacheAGEGraphAdapter
+    from memory.tiers.graph.age_adapter import ApacheAGEAdapter
+
+    pg_password = os.getenv("POSTGRES_PASSWORD", "e2e-postgres-pass")
+    pg_url = os.getenv(
+        "POSTGRES_URL",
+        f"postgresql://postgres:{pg_password}@localhost:5432/postgres",
+    )
+
+    deadline = time.monotonic() + 90.0
+    last_exc: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            conn = pg8000.dbapi.connect(
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password=pg_password,
+                database="postgres",
+                timeout=3,
+            )
+            conn.close()
+            break
+        except Exception as exc:  # pragma: no cover - startup polling
+            last_exc = exc
+            time.sleep(2.0)
+    else:
+        pytest.fail(f"Supabase Postgres/AGE did not become ready in time: {last_exc}")
+
+    suffix = uuid4().hex[:8]
+    l2_graph = ApacheAGEAdapter(
+        postgres_url=pg_url,
+        graph_name=f"e2e_l2_{suffix}",
+        auto_fallback=False,
+    )
+    l3_graph = ApacheAGEGraphAdapter(
+        postgres_url=pg_url,
+        graph_name=f"e2e_l3_{suffix}",
+        auto_fallback=False,
+    )
+    try:
+        assert l2_graph.is_in_memory is False
+        assert l2_graph.check_health() is True
+        l2_graph.add_relationship(
+            user_id="e2e_u",
+            source="Bob",
+            relation="MANAGES",
+            target="Alice",
+        )
+        managers = l2_graph.execute_query(
+            "MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name"
+        )
+        assert managers and managers[0]["m.name"] == "Bob"
+
+        assert l3_graph.is_in_memory is False
+        assert l3_graph.check_health() is True
+        l3_graph.add_relationship(source="Bob", relation="MANAGES", target="Alice")
+        l3_graph.add_relationship(source="Bob", relation="WORKS_AT", target="Megacorp")
+        l3_graph.add_relationship(source="Megacorp", relation="ACQUIRED", target="StartupAI")
+        acquired = l3_graph.query_manager_company_acquisitions("Alice")
+        assert "StartupAI" in acquired
+    finally:
+        l2_graph.close()
+        l3_graph.close()
 

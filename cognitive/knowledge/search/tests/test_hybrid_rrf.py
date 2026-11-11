@@ -113,3 +113,28 @@ def test_falkordb_multihop_acquisitions_query():
     acquired_names = [r["acquired_company"] for r in cypher_results]
     assert "StartupAI" in acquired_names
     assert "DataCloud" in acquired_names
+
+
+def test_apache_age_multihop_acquisitions_query():
+    """Verify default OSI ApacheAGEGraphAdapter preserves GraphRAG multi-hop traversal."""
+    from knowledge.graph import ApacheAGEGraphAdapter
+
+    adapter = ApacheAGEGraphAdapter(postgres_url=":memory:")
+    assert adapter.check_health() is True
+    assert adapter.is_in_memory is True
+
+    adapter.add_relationship(source="Bob", relation="MANAGES", target="Alice")
+    adapter.add_relationship(source="Bob", relation="WORKS_AT", target="Megacorp")
+    adapter.add_relationship(source="Megacorp", relation="ACQUIRED", target="StartupAI")
+    adapter.add_relationship(source="Megacorp", relation="ACQUIRED", target="DataCloud")
+
+    acquisitions = adapter.query_manager_company_acquisitions(employee_name="Alice")
+    assert "StartupAI" in acquisitions
+    assert "DataCloud" in acquisitions
+
+    cypher_results = adapter.execute_query(
+        "MATCH (c)-[:ACQUIRED]->(target) RETURN target.name AS acquired_company"
+    )
+    acquired_names = [r["acquired_company"] for r in cypher_results]
+    assert "StartupAI" in acquired_names
+    assert "DataCloud" in acquired_names

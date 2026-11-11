@@ -12,8 +12,8 @@
 | `control/orchestration/nodes/` (`core/`, `plugins/`, `assistants/`, `contract/`, `allNodes.ts`) | Ported from **Ironclad Rivet** (`packages/core/src/model/nodes`, `packages/core/src/plugins`) | **MIT** | Compatible with Apache-2.0. Attribution & MIT license text preserved in [NOTICE](../NOTICE) and [nodes/NOTICE](../control/orchestration/nodes/NOTICE). |
 | `cognitive/reasoning/` | Clean-room / adapted gateway patterns from Portkey (MIT), Bifrost (Apache-2.0), Envoy AI Gateway (Apache-2.0), LiteLLM Core (MIT) | **MIT / Apache-2.0** | Compatible with Apache-2.0. Preserved in [cognitive/reasoning/NOTICE](../cognitive/reasoning/NOTICE). |
 | `cognitive/action/connectors/` | ActivePieces piece contract pattern | **MIT** | Compatible with Apache-2.0. |
-| `control/billing/engine/` (Lago adapter) | REST client boundary to external Lago service | **Own code (Apache-2.0)** -> external **AGPL-3.0** | Strict HTTP/REST process boundary; zero AGPL code vendored in repository. |
-| `requirements.lock` | Hash-pinned Python dependency graph | **Verified transitive graph** | Generated with `uv pip compile --generate-hashes`. Does not include `litellm`; CI installs with `pip install --require-hashes -r requirements.lock`. |
+| `control/billing/engine/` (Lago adapter) | REST client boundary to external Lago service | **Own code (Apache-2.0)** -> external **AGPL-3.0** | Strict `httpx` HTTP/REST process boundary; zero AGPL code or `lago*` client packages vendored/imported (CI-enforced). |
+| `requirements.lock` | Hash-pinned Python dependency graph | **Verified transitive graph** | Generated with `uv pip compile --universal --generate-hashes` (129 lightweight packages; `gqlalchemy`/`falkordb` moved to `graph-non-osi` extra so `tensorflow`/`keras` are excluded); no `litellm`; CI installs with `pip install --require-hashes -r requirements.lock`. |
 
 ---
 
@@ -53,8 +53,9 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 
 [scripts/check_licenses.py](../scripts/check_licenses.py) runs on every push and pull request and verifies:
 1. Root `LICENSE`, `NOTICE`, `control/orchestration/nodes/NOTICE`, `.env.example`, and `pyproject.toml` (`Apache-2.0`).
-2. `requirements.lock` exists with `--hash=sha256:` entries and no `litellm==` pin.
-3. Every image in `docker-compose.yml` is explicitly version-pinned (no `:latest`).
-4. No committed default secret fallbacks exist in `docker-compose.yml`.
-5. Every non-OSI service in `docker-compose.yml` declares a `profiles:` opt-in guard so default `docker compose up` remains 100% OSI-approved.
-6. Installed Python packages are checked for unexpected strong-copyleft licenses.
+2. `requirements.lock` exists with `--hash=sha256:` entries and excludes `litellm`, `tensorflow`, `keras`, `gqlalchemy`, `falkordb`, and `lago*`.
+3. Zero Python files vendor or import `lago` / `lago_python_client` (preserving the strict AGPL-3.0 REST boundary).
+4. Every image in `docker-compose.yml` is explicitly version-pinned (no `:latest`).
+5. No committed default secret fallbacks exist in `docker-compose.yml`.
+6. Every non-OSI service in `docker-compose.yml` declares a `profiles:` opt-in guard so default `docker compose up` remains 100% OSI-approved.
+7. Installed Python packages are checked for unexpected strong-copyleft licenses.

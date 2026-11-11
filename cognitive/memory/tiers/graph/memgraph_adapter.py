@@ -1,26 +1,23 @@
-"""Tier 4: Memgraph Knowledge Graph Store Adapter.
+"""Tier 4: Memgraph Knowledge Graph Store Adapter (opt-in self-hosted BSL-1.1).
 
 Provides entity-relationship storage, multi-hop Cypher queries,
 and conflict resolution against knowledge graphs.
 Supports both live Memgraph instances via gqlalchemy/bolt and
-deterministic in-memory graph execution (using networkx) for hermetic offline testing.
+deterministic in-memory execution via the shared NetworkXGraphFallback.
 """
 
-from datetime import datetime, timezone
+from __future__ import annotations
+
 import re
 from typing import Any, Dict, List, Optional
-import networkx as nx
 
-from memory.core.interfaces import BaseGraphStore
 from memory.core.exceptions import AdapterConnectionError
-
-
-def _utc_now_str() -> str:
-    return datetime.now(timezone.utc).isoformat()
+from memory.core.interfaces import BaseGraphStore
+from memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 
 
 class MemgraphAdapter(BaseGraphStore):
-    """Production and local graph memory tier powered by Memgraph (or in-memory graph)."""
+    """Opt-in self-hosted graph memory tier powered by Memgraph (with NetworkX fallback)."""
 
     def __init__(
         self,
@@ -38,8 +35,8 @@ class MemgraphAdapter(BaseGraphStore):
         self._is_in_memory = False
         self._client: Optional[Any] = None
 
-        # In-memory graph fallback
-        self._nx_graph = nx.MultiDiGraph()
+        self._fallback = NetworkXGraphFallback()
+        self._nx_graph = self._fallback.graph
 
         self._init_client()
 
@@ -57,7 +54,6 @@ class MemgraphAdapter(BaseGraphStore):
                 username=self._username,
                 password=self._password,
             )
-            # Probe connection with a minimal query
             list(client.execute_and_fetch("RETURN 1 AS test;"))
             self._client = client
             self._is_in_memory = False
@@ -86,7 +82,7 @@ class MemgraphAdapter(BaseGraphStore):
         return self._is_in_memory
 
     def _node_id(self, user_id: str, name: str, project_id: str = "default") -> str:
-        return f"{user_id}:{project_id}:{name.strip().lower()}"
+        return self._fallback.node_id(user_id, name, project_id)
 
     def add_entity(
         self,
@@ -98,25 +94,15 @@ class MemgraphAdapter(BaseGraphStore):
     ) -> str:
         """Store or update an entity node."""
         props = properties or {}
-        now = _utc_now_str()
+        now = utc_now_str()
+        self._fallback.add_entity(
+            user_id=user_id,
+            name=name,
+            entity_type=entity_type,
+            properties=props,
+            project_id=project_id,
+        )
 
-        # Update in-memory graph
-        nid = self._node_id(user_id, name, project_id)
-        current_data = self._nx_graph.nodes.get(nid, {})
-        new_data = {
-            **current_data,
-            **props,
-            "name": name,
-            "entity_type": entity_type,
-            "user_id": user_id,
-            "project_id": project_id,
-            "updated_at": now,
-        }
-        if "created_at" not in new_data:
-            new_data["created_at"] = now
-        self._nx_graph.add_node(nid, **new_data)
-
-        # Update live Memgraph if connected
         if not self._is_in_memory and self._client:
             clean_type = re.sub(r"[^A-Za-z0-9_]", "", entity_type) or "Entity"
             cypher = f"""
@@ -155,33 +141,18 @@ class MemgraphAdapter(BaseGraphStore):
     ) -> Dict[str, Any]:
         """Store or update a directed relationship between two entities."""
         props = properties or {}
-        now = _utc_now_str()
-        rel_clean = re.sub(r"[^A-Za-z0-9_]", "_", relation.strip().upper()) or "RELATED_TO"
-
-        # Ensure both entity nodes exist
-        self.add_entity(user_id=user_id, name=source, project_id=project_id)
-        self.add_entity(user_id=user_id, name=target, project_id=project_id)
-
-        src_id = self._node_id(user_id, source, project_id)
-        tgt_id = self._node_id(user_id, target, project_id)
-
-        # In-memory edge
-        self._nx_graph.add_edge(
-            src_id,
-            tgt_id,
-            key=rel_clean,
-            relation=rel_clean,
-            source=source,
-            target=target,
+        now = utc_now_str()
+        result = self._fallback.add_relationship(
             user_id=user_id,
-            project_id=project_id,
+            source=source,
+            relation=relation,
+            target=target,
             properties=props,
-            created_at=now,
-            is_active=True,
+            project_id=project_id,
         )
 
-        # Live Memgraph
         if not self._is_in_memory and self._client:
+            rel_clean = result["relation"]
             cypher = f"""
             MATCH (s {{name: $source, user_id: $user_id, project_id: $project_id}})
             MATCH (t {{name: $target, user_id: $user_id, project_id: $project_id}})
@@ -208,13 +179,7 @@ class MemgraphAdapter(BaseGraphStore):
                 if not self._auto_fallback:
                     raise AdapterConnectionError(f"Memgraph add_relationship failed: {e}")
 
-        return {
-            "source": source,
-            "relation": rel_clean,
-            "target": target,
-            "properties": props,
-            "is_active": True,
-        }
+        return result
 
     def delete_relationship(
         self,
@@ -225,19 +190,16 @@ class MemgraphAdapter(BaseGraphStore):
         project_id: Optional[str] = None,
     ) -> bool:
         """Remove or deactivate a relationship (used in conflict resolution)."""
-        pid = project_id or "default"
-        src_id = self._node_id(user_id, source, pid)
-        tgt_id = self._node_id(user_id, target, pid)
-        rel_clean = re.sub(r"[^A-Za-z0-9_]", "_", relation.strip().upper())
+        removed = self._fallback.delete_relationship(
+            user_id=user_id,
+            source=source,
+            relation=relation,
+            target=target,
+            project_id=project_id,
+        )
 
-        # In-memory
-        removed = False
-        if self._nx_graph.has_edge(src_id, tgt_id, key=rel_clean):
-            self._nx_graph.remove_edge(src_id, tgt_id, key=rel_clean)
-            removed = True
-
-        # Live Memgraph
         if not self._is_in_memory and self._client:
+            rel_clean = re.sub(r"[^A-Za-z0-9_]", "_", relation.strip().upper())
             cypher = f"""
             MATCH (s {{name: $source, user_id: $user_id}})-[r:{rel_clean}]->(t {{name: $target, user_id: $user_id}})
             DELETE r;
@@ -262,43 +224,13 @@ class MemgraphAdapter(BaseGraphStore):
         project_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Traverse graph up to N hops from start entity following relationships."""
-        pid = project_id or "default"
-        start_id = self._node_id(user_id, start_entity, pid)
-        rel_filter = relation.strip().upper() if relation else None
-
-        results = []
-        visited = set()
-
-        # BFS traversal
-        queue = [(start_id, start_entity, 0, [start_entity])]
-        while queue:
-            curr_id, curr_name, depth, path = queue.pop(0)
-            if depth >= hops:
-                continue
-
-            if curr_id in self._nx_graph:
-                for _, neighbor_id, key, data in self._nx_graph.out_edges(curr_id, data=True, keys=True):
-                    if not data.get("is_active", True):
-                        continue
-                    if rel_filter and data.get("relation") != rel_filter:
-                        continue
-
-                    neighbor_name = self._nx_graph.nodes[neighbor_id].get("name", neighbor_id.split(":")[-1])
-                    new_path = path + [data.get("relation", key), neighbor_name]
-                    edge_key = (curr_id, neighbor_id, key, depth)
-                    if edge_key not in visited:
-                        visited.add(edge_key)
-                        results.append({
-                            "source": curr_name,
-                            "relation": data.get("relation", key),
-                            "target": neighbor_name,
-                            "depth": depth + 1,
-                            "path": new_path,
-                            "properties": data.get("properties", {}),
-                        })
-                        queue.append((neighbor_id, neighbor_name, depth + 1, new_path))
-
-        return results
+        return self._fallback.multi_hop_query(
+            user_id=user_id,
+            start_entity=start_entity,
+            relation=relation,
+            hops=hops,
+            project_id=project_id,
+        )
 
     def execute_query(
         self,
@@ -307,7 +239,6 @@ class MemgraphAdapter(BaseGraphStore):
     ) -> List[Dict[str, Any]]:
         """Execute a Cypher query against Memgraph, or in-memory emulation."""
         params = params or {}
-
         if not self._is_in_memory and self._client:
             try:
                 raw_results = self._client.execute_and_fetch(query, params)
@@ -316,100 +247,18 @@ class MemgraphAdapter(BaseGraphStore):
                 if not self._auto_fallback:
                     raise AdapterConnectionError(f"Memgraph query failed: {e}")
 
-        # In-Memory Cypher Emulator for typical query patterns
-        return self._emulate_cypher(query, params)
+        return self._fallback.emulate_cypher(query, params)
 
     def _emulate_cypher(self, query: str, params: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Emulate common Cypher queries on the in-memory graph."""
-        q = query.strip()
-
-        # Pattern: MATCH (m)-[:RELATION]->(a {name: 'Alice'}) RETURN m.name
-        match_incoming = re.search(
-            r"MATCH\s*\(\s*(\w+)\s*\)\s*-\s*\[\s*:?(\w+)\s*\]\s*->\s*\(\s*(\w+)\s*(?:\{\s*name\s*:\s*(?:'([^']+)'|\$([a-zA-Z0-9_]+))\s*\}\s*)?\)",
-            q,
-            re.IGNORECASE,
-        )
-        if match_incoming:
-            rel_type = match_incoming.group(2).upper()
-            target_name = match_incoming.group(4) or params.get(match_incoming.group(5) or "", "")
-            
-            # Check for WHERE clause if target_name wasn't in pattern
-            if not target_name:
-                where_match = re.search(r"WHERE\s+\w+\.name\s*=\s*(?:'([^']+)'|\$([a-zA-Z0-9_]+))", q, re.IGNORECASE)
-                if where_match:
-                    target_name = where_match.group(1) or params.get(where_match.group(2) or "", "")
-
-            results = []
-            for u, v, key, data in self._nx_graph.edges(data=True, keys=True):
-                if not data.get("is_active", True):
-                    continue
-                v_name = self._nx_graph.nodes[v].get("name", "")
-                if rel_type and data.get("relation") != rel_type:
-                    continue
-                if target_name and v_name.lower() != target_name.lower():
-                    continue
-
-                u_name = self._nx_graph.nodes[u].get("name", "")
-                results.append({
-                    "m.name": u_name,
-                    "manager": u_name,
-                    "source": u_name,
-                    "relation": data.get("relation", key),
-                    "target": v_name,
-                })
-            return results
-
-        # Pattern: MATCH (a {name: 'Alice'})-[:RELATION]->(b) RETURN b.name
-        match_outgoing = re.search(
-            r"MATCH\s*\(\s*(\w+)\s*(?:\{\s*name\s*:\s*(?:'([^']+)'|\$([a-zA-Z0-9_]+))\s*\}\s*)?\)\s*-\s*\[\s*:?(\w+)\s*\]\s*->\s*\(\s*(\w+)\s*\)",
-            q,
-            re.IGNORECASE,
-        )
-        if match_outgoing:
-            source_name = match_outgoing.group(2) or params.get(match_outgoing.group(3) or "", "")
-            rel_type = match_outgoing.group(4).upper()
-
-            if not source_name:
-                where_match = re.search(r"WHERE\s+\w+\.name\s*=\s*(?:'([^']+)'|\$([a-zA-Z0-9_]+))", q, re.IGNORECASE)
-                if where_match:
-                    source_name = where_match.group(1) or params.get(where_match.group(2) or "", "")
-
-            results = []
-            for u, v, key, data in self._nx_graph.edges(data=True, keys=True):
-                if not data.get("is_active", True):
-                    continue
-                u_name = self._nx_graph.nodes[u].get("name", "")
-                if rel_type and data.get("relation") != rel_type:
-                    continue
-                if source_name and u_name.lower() != source_name.lower():
-                    continue
-
-                v_name = self._nx_graph.nodes[v].get("name", "")
-                results.append({
-                    "b.name": v_name,
-                    "target": v_name,
-                    "relation": data.get("relation", key),
-                    "source": u_name,
-                })
-            return results
-
-        # Return empty list if query did not match known in-memory emulator pattern
-        return []
+        return self._fallback.emulate_cypher(query, params)
 
     def delete_by_user(self, user_id: str) -> int:
         """Purge all graph nodes and edges for a given user."""
-        nodes_to_remove = [
-            n for n, d in self._nx_graph.nodes(data=True) if d.get("user_id") == user_id
-        ]
-        for n in nodes_to_remove:
-            self._nx_graph.remove_node(n)
-
+        removed = self._fallback.delete_by_user(user_id)
         if not self._is_in_memory and self._client:
             cypher = "MATCH (n {user_id: $user_id}) DETACH DELETE n;"
             try:
                 self._client.execute_query(cypher, {"user_id": user_id})
             except Exception:
                 pass
-
-        return len(nodes_to_remove)
-
+        return removed

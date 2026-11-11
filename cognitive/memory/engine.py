@@ -4,7 +4,14 @@ import time
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from memory.config import MemoryConfig, default_config, WorkingMemoryBackend, FactStoreBackend, VectorStoreBackend
+from memory.config import (
+    GraphStoreBackend,
+    MemoryConfig,
+    default_config,
+    WorkingMemoryBackend,
+    FactStoreBackend,
+    VectorStoreBackend,
+)
 from memory.core.models import (
     ContextPackage,
     FactCategory,
@@ -28,6 +35,7 @@ from memory.tiers.facts.sqlite_adapter import SQLiteFactStore
 from memory.tiers.facts.postgres_adapter import PostgreSQLFactStore
 from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 from memory.tiers.semantic.chroma_adapter import ChromaAdapter
+from memory.tiers.graph.age_adapter import ApacheAGEAdapter
 from memory.tiers.graph.memgraph_adapter import MemgraphAdapter
 from memory.embeddings.embedder import get_embedder
 from memory.stitches.extractor import FactExtractor
@@ -114,15 +122,30 @@ class MemoryEngine:
                 dim=self.embedder.dimension,
             )
 
-        # Tier 4: Knowledge Graph Store
+        # Tier 4: Knowledge Graph Store (Postgres + Apache AGE default)
         if graph_store is not None:
             self.graph = graph_store
-        else:
+        elif self.config.graph_backend == GraphStoreBackend.MEMGRAPH:
             self.graph = MemgraphAdapter(
                 host=self.config.memgraph_host,
                 port=self.config.memgraph_port,
                 username=self.config.memgraph_username,
                 password=self.config.memgraph_password,
+            )
+        elif self.config.graph_backend == GraphStoreBackend.MEMORY:
+            self.graph = ApacheAGEAdapter(
+                postgres_url=":memory:",
+                graph_name=self.config.age_graph_name,
+            )
+        else:
+            age_url = (
+                ":memory:"
+                if self.config.memgraph_host == ":memory:" and not self.config.postgres_url
+                else (self.config.postgres_url or "postgresql://postgres:postgres@localhost:5432/postgres")
+            )
+            self.graph = ApacheAGEAdapter(
+                postgres_url=age_url,
+                graph_name=self.config.age_graph_name,
             )
 
         # Stitches

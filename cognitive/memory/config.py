@@ -22,6 +22,7 @@ class VectorStoreBackend(str, Enum):
 
 
 class GraphStoreBackend(str, Enum):
+    POSTGRES_AGE = "postgres_age"
     MEMGRAPH = "memgraph"
     MEMORY = "memory"
 
@@ -86,8 +87,12 @@ class MemoryConfig(BaseModel):
 
     # Graph Store (Tier 4)
     graph_backend: GraphStoreBackend = Field(
-        default=GraphStoreBackend.MEMGRAPH,
-        description="Tier 4 backend: memgraph or memory",
+        default=GraphStoreBackend.POSTGRES_AGE,
+        description="Tier 4 backend: postgres_age (Apache AGE OSI default), memgraph, or memory",
+    )
+    age_graph_name: str = Field(
+        default=os.getenv("AGE_GRAPH_NAME", "ci_memory_graph"),
+        description="Apache AGE graph namespace in PostgreSQL",
     )
     memgraph_host: str = Field(
         default=os.getenv("MEMGRAPH_HOST", "localhost"),
@@ -159,6 +164,9 @@ class MemoryConfig(BaseModel):
             qdrant_location=os.getenv("QDRANT_LOCATION", ":memory:"),
             chroma_path=os.getenv("CHROMA_PATH", "./chroma_db"),
             collection_name=os.getenv("COLLECTION_NAME", "agent_memories"),
+            graph_backend=os.getenv("MEMORY_GRAPH_BACKEND", GraphStoreBackend.POSTGRES_AGE.value),
+            age_graph_name=os.getenv("AGE_GRAPH_NAME", "ci_memory_graph"),
+            memgraph_host=os.getenv("MEMGRAPH_HOST", "localhost"),
             embedding_backend=os.getenv("MEMORY_EMBEDDING_BACKEND", EmbeddingBackend.LOCAL.value),
             embedding_dim=int(os.getenv("EMBEDDING_DIM", "384")),
             openai_api_key=os.getenv("OPENAI_API_KEY"),

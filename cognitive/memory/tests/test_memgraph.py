@@ -162,3 +162,33 @@ def test_memory_engine_graph_tier_integration():
     assert len(chain) == 2
     assert [c["target"] for c in chain] == ["Bob", "Alice"]
 
+
+def test_default_memory_engine_uses_apache_age():
+    """Default MemoryConfig routes Tier 4 graph queries through ApacheAGEAdapter."""
+    from memory.tiers.graph.age_adapter import ApacheAGEAdapter
+    from memory.config import GraphStoreBackend
+
+    config = MemoryConfig(memgraph_host=":memory:")
+    assert config.graph_backend == GraphStoreBackend.POSTGRES_AGE
+    engine = MemoryEngine(config=config)
+    assert isinstance(engine.graph, ApacheAGEAdapter)
+    assert engine.graph.check_health() is True
+
+    engine.add_relationship(
+        user_id="age_user",
+        source="Bob",
+        relation="MANAGES",
+        target="Alice",
+    )
+    res = engine.query_graph("MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name")
+    assert len(res) == 1
+    assert res[0]["m.name"] == "Bob"
+
+    assert engine.graph.delete_relationship(
+        user_id="age_user",
+        source="Bob",
+        relation="MANAGES",
+        target="Alice",
+    )
+    assert engine.query_graph("MATCH (m)-[:MANAGES]->(a {name: 'Alice'}) RETURN m.name") == []
+

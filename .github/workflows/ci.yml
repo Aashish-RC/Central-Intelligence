@@ -94,7 +94,7 @@ jobs:
         run: docker compose config -q
 
   compose-e2e:
-    name: Compose E2E (Qdrant, Temporal, Keycloak, Valkey)
+    name: Compose E2E (Qdrant v1.20, Apache AGE, Temporal, Keycloak, Valkey)
     runs-on: ubuntu-latest
     needs: [python-tests, license-and-hygiene]
     steps:
@@ -129,4 +129,4 @@ jobs:
           POSTGRES_PASSWORD: e2e-postgres-pass
         run: |
           docker compose ps -a
-          docker compose logs --tail=80 valkey qdrant temporal keycloak
+          docker compose logs --tail=80 valkey qdrant supabase-db temporal keycloak

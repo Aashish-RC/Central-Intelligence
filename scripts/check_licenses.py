@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import os
 import re
 import sys
 from pathlib import Path
@@ -46,8 +47,27 @@ SECRET_FALLBACK_RE = re.compile(
 )
 
 
+# Packages that must never be pinned in core requirements.lock:
+# - litellm: supply-chain exclusion
+# - tensorflow / keras / tensorboard / gqlalchemy / falkordb: heavy or non-OSI graph extras
+# - lago / lago-python-client: AGPL-3.0 boundary (REST HTTP/JSON only)
+DISALLOWED_LOCK_PACKAGES = (
+    "litellm",
+    "tensorflow",
+    "keras",
+    "tensorboard",
+    "gqlalchemy",
+    "falkordb",
+    "lago",
+    "lago-python-client",
+)
+
+LAGO_IMPORT_RE = re.compile(r"(?m)^\s*(?:from|import)\s+lago(?:_python_client)?\b")
+VENV_SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__"}
+
+
 def check_repo_license_files() -> list[str]:
-    """Verify LICENSE, NOTICE, .env.example, requirements.lock, and pyproject.toml metadata."""
+    """Verify LICENSE, NOTICE, .env.example, requirements.lock, Lago boundary, and pyproject metadata."""
     errors: list[str] = []
     license_path = REPO_ROOT / "LICENSE"
     if not license_path.is_file():
@@ -66,8 +86,22 @@ def check_repo_license_files() -> list[str]:
         lock_text = lock_path.read_text(encoding="utf-8")
         if "--hash=sha256:" not in lock_text:
             errors.append("requirements.lock must include --hash=sha256: entries.")
-        if re.search(r"(?m)^litellm==", lock_text):
-            errors.append("requirements.lock must not pin litellm directly.")
+        for pkg in DISALLOWED_LOCK_PACKAGES:
+            if re.search(rf"(?mi)^{re.escape(pkg)}==", lock_text):
+                errors.append(f"requirements.lock must not pin disallowed/optional package '{pkg}'.")
+
+    for root, dirnames, filenames in os.walk(REPO_ROOT):
+        dirnames[:] = [d for d in dirnames if d not in VENV_SKIP_DIRS]
+        for filename in filenames:
+            if not filename.endswith(".py"):
+                continue
+            py_file = Path(root) / filename
+            rel = py_file.relative_to(REPO_ROOT).as_posix()
+            text = py_file.read_text(encoding="utf-8", errors="ignore")
+            if LAGO_IMPORT_RE.search(text):
+                errors.append(
+                    f"AGPL boundary violation in {rel}: direct import of Lago Python package is forbidden (use REST HTTP/JSON only)."
+                )
 
     pyproject_data = tomllib.loads(
         (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
