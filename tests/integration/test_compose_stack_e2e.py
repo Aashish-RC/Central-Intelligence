@@ -274,7 +274,8 @@ def test_memory_qdrant_adapter_v120_e2e() -> None:
         assert matches[0].id == rec_id
         assert "Apache AGE" in matches[0].text
 
-        assert adapter.delete("e2e_user", [rec_id, other_id]) is True
+        assert adapter.delete(rec_id) is True
+        assert adapter.delete_by_user("e2e_user") >= 1
     finally:
         if adapter._client:
             adapter._client.delete_collection(collection_name=collection)
