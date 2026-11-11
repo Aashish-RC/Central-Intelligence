@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "tsx --test tests/engine.test.ts",
-    "test:all": "tsx --test tests/**/*.test.ts"
+    "test:all": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@temporalio/client": "^1.25.0",

@@ -43,7 +43,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: pnpm
 
       - name: Install workspace dependencies (strict lockfile)
@@ -116,3 +116,17 @@ jobs:
         env:
           COMPOSE_E2E_AUTO_START: "1"
         run: python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v
+
+      - name: Dump compose logs on failure
+        if: failure()
+        env:
+          MEILISEARCH_MASTER_KEY: e2e-test-meili-key
+          NANGO_SECRET_KEY: e2e-test-nango-secret
+          KEYCLOAK_ADMIN: admin
+          KEYCLOAK_ADMIN_PASSWORD: e2e-admin-pass
+          INFISICAL_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
+          LIVEKIT_KEYS: "e2ekey: e2esecret"
+          POSTGRES_PASSWORD: e2e-postgres-pass
+        run: |
+          docker compose ps -a
+          docker compose logs --tail=80 valkey qdrant temporal keycloak

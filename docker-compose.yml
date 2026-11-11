@@ -139,8 +139,8 @@ services:
     ports:
       - "8085:8080"
     environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:?KEYCLOAK_ADMIN must be set}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD must be set}
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN:?KEYCLOAK_ADMIN must be set}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD must be set}
     volumes:
       - keycloak_data:/opt/keycloak/data
 

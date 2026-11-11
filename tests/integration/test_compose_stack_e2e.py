@@ -9,6 +9,7 @@ Or let the suite start/stop the target compose services automatically:
 
 from __future__ import annotations
 
+import asyncio
 import os
 import subprocess
 import time
@@ -22,7 +23,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 from temporalio import workflow
 from temporalio.client import Client as TemporalClient
-from temporalio.worker import Worker
+from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 
 pytestmark = pytest.mark.live
 
@@ -161,7 +162,7 @@ async def test_temporal_workflow_execution_e2e() -> None:
             break
         except Exception as exc:  # pragma: no cover - startup polling
             last_exc = exc
-            time.sleep(2.0)
+            await asyncio.sleep(2.0)
 
     if client is None:
         pytest.fail(f"Temporal server at {target} not reachable: {last_exc}")
@@ -171,6 +172,7 @@ async def test_temporal_workflow_execution_e2e() -> None:
         client,
         task_queue=task_queue,
         workflows=[_ComposeEchoWorkflow],
+        workflow_runner=UnsandboxedWorkflowRunner(),
     ):
         result = await client.execute_workflow(
             _ComposeEchoWorkflow.run,
