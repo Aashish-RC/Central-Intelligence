@@ -35,6 +35,7 @@ REVIEWED_COMPOSE_SERVICES: dict[str, tuple[str, bool]] = {
     "hyperswitch": ("Apache-2.0", True),
     "livekit": ("Apache-2.0", True),
     "supabase-db": ("Apache-2.0 / PostgreSQL", True),
+    "apache-age": ("Apache-2.0", True),
     "huly": ("EPL-2.0", True),
 }
 

@@ -136,7 +136,11 @@ class ApacheAGEAdapter(BaseGraphStore):
         self._postgres_url = (
             postgres_url
             if postgres_url is not None
-            else os.getenv("POSTGRES_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
+            else (
+                os.getenv("AGE_POSTGRES_URL")
+                or os.getenv("POSTGRES_URL")
+                or "postgresql://postgres:postgres@localhost:5433/postgres"
+            )
         )
         self._graph_name = re.sub(r"[^A-Za-z0-9_]", "_", graph_name.strip()) or "ci_memory_graph"
         self._auto_fallback = auto_fallback
@@ -335,8 +339,8 @@ class ApacheAGEAdapter(BaseGraphStore):
             now = utc_now_str()
             props_json = json.dumps(properties or {}, sort_keys=True)
             cypher = (
-                "MATCH (s {name: $source, user_id: $user_id, project_id: $project_id}), "
-                "(t {name: $target, user_id: $user_id, project_id: $project_id}) "
+                "MATCH (s {name: $source, user_id: $user_id, project_id: $project_id}) "
+                "MATCH (t {name: $target, user_id: $user_id, project_id: $project_id}) "
                 f"MERGE (s)-[r:{res['relation']}]->(t) "
                 "SET r.updated_at = $now, r.is_active = true, r.props_json = $props_json "
                 "RETURN s.name AS source, type(r) AS relation, t.name AS target"
@@ -384,7 +388,7 @@ class ApacheAGEAdapter(BaseGraphStore):
                 f"MATCH (s {{name: $source, user_id: $user_id, project_id: $project_id}})"
                 f"-[r:{rel_clean}]->"
                 f"(t {{name: $target, user_id: $user_id, project_id: $project_id}}) "
-                "DELETE r RETURN count(r) AS deleted"
+                "DELETE r RETURN 1 AS deleted"
             )
             try:
                 rows = self._run_age_cypher(
@@ -392,7 +396,7 @@ class ApacheAGEAdapter(BaseGraphStore):
                     params={"source": source, "target": target, "user_id": user_id, "project_id": pid},
                     return_keys=["deleted"],
                 )
-                if rows and (rows[0].get("deleted") or 0) > 0:
+                if len(rows) > 0:
                     removed = True
             except Exception as exc:
                 if not self._auto_fallback:
@@ -470,7 +474,7 @@ class ApacheAGEAdapter(BaseGraphStore):
         """Purge all graph vertices and edges owned by user_id."""
         removed = self._fallback.delete_by_user(user_id)
         if not self._is_in_memory and self._conn:
-            cypher = "MATCH (n {user_id: $user_id}) DETACH DELETE n RETURN count(n) AS deleted"
+            cypher = "MATCH (n {user_id: $user_id}) DETACH DELETE n RETURN count(*) AS deleted"
             try:
                 rows = self._run_age_cypher(
                     cypher,

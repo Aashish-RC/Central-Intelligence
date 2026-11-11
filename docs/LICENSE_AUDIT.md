@@ -36,7 +36,8 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 | `infisical` | `infisical/infisical:v0.167.8` | MIT | L12 Secret vault |
 | `hyperswitch` | `juspaydotin/hyperswitch-router:v1.129.0-standalone` | Apache-2.0 | L13 Payment router |
 | `livekit` | `livekit/livekit-server:v1.13.11` | Apache-2.0 | L1 WebRTC media server |
-| `supabase-db` | `supabase/postgres:15.1.1.78` | Apache-2.0 / PostgreSQL | Relational + `pgvector` + **Apache AGE default open graph DB** (replaces FalkorDB/Memgraph for hosted launches) |
+| `supabase-db` | `supabase/postgres:15.1.1.78` | Apache-2.0 / PostgreSQL | L15 Relational + `pgvector` + RLS store |
+| `apache-age` | `apache/age:release_PG16_1.6.0` | Apache-2.0 | **L2/L3 default open OpenCypher graph DB** (replaces FalkorDB/Memgraph for hosted launches) |
 | `huly` | `hardcoreeng/front:v0.7.432` | EPL-2.0 | Separate container boundary; distribute modifications under EPL-2.0 if modified |
 
 ### Opt-In Non-OSI Self-Hosted Services (`profiles: ["self-hosted-non-osi"]`)

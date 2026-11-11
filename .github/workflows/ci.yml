@@ -129,4 +129,4 @@ jobs:
           POSTGRES_PASSWORD: e2e-postgres-pass
         run: |
           docker compose ps -a
-          docker compose logs --tail=80 valkey qdrant supabase-db temporal keycloak
+          docker compose logs --tail=80 valkey qdrant apache-age temporal keycloak

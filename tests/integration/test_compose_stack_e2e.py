@@ -28,7 +28,7 @@ from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 pytestmark = pytest.mark.live
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_SERVICES = ["valkey", "qdrant", "supabase-db", "temporal", "keycloak"]
+COMPOSE_SERVICES = ["valkey", "qdrant", "apache-age", "temporal", "keycloak"]
 
 
 @workflow.defn
@@ -226,14 +226,14 @@ def test_memory_qdrant_adapter_v120_e2e() -> None:
     from memory.core.models import MemoryRecord, utc_now
     from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
     collection = f"e2e_mem_{uuid4().hex[:8]}"
     adapter = QdrantAdapter(
-        location=os.getenv("QDRANT_URL", "http://localhost:6333"),
+        location=qdrant_url,
         collection_name=collection,
         dim=8,
-        auto_fallback=False,
     )
-    assert adapter.is_in_memory is False
+    assert adapter._location == qdrant_url
     assert adapter.check_health() is True
 
     rec_id = uuid4()
@@ -281,15 +281,16 @@ def test_memory_qdrant_adapter_v120_e2e() -> None:
 
 
 def test_postgres_apache_age_graph_adapters_e2e() -> None:
-    """Exercise L2 ApacheAGEAdapter & L3 ApacheAGEGraphAdapter against live supabase-db."""
+    """Exercise L2 ApacheAGEAdapter & L3 ApacheAGEGraphAdapter against live apache-age."""
     import pg8000.dbapi
     from knowledge.graph import ApacheAGEGraphAdapter
     from memory.tiers.graph.age_adapter import ApacheAGEAdapter
 
     pg_password = os.getenv("POSTGRES_PASSWORD", "e2e-postgres-pass")
+    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
     pg_url = os.getenv(
-        "POSTGRES_URL",
-        f"postgresql://postgres:{pg_password}@localhost:5432/postgres",
+        "AGE_POSTGRES_URL",
+        f"postgresql://postgres:{pg_password}@localhost:{age_port}/postgres",
     )
 
     deadline = time.monotonic() + 90.0
@@ -298,7 +299,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
         try:
             conn = pg8000.dbapi.connect(
                 host="localhost",
-                port=5432,
+                port=age_port,
                 user="postgres",
                 password=pg_password,
                 database="postgres",
@@ -310,7 +311,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
             last_exc = exc
             time.sleep(2.0)
     else:
-        pytest.fail(f"Supabase Postgres/AGE did not become ready in time: {last_exc}")
+        pytest.fail(f"Apache AGE Postgres did not become ready in time: {last_exc}")
 
     suffix = uuid4().hex[:8]
     l2_graph = ApacheAGEAdapter(

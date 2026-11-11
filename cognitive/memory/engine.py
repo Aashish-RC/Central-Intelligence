@@ -1,5 +1,6 @@
 """Unified Memory Manager (Engine Facade API) orchestrating the 3 tiers and 4 stitches."""
 
+import os
 import time
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -141,7 +142,11 @@ class MemoryEngine:
             age_url = (
                 ":memory:"
                 if self.config.memgraph_host == ":memory:" and not self.config.postgres_url
-                else (self.config.postgres_url or "postgresql://postgres:postgres@localhost:5432/postgres")
+                else (
+                    os.getenv("AGE_POSTGRES_URL")
+                    or self.config.postgres_url
+                    or "postgresql://postgres:postgres@localhost:5433/postgres"
+                )
             )
             self.graph = ApacheAGEAdapter(
                 postgres_url=age_url,
