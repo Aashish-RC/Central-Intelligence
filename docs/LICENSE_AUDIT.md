@@ -24,7 +24,7 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 ### OSI-Open Default Stack
 | Service | Image (Pinned) | License | Swap Decision & Role |
 |---|---|---|---|
-| `qdrant` | `qdrant/qdrant:v1.8.4` | Apache-2.0 | Default vector store |
+| `qdrant` | `qdrant/qdrant:v1.20.0` | Apache-2.0 | Default vector store |
 | `ollama` | `ollama/ollama:0.40.16` | MIT | Local model serving |
 | `meilisearch` | `getmeili/meilisearch:v1.7.3` | MIT | Full-text search |
 | `valkey` | `valkey/valkey:8.0.2-alpine` | BSD-3-Clause | **Swapped in for Dragonfly (`BSL-1.1`)** as wire-compatible Redis/cache engine |

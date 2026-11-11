@@ -1,7 +1,7 @@
 services:
   # Vector Store for Memory Engine & Embeddings
   qdrant:
-    image: qdrant/qdrant:v1.8.4
+    image: qdrant/qdrant:v1.20.0
     container_name: central-qdrant
     restart: unless-stopped
     ports:

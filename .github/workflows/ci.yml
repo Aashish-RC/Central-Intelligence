@@ -115,7 +115,7 @@ jobs:
       - name: Run live Compose E2E test suite
         env:
           COMPOSE_E2E_AUTO_START: "1"
-        run: python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v
+        run: python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v -s --tb=short
 
       - name: Dump compose logs on failure
         if: failure()
