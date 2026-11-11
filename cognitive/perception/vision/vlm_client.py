@@ -11,12 +11,19 @@ import base64
 import io
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import httpx
 from PIL import Image
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("cognitive.perception.vision.vlm")
 
@@ -43,15 +50,25 @@ class VLMClient:
 
     def __init__(
         self,
-        gateway_url: str = "http://localhost:3000",
-        api_key: str = "sk-central-vlm-gateway",
+        gateway_url: Optional[str] = None,
+        api_key: Optional[str] = None,
         default_model: str = "gpt-4o",
         timeout: float = 10.0,
+        _defer_prod_check: bool = False,
     ) -> None:
-        self.gateway_url = gateway_url.rstrip("/")
-        self.api_key = api_key
+        self.gateway_url = (gateway_url or os.getenv("GATEWAY_URL", "http://localhost:3000")).rstrip("/")
+        self.api_key = (
+            api_key
+            if api_key is not None
+            else (os.getenv("VLM_API_KEY") or os.getenv("GATEWAY_API_KEY") or "")
+        )
         self.default_model = default_model
         self.timeout = timeout
+        self.adapter_mode = (
+            "simulated"
+            if _defer_prod_check
+            else require_live_adapter("vlm", require_credentials={"api_key": self.api_key})
+        )
 
     def _encode_image_to_data_url(self, image_input: Union[str, Path, bytes, Image.Image]) -> str:
         """Normalizes file path, bytes, or PIL Image into a base64 data URL."""
@@ -88,6 +105,7 @@ class VLMClient:
         """
         Acceptance: Can send image to VLM and get description back.
         """
+        self.adapter_mode = require_live_adapter("vlm", require_credentials={"api_key": self.api_key})
         data_url = self._encode_image_to_data_url(image_input)
         selected_model = model or self.default_model
 
@@ -109,9 +127,10 @@ class VLMClient:
         try:
             with httpx.Client(timeout=self.timeout) as client:
                 headers = {
-                    "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
                 }
+                if self.api_key:
+                    headers["Authorization"] = f"Bearer {self.api_key}"
                 resp = client.post(
                     f"{self.gateway_url}/v1/chat/completions",
                     json=payload,
@@ -129,7 +148,14 @@ class VLMClient:
                         tokens_used=tokens,
                         raw_response=data,
                     )
+                fail_closed_in_production(
+                    "vlm",
+                    f"L4 Gateway returned HTTP {resp.status_code}",
+                )
+        except ProductionSafetyError:
+            raise
         except Exception as e:
+            fail_closed_in_production("vlm", f"L4 Gateway VLM call failed: {e}", cause=e)
             logger.debug("L4 Gateway VLM call failed or offline: %s", e)
 
         # Hermetic multimodal simulation for tests and offline operations
@@ -170,5 +196,5 @@ class VLMClient:
 
 
 # Global default instance
-default_vlm_client = VLMClient()
+default_vlm_client = VLMClient(_defer_prod_check=True)
 

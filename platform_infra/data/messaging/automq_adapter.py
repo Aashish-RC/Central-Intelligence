@@ -14,6 +14,13 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,6 +78,14 @@ class AutoMQAdapter:
 
     def __init__(self, config: Optional[AutoMQConfig] = None) -> None:
         self.config = config or AutoMQConfig()
+        self.adapter_mode = require_live_adapter("automq")
+        if is_production() and self.config.use_mock:
+            raise ProductionSafetyError(
+                "AutoMQ adapter cannot run with use_mock=True in production."
+            )
+        self._producer: Any = None
+        if not self.config.use_mock and (is_production() or self.adapter_mode == "live"):
+            self._init_live_client()
         self._schemas: Dict[str, EventSchema] = {}
         # topic -> list of EventRecords
         self._topics: Dict[str, List[EventRecord]] = {}
@@ -78,6 +93,25 @@ class AutoMQAdapter:
         self._offsets: Dict[Tuple[str, str], int] = {}
         # topic -> list of DeadLetterRecords
         self._dlq: Dict[str, List[DeadLetterRecord]] = {}
+
+    def _init_live_client(self) -> None:
+        """Connect to live Kafka/AutoMQ broker when running in live/production mode."""
+        try:
+            from confluent_kafka import Producer  # type: ignore
+
+            self._producer = Producer({"bootstrap.servers": self.config.bootstrap_servers})
+        except ImportError as exc:
+            fail_closed_in_production(
+                "automq",
+                "confluent-kafka client is not installed for live AutoMQ streaming",
+                cause=exc,
+            )
+        except Exception as exc:
+            fail_closed_in_production(
+                "automq",
+                f"Failed to connect to AutoMQ broker at {self.config.bootstrap_servers}: {exc}",
+                cause=exc,
+            )
 
     def register_schema(self, schema: EventSchema) -> None:
         """Register a schema with version enforcement."""

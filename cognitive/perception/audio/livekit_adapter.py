@@ -9,10 +9,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("cognitive.perception.audio.livekit")
 
@@ -66,14 +73,23 @@ class LiveKitAdapter:
 
     def __init__(
         self,
-        api_url: str = "http://localhost:7880",
-        api_key: str = "devkey",
-        api_secret: str = "secret",
+        api_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ) -> None:
-        self.api_url = api_url.rstrip("/")
-        self.api_key = api_key
-        self.api_secret = api_secret
+        self.api_url = (api_url or os.getenv("LIVEKIT_URL", "http://localhost:7880")).rstrip("/")
+        self.api_key = api_key if api_key is not None else os.getenv("LIVEKIT_API_KEY", "")
+        self.api_secret = api_secret if api_secret is not None else os.getenv("LIVEKIT_API_SECRET", "")
         self._sessions: Dict[str, AudioSession] = {}
+        self.adapter_mode = (
+            "simulated"
+            if _defer_prod_check
+            else require_live_adapter(
+                "livekit",
+                require_credentials={"api_key": self.api_key, "api_secret": self.api_secret},
+            )
+        )
 
     def create_token(
         self,
@@ -84,6 +100,10 @@ class LiveKitAdapter:
         """
         Generates an authentication token for a participant joining a LiveKit WebRTC room.
         """
+        self.adapter_mode = require_live_adapter(
+            "livekit",
+            require_credentials={"api_key": self.api_key, "api_secret": self.api_secret},
+        )
         if _LIVEKIT_API_AVAILABLE:
             try:
                 grant = VideoGrants(
@@ -101,9 +121,12 @@ class LiveKitAdapter:
                 )
                 return token
             except Exception as e:
+                fail_closed_in_production("livekit", f"LiveKit token generation failed: {e}", cause=e)
                 logger.warning("livekit.api token generation fallback: %s", e)
+        else:
+            fail_closed_in_production("livekit", "livekit.api package is unavailable")
 
-        # Standalone deterministic fallback token
+        # Standalone deterministic fallback token (dev/test only)
         return f"livekit_jwt_{participant_identity}_{room_name}_{int(time.time())}"
 
     def establish_session(
@@ -190,5 +213,5 @@ class LiveKitAdapter:
 
 
 # Global default instance
-default_livekit_adapter = LiveKitAdapter()
+default_livekit_adapter = LiveKitAdapter(_defer_prod_check=True)
 

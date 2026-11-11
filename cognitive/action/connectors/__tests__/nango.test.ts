@@ -100,5 +100,34 @@ describe('Nango Federated OAuth Connector (Layer 5)', () => {
     expect(res.status).toBe(200);
     expect(res.provider).toBe('linear');
   });
+
+  it('fails closed in production when simulated or missing NANGO_SECRET_KEY', async () => {
+    const prevEnv = process.env.ENVIRONMENT;
+    const prevMode = process.env.NANGO_MODE;
+    const prevKey = process.env.NANGO_SECRET_KEY;
+
+    try {
+      process.env.ENVIRONMENT = 'production';
+      delete process.env.NANGO_MODE;
+      delete process.env.NANGO_SECRET_KEY;
+
+      expect(() => new NangoAdapter()).toThrow(/ProductionSafetyError|simulated/);
+      expect(() => new NangoAdapter({ mockMode: true, secretKey: 'live-secret' })).toThrow(
+        /mockMode=true/,
+      );
+
+      process.env.NANGO_MODE = 'live';
+      expect(() => new NangoAdapter()).toThrow(/NANGO_SECRET_KEY/);
+
+      await expect(nangoAdapter.getConnection('github', 'conn-1')).rejects.toThrow();
+    } finally {
+      if (prevEnv === undefined) delete process.env.ENVIRONMENT;
+      else process.env.ENVIRONMENT = prevEnv;
+      if (prevMode === undefined) delete process.env.NANGO_MODE;
+      else process.env.NANGO_MODE = prevMode;
+      if (prevKey === undefined) delete process.env.NANGO_SECRET_KEY;
+      else process.env.NANGO_SECRET_KEY = prevKey;
+    }
+  });
 });
 

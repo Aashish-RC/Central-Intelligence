@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import binascii
 import codecs
+import logging
 import os
 from pathlib import Path
 import re
@@ -17,6 +18,15 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import unquote
 
 from pydantic import BaseModel, Field
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
+
+logger = logging.getLogger("control.safety.guardrails.nemo")
 
 try:
     from nemoguardrails import LLMRails, RailsConfig
@@ -98,8 +108,9 @@ def detect_encoding_attacks(text: str) -> Tuple[bool, Optional[str], Optional[st
                 is_inj, kw = inspect_text_for_injection(unquoted)
                 if is_inj:
                     return True, "url_encoding", unquoted, kw
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("NeMo URL-decoding inspection error: %s", exc)
+            fail_closed_in_production("nemo", f"URL encoding inspection error: {exc}", cause=exc)
 
     # 2. Leetspeak
     leet_decoded = decode_leetspeak(text)
@@ -131,8 +142,9 @@ def detect_encoding_attacks(text: str) -> Tuple[bool, Optional[str], Optional[st
                 is_inj, kw = inspect_text_for_injection(decoded_hex)
                 if is_inj:
                     return True, "hex", decoded_hex, kw
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("NeMo hex-decoding inspection error: %s", exc)
+            fail_closed_in_production("nemo", f"Hex encoding inspection error: {exc}", cause=exc)
 
     # 5. ROT13 obfuscation
     rot13_candidate = codecs.decode(text, "rot_13")
@@ -148,8 +160,9 @@ def detect_encoding_attacks(text: str) -> Tuple[bool, Optional[str], Optional[st
             is_inj, kw = inspect_text_for_injection(bin_str)
             if is_inj:
                 return True, "binary", bin_str, kw
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("NeMo binary-decoding inspection error: %s", exc)
+            fail_closed_in_production("nemo", f"Binary encoding inspection error: {exc}", cause=exc)
 
     return False, None, None, None
 
@@ -169,6 +182,12 @@ class NeMoGuardrailsAdapter:
         self.config_path = config_path or str(Path(__file__).parent / "config")
         self.rails = None
         self._init_error = None
+        self.adapter_mode = require_live_adapter("nemo")
+
+        if is_production() and not enable_nemorails:
+            raise ProductionSafetyError(
+                "NeMo Guardrails cannot disable nemorails in production."
+            )
 
         if NEMO_AVAILABLE and enable_nemorails:
             try:
@@ -184,6 +203,9 @@ class NeMoGuardrailsAdapter:
             except Exception as e:
                 self._init_error = str(e)
                 self.rails = None
+                fail_closed_in_production("nemo", f"LLMRails init failed: {e}", cause=e)
+        elif enable_nemorails:
+            fail_closed_in_production("nemo", "nemoguardrails package is not installed")
 
     def _register_actions(self) -> None:
         if not self.rails:
@@ -217,8 +239,9 @@ class NeMoGuardrailsAdapter:
             self.rails.register_action(check_toxicity_action, name="check_toxicity_action")
             self.rails.register_action(check_factuality_action, name="check_factuality_action")
             self.rails.register_action(check_hallucination_action, name="check_hallucination_action")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("NeMo register_action failed: %s", exc)
+            fail_closed_in_production("nemo", f"Failed to register NeMo actions: {exc}", cause=exc)
 
     def check_input(self, text: str) -> NeMoRailResult:
         """

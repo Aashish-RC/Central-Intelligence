@@ -3,6 +3,11 @@
 import os
 from typing import Any, Dict, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 
 class LiveKitAdapter:
     """Manages LiveKit WebRTC room creation and audio stream tokens."""
@@ -14,11 +19,19 @@ class LiveKitAdapter:
         api_secret: Optional[str] = None,
     ):
         self.api_url = api_url or os.getenv("LIVEKIT_URL", "wss://livekit.example.com")
-        self.api_key = api_key or os.getenv("LIVEKIT_API_KEY", "devkey")
-        self.api_secret = api_secret or os.getenv("LIVEKIT_API_SECRET", "secret")
+        self.api_key = api_key if api_key is not None else os.getenv("LIVEKIT_API_KEY", "")
+        self.api_secret = api_secret if api_secret is not None else os.getenv("LIVEKIT_API_SECRET", "")
+        self.adapter_mode = require_live_adapter(
+            "livekit",
+            require_credentials={"api_key": self.api_key, "api_secret": self.api_secret},
+        )
 
     def generate_token(self, room_name: str, participant_identity: str) -> str:
         """Generate access token for WebRTC client connection."""
+        self.adapter_mode = require_live_adapter(
+            "livekit",
+            require_credentials={"api_key": self.api_key, "api_secret": self.api_secret},
+        )
         try:
             # Dynamic import of livekit-api if present
             from livekit import api
@@ -32,8 +45,13 @@ class LiveKitAdapter:
                     can_subscribe=True,
                 ))
             return token.to_jwt()
-        except ImportError:
-            # Fallback simulated token when livekit package is not installed
+        except ImportError as exc:
+            fail_closed_in_production(
+                "livekit",
+                "livekit-api package is not installed",
+                cause=exc,
+            )
+            # Fallback simulated token when livekit package is not installed (dev/test only)
             import base64
             simulated_payload = f"simulated-jwt:{self.api_key}:{room_name}:{participant_identity}"
             return base64.b64encode(simulated_payload.encode()).decode()

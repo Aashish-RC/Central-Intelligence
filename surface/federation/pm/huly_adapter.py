@@ -8,11 +8,21 @@ and manage collaborative knowledge docs.
 from __future__ import annotations
 
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+import httpx
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +70,19 @@ class HulyDoc:
 class HulyAdapter:
     """Adapter for Huly project management and documents."""
 
-    def __init__(self, endpoint_url: str = "http://localhost:8085", workspace_id: str = "central-team") -> None:
-        self.endpoint_url = endpoint_url
+    def __init__(
+        self,
+        endpoint_url: Optional[str] = None,
+        workspace_id: str = "central-team",
+        api_token: Optional[str] = None,
+    ) -> None:
+        self.endpoint_url = (endpoint_url or os.getenv("HULY_URL", "http://localhost:8085")).rstrip("/")
         self.workspace_id = workspace_id
+        self.api_token = api_token if api_token is not None else os.getenv("HULY_API_TOKEN", "")
+        self.adapter_mode = require_live_adapter(
+            "huly",
+            require_credentials={"api_token": self.api_token},
+        )
         self._tasks: Dict[str, HulyTask] = {}
         self._docs: Dict[str, HulyDoc] = {}
 
@@ -77,6 +97,47 @@ class HulyAdapter:
         tags: Optional[List[str]] = None,
     ) -> HulyTask:
         """Create a new task in Huly."""
+        self.adapter_mode = require_live_adapter(
+            "huly",
+            require_credentials={"api_token": self.api_token},
+        )
+        if is_production() or self.adapter_mode == "live":
+            try:
+                with httpx.Client(timeout=5.0) as client:
+                    resp = client.post(
+                        f"{self.endpoint_url}/api/v1/workspaces/{self.workspace_id}/tasks",
+                        json={
+                            "project_id": project_id,
+                            "title": title,
+                            "description": description,
+                            "assignee": assignee,
+                            "priority": priority.value,
+                            "created_by": created_by,
+                            "tags": tags or [],
+                        },
+                        headers={"Authorization": f"Bearer {self.api_token}"},
+                    )
+                    if resp.status_code in (200, 201):
+                        data = resp.json()
+                        task = HulyTask(
+                            task_id=str(data.get("task_id") or f"HL-{uuid.uuid4().hex[:6].upper()}"),
+                            project_id=project_id,
+                            title=title,
+                            description=description,
+                            assignee=assignee,
+                            status=TaskStatus(data.get("status", TaskStatus.TODO.value)),
+                            priority=priority,
+                            created_by=created_by,
+                            tags=tags or [],
+                        )
+                        self._tasks[task.task_id] = task
+                        return task
+                    fail_closed_in_production("huly", f"Huly API returned HTTP {resp.status_code}")
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("huly", f"Huly task creation failed: {exc}", cause=exc)
+
         task_id = f"HL-{uuid.uuid4().hex[:6].upper()}"
         task = HulyTask(
             task_id=task_id,

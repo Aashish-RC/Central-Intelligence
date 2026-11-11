@@ -13,6 +13,13 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set
 
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,6 +46,12 @@ class DragonflyAdapter:
         self.config = config or DragonflyConfig()
         self._is_connected: bool = False
         self._client: Any = None
+        self.adapter_mode = require_live_adapter("dragonfly")
+
+        if is_production() and self.config.use_mock:
+            raise ProductionSafetyError(
+                "Dragonfly adapter cannot run with use_mock=True in production."
+            )
 
         # In-memory storage for mock/fallback
         self._store: Dict[str, Any] = {}
@@ -65,14 +78,19 @@ class DragonflyAdapter:
             self._is_connected = True
             logger.info("Connected to Dragonfly at %s:%s", self.config.host, self.config.port)
         except Exception as exc:
+            self._is_connected = False
+            self._client = None
+            fail_closed_in_production(
+                "dragonfly",
+                f"Could not connect to live Dragonfly at {self.config.host}:{self.config.port}: {exc}",
+                cause=exc,
+            )
             logger.warning(
                 "Could not connect to live Dragonfly at %s:%s (%s). Falling back to in-memory mode.",
                 self.config.host,
                 self.config.port,
                 exc,
             )
-            self._is_connected = False
-            self._client = None
 
     @property
     def is_connected(self) -> bool:
@@ -95,8 +113,10 @@ class DragonflyAdapter:
                     return bool(self._client.setex(key, effective_ttl, serialized))
                 return bool(self._client.set(key, serialized))
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly set error on key {key}: {exc}", cause=exc)
                 logger.error("Dragonfly set error on key %s: %s", key, exc)
 
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for set()")
         # Fallback / mock implementation
         self._store[key] = value
         if effective_ttl:
@@ -117,8 +137,10 @@ class DragonflyAdapter:
                 except (json.JSONDecodeError, TypeError):
                     return raw
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly get error on key {key}: {exc}", cause=exc)
                 logger.error("Dragonfly get error on key %s: %s", key, exc)
 
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for get()")
         # Mock implementation with TTL check
         if key in self._expires and time.time() > self._expires[key]:
             self.delete(key)
@@ -132,8 +154,10 @@ class DragonflyAdapter:
             try:
                 return int(self._client.delete(*keys))
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly delete error: {exc}", cause=exc)
                 logger.error("Dragonfly delete error: %s", exc)
 
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for delete()")
         for k in keys:
             if k in self._store:
                 del self._store[k]
@@ -148,8 +172,10 @@ class DragonflyAdapter:
             try:
                 return bool(self._client.exists(key))
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly exists error: {exc}", cause=exc)
                 logger.error("Dragonfly exists error: %s", exc)
 
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for exists()")
         if key in self._expires and time.time() > self._expires[key]:
             self.delete(key)
             return False
@@ -173,8 +199,10 @@ class DragonflyAdapter:
             try:
                 return int(self._client.publish(channel, payload))
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly publish error on channel {channel}: {exc}", cause=exc)
                 logger.error("Dragonfly publish error on channel %s: %s", channel, exc)
 
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for publish()")
         subscribers = self._subscribers.get(channel, set())
         for callback in list(subscribers):
             try:
@@ -202,8 +230,11 @@ class DragonflyAdapter:
         if self._is_connected and self._client:
             try:
                 self._client.flushdb()
+                return True
             except Exception as exc:
+                fail_closed_in_production("dragonfly", f"Dragonfly flushdb error: {exc}", cause=exc)
                 logger.error("Dragonfly flushdb error: %s", exc)
+        fail_closed_in_production("dragonfly", "No active live Dragonfly connection for flushdb()")
         self._store.clear()
         self._expires.clear()
         return True

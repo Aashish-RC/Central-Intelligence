@@ -40,22 +40,98 @@ export interface NangoConnectionRecord {
   };
 }
 
+export type AdapterMode = 'live' | 'simulated';
+
+export class ProductionSafetyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProductionSafetyError';
+  }
+}
+
+function isProductionEnv(): boolean {
+  return (process.env.ENVIRONMENT || '').trim().toLowerCase() === 'production';
+}
+
+function resolveNangoMode(explicitMockMode?: boolean): AdapterMode {
+  const raw =
+    process.env.NANGO_ADAPTER_MODE ||
+    process.env.NANGO_MODE ||
+    process.env.ADAPTER_MODE ||
+    (explicitMockMode === false ? 'live' : explicitMockMode === true ? 'simulated' : undefined);
+
+  if (raw) {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized !== 'live' && normalized !== 'simulated') {
+      throw new ProductionSafetyError(
+        `Invalid adapter mode '${raw}' for nango. Expected 'live' or 'simulated'.`,
+      );
+    }
+    return normalized;
+  }
+
+  return isProductionEnv() ? 'simulated' : process.env.NANGO_SECRET_KEY ? 'live' : 'simulated';
+}
+
 export class NangoAdapter {
   public id = 'nango';
   public name = 'Nango Federated Gateway';
+  public adapterMode: AdapterMode;
   private client?: Nango;
+  private secretKey: string;
   private mockMode: boolean;
   private mockConnections: Map<string, NangoConnectionRecord> = new Map();
 
-  constructor(config: NangoAdapterConfig = {}) {
-    const secretKey = config.secretKey || process.env.NANGO_SECRET_KEY || 'mock-secret-key';
+  constructor(config: NangoAdapterConfig = {}, deferProdCheck = false) {
+    this.secretKey = config.secretKey ?? process.env.NANGO_SECRET_KEY ?? '';
     const host = config.host || process.env.NANGO_HOST || 'http://localhost:3003';
-    this.mockMode = config.mockMode ?? (process.env.NODE_ENV === 'test' || !process.env.NANGO_SECRET_KEY);
+    this.adapterMode = resolveNangoMode(config.mockMode);
 
-    try {
-      this.client = new Nango({ secretKey, host });
-    } catch {
-      this.mockMode = true;
+    if (isProductionEnv() && config.mockMode === true) {
+      throw new ProductionSafetyError('Nango adapter cannot run with mockMode=true in production.');
+    }
+
+    if (!deferProdCheck) {
+      this.assertProductionSafety();
+    }
+
+    const useSimulated =
+      config.mockMode ??
+      (this.adapterMode === 'simulated' ||
+        process.env.NODE_ENV === 'test' ||
+        !this.secretKey);
+
+    this.mockMode = isProductionEnv() ? false : useSimulated;
+
+    if (!this.mockMode) {
+      try {
+        this.client = new Nango({ secretKey: this.secretKey, host });
+      } catch (err) {
+        if (isProductionEnv() || this.adapterMode === 'live') {
+          throw new ProductionSafetyError(
+            `Nango live client initialization failed: ${(err as Error).message}`,
+          );
+        }
+        this.mockMode = true;
+        this.adapterMode = 'simulated';
+      }
+    }
+  }
+
+  private assertProductionSafety(): void {
+    const mode = resolveNangoMode(this.mockMode ? true : undefined);
+    this.adapterMode = mode;
+    if (isProductionEnv()) {
+      if (mode !== 'live' || this.mockMode) {
+        throw new ProductionSafetyError(
+          "nango adapter is in 'simulated' mode. Production requires 'NANGO_MODE=live' (or 'NANGO_ADAPTER_MODE=live').",
+        );
+      }
+      if (!this.secretKey || this.secretKey === 'mock-secret-key') {
+        throw new ProductionSafetyError(
+          'nango adapter requires a valid NANGO_SECRET_KEY in production.',
+        );
+      }
     }
   }
 
@@ -63,10 +139,17 @@ export class NangoAdapter {
     return this.mockMode;
   }
 
+  public getAdapterMode(): AdapterMode {
+    return this.adapterMode;
+  }
+
   /**
    * Set or seed mock connection credentials for testing / offline environments.
    */
   public setMockConnection(record: NangoConnectionRecord): void {
+    if (isProductionEnv()) {
+      throw new ProductionSafetyError('Cannot register mock Nango connections in production.');
+    }
     const key = `${record.providerConfigKey}:${record.connectionId}`;
     this.mockConnections.set(key, record);
   }
@@ -78,6 +161,7 @@ export class NangoAdapter {
     providerConfigKey: string,
     connectionId: string,
   ): Promise<NangoConnectionRecord | null> {
+    this.assertProductionSafety();
     if (this.mockMode) {
       const key = `${providerConfigKey}:${connectionId}`;
       return (
@@ -102,6 +186,7 @@ export class NangoAdapter {
    * Proxy an authenticated API request to upstream SaaS service using stored OAuth tokens.
    */
   public async proxy(params: NangoProxyRequestParams): Promise<any> {
+    this.assertProductionSafety();
     if (this.mockMode) {
       return this.handleMockProxy(params);
     }
@@ -198,7 +283,7 @@ export class NangoAdapter {
   }
 }
 
-export const nangoAdapter = new NangoAdapter();
+export const nangoAdapter = new NangoAdapter({}, true);
 
 /**
  * ConnectorPiece wrapper for Nango federated provider.

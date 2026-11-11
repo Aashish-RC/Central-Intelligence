@@ -15,6 +15,12 @@ from uuid import uuid4
 
 import httpx
 
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("cognitive.perception.screen.screenpipe")
 
 
@@ -51,11 +57,15 @@ class ScreenpipeAdapter:
         self,
         api_url: str = "http://localhost:3030",
         enable_local_indexer: bool = True,
+        _defer_prod_check: bool = False,
     ) -> None:
         self.api_url = api_url.rstrip("/")
         self.enable_local_indexer = enable_local_indexer
         # In-memory chronological timeline repository
         self._frames: List[OCRFrame] = []
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("screenpipe")
+        )
 
     def record_frame(
         self,
@@ -138,6 +148,7 @@ class ScreenpipeAdapter:
         limit: int = 5,
     ) -> List[OCRFrame]:
         """Queries local screenpipe daemon if running."""
+        self.adapter_mode = require_live_adapter("screenpipe")
         try:
             async with httpx.AsyncClient(timeout=0.5) as client:
                 params = {"limit": limit}
@@ -157,11 +168,22 @@ class ScreenpipeAdapter:
                             )
                         )
                     return frames
-        except Exception:
-            pass
+                fail_closed_in_production(
+                    "screenpipe",
+                    f"Screenpipe daemon returned HTTP {resp.status_code}",
+                )
+        except ProductionSafetyError:
+            raise
+        except Exception as e:
+            fail_closed_in_production(
+                "screenpipe",
+                f"Screenpipe daemon query failed: {e}",
+                cause=e,
+            )
+            logger.debug("Screenpipe daemon unavailable, using local frames: %s", e)
         return self.query_screen(query_text=query, limit=limit)
 
 
 # Global default instance
-default_screenpipe_adapter = ScreenpipeAdapter()
+default_screenpipe_adapter = ScreenpipeAdapter(_defer_prod_check=True)
 

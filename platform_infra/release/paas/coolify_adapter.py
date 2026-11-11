@@ -7,11 +7,21 @@ manage containerized service lifecycles, configure SSL certs, and execute rollba
 from __future__ import annotations
 
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+import httpx
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +51,7 @@ class DeploymentResult:
 class CoolifyConfig:
     """Coolify connection settings."""
     api_url: str = "http://localhost:8000/api/v1"
-    api_token: str = "coolify_mock_token"
+    api_token: str = field(default_factory=lambda: os.getenv("COOLIFY_API_TOKEN", ""))
     default_server_id: str = "srv_main_01"
     use_mock: bool = False
 
@@ -51,6 +61,14 @@ class CoolifyAdapter:
 
     def __init__(self, config: Optional[CoolifyConfig] = None) -> None:
         self.config = config or CoolifyConfig()
+        self.adapter_mode = require_live_adapter(
+            "coolify",
+            require_credentials={"api_token": self.config.api_token},
+        )
+        if is_production() and self.config.use_mock:
+            raise ProductionSafetyError(
+                "Coolify adapter cannot run with use_mock=True in production."
+            )
         # application_id -> latest commit & deployment_uuid
         self._applications: Dict[str, Dict[str, Any]] = {}
         # deployment_uuid -> DeploymentResult
@@ -85,6 +103,32 @@ class CoolifyAdapter:
         env_vars: Optional[Dict[str, str]] = None,
     ) -> DeploymentResult:
         """Trigger git-push deployment for application."""
+        if not self.config.use_mock and (is_production() or self.adapter_mode == "live"):
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(
+                        f"{self.config.api_url.rstrip('/')}/deploy",
+                        json={"uuid": app_id, "tag": commit_sha, "branch": branch, "env": env_vars or {}},
+                        headers={"Authorization": f"Bearer {self.config.api_token}"},
+                    )
+                    if resp.status_code in (200, 201, 202):
+                        payload = resp.json()
+                        dep_uuid = str(payload.get("deployment_uuid") or f"dep_{uuid.uuid4().hex[:12]}")
+                        result = DeploymentResult(
+                            deployment_uuid=dep_uuid,
+                            application_id=app_id,
+                            commit_sha=commit_sha,
+                            status=DeploymentStatus.QUEUED,
+                            url=payload.get("url"),
+                        )
+                        self._deployments[dep_uuid] = result
+                        return result
+                    fail_closed_in_production("coolify", f"Coolify API returned HTTP {resp.status_code}")
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("coolify", f"Coolify deploy failed: {exc}", cause=exc)
+
         if app_id not in self._applications:
             self.register_application(
                 app_id=app_id,

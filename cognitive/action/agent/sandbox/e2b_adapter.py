@@ -5,13 +5,21 @@ import time
 from typing import Any, Dict, Optional
 from agent.core.manifest import SandboxConfig
 from agent.core.exceptions import SandboxExecutionError
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 
 class E2BSandboxAdapter:
     """Manages ephemeral, hardware-isolated cloud microVMs via E2B."""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("E2B_API_KEY")
+        self.api_key = api_key if api_key is not None else os.getenv("E2B_API_KEY")
+        self.adapter_mode = require_live_adapter(
+            "e2b",
+            require_credentials={"api_key": self.api_key},
+        )
 
     async def execute_command(
         self,
@@ -20,6 +28,10 @@ class E2BSandboxAdapter:
         env_vars: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Execute command in an E2B microVM."""
+        self.adapter_mode = require_live_adapter(
+            "e2b",
+            require_credentials={"api_key": self.api_key},
+        )
         start_time = time.perf_counter()
 
         # If E2B SDK and API key are available, execute in cloud microVM
@@ -37,10 +49,16 @@ class E2BSandboxAdapter:
                     "execution_time_ms": duration_ms,
                     "provider": "e2b",
                 }
-            except ImportError:
-                pass
+            except ImportError as exc:
+                fail_closed_in_production(
+                    "e2b",
+                    "e2b SDK package is not installed",
+                    cause=exc,
+                )
             except Exception as e:
                 raise SandboxExecutionError(f"E2B MicroVM execution failed: {str(e)}")
+        else:
+            fail_closed_in_production("e2b", "E2B_API_KEY is not configured")
 
         # Fallback simulation or local execution when running without E2B cloud credentials
         duration_ms = (time.perf_counter() - start_time) * 1000

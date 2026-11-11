@@ -15,6 +15,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("cognitive.perception.audio.handy")
 
 try:
@@ -57,12 +62,16 @@ class HandyAdapter:
         device: str = "cpu",
         compute_type: str = "int8",
         model_path: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ) -> None:
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self.model_path = model_path
         self._whisper_model = None
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("handy")
+        )
 
     def is_offline_capable(self) -> bool:
         """Returns True guaranteeing local-only execution."""
@@ -91,6 +100,7 @@ class HandyAdapter:
         """
         Transcribes raw audio bytes offline without network egress.
         """
+        self.adapter_mode = require_live_adapter("handy")
         start_t = time.perf_counter()
 
         if not audio_bytes or len(audio_bytes) < 16:
@@ -137,7 +147,10 @@ class HandyAdapter:
                     processing_time_ms=round(elapsed_ms, 2),
                 )
             except Exception as e:
+                fail_closed_in_production("handy", f"Whisper transcription failed: {e}", cause=e)
                 logger.warning("Local whisper transcription failed, falling back to offline decoder: %s", e)
+        else:
+            fail_closed_in_production("handy", "faster-whisper model is unavailable")
 
         # Deterministic offline acoustic mock / fallback
         # Extracts synthesized text from audio header or mock payload
@@ -146,8 +159,8 @@ class HandyAdapter:
             try:
                 idx = audio_bytes.index(b"TEST_PHRASE:") + len(b"TEST_PHRASE:")
                 decoded_text = audio_bytes[idx:].split(b"\x00")[0].decode("utf-8", errors="ignore").strip()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to decode TEST_PHRASE payload: %s", e)
 
         segment = TranscriptionSegment(
             start=0.0,
@@ -191,5 +204,5 @@ class HandyAdapter:
 
 
 # Global default offline STT instance
-default_handy_adapter = HandyAdapter()
+default_handy_adapter = HandyAdapter(_defer_prod_check=True)
 

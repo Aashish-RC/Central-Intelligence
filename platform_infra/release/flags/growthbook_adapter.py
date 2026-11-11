@@ -8,8 +8,18 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+import httpx
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    is_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +51,43 @@ class EvaluationResult:
 class GrowthBookAdapter:
     """Adapter for GrowthBook feature flagging and canary rollouts."""
 
-    def __init__(self, api_host: str = "https://app.growthbook.io", client_key: str = "mock_key") -> None:
-        self.api_host = api_host
-        self.client_key = client_key
+    def __init__(
+        self,
+        api_host: Optional[str] = None,
+        client_key: Optional[str] = None,
+    ) -> None:
+        self.api_host = (api_host or os.getenv("GROWTHBOOK_API_HOST", "https://app.growthbook.io")).rstrip("/")
+        self.client_key = client_key if client_key is not None else os.getenv("GROWTHBOOK_CLIENT_KEY", "")
+        self.adapter_mode = require_live_adapter(
+            "growthbook",
+            require_credentials={"client_key": self.client_key},
+        )
         self._flags: Dict[str, FeatureFlag] = {}
+
+    def sync_features(self) -> int:
+        """Fetch live feature definitions from GrowthBook API."""
+        self.adapter_mode = require_live_adapter(
+            "growthbook",
+            require_credentials={"client_key": self.client_key},
+        )
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.get(f"{self.api_host}/api/features/{self.client_key}")
+                if resp.status_code == 200:
+                    features = resp.json().get("features", {})
+                    for key, spec in features.items():
+                        self._flags[key] = FeatureFlag(
+                            key=key,
+                            enabled=True,
+                            value=spec.get("defaultValue", True),
+                        )
+                    return len(features)
+                fail_closed_in_production("growthbook", f"GrowthBook API returned HTTP {resp.status_code}")
+        except ProductionSafetyError:
+            raise
+        except Exception as exc:
+            fail_closed_in_production("growthbook", f"GrowthBook feature sync failed: {exc}", cause=exc)
+        return len(self._flags)
 
     def register_flag(self, flag: FeatureFlag) -> None:
         """Register or update a feature flag definition."""

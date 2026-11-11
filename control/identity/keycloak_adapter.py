@@ -13,14 +13,25 @@ Features:
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import logging
+import os
 import secrets
+import struct
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import httpx
+
+from control.safety.production_guard import (
+    ProductionSafetyError,
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("control.identity.keycloak")
 
@@ -74,15 +85,21 @@ class KeycloakAdapter:
 
     def __init__(
         self,
-        server_url: str = "http://localhost:8085",
+        server_url: Optional[str] = None,
         realm: str = "central-intelligence",
         client_id: str = "brain-gateway",
         client_secret: Optional[str] = None,
     ):
-        self.server_url = server_url
+        self.server_url = (server_url or os.getenv("KEYCLOAK_URL", "http://localhost:8085")).rstrip("/")
         self.realm = realm
         self.client_id = client_id
-        self.client_secret = client_secret or "gateway-secret"
+        self.client_secret = (
+            client_secret if client_secret is not None else os.getenv("KEYCLOAK_CLIENT_SECRET", "")
+        )
+        self.adapter_mode = require_live_adapter(
+            "keycloak",
+            require_credentials={"client_secret": self.client_secret},
+        )
         self._jwt_secret = secrets.token_hex(32)
 
         # In-memory realm cache for offline/hermetic operations & standalone testing
@@ -177,18 +194,76 @@ class KeycloakAdapter:
         user = self._users.get(user_id)
         if not user:
             raise KeyError(f"User {user_id} not found")
-        secret = secrets.token_hex(20)
+        secret = base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
         user.mfa_secret = secret
         user.mfa_enabled = True
         return secret
 
-    def verify_mfa_code(self, user_id: str, code: str) -> bool:
+    @staticmethod
+    def _decode_totp_secret(secret: str) -> bytes:
+        normalized = secret.strip().upper().replace(" ", "")
+        pad_len = (-len(normalized)) % 8
+        try:
+            return base64.b32decode(normalized + ("=" * pad_len), casefold=True)
+        except Exception:
+            try:
+                return bytes.fromhex(secret.strip())
+            except ValueError:
+                return secret.encode("utf-8")
+
+    @staticmethod
+    def compute_totp(secret: str, for_time: Optional[float] = None, interval: int = 30, digits: int = 6) -> str:
+        """Compute RFC 6238 TOTP code using HMAC-SHA1."""
+        key = KeycloakAdapter._decode_totp_secret(secret)
+        ts = int(for_time if for_time is not None else time.time())
+        counter = ts // interval
+        msg = struct.pack(">Q", counter)
+        digest = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = digest[-1] & 0x0F
+        binary = struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF
+        return str(binary % (10 ** digits)).zfill(digits)
+
+    def verify_mfa_code(self, user_id: str, code: str, window: int = 1) -> bool:
+        """Verify 6-digit RFC 6238 TOTP MFA code (no hardcoded bypass)."""
         user = self._users.get(user_id)
         if not user or not user.mfa_enabled or not user.mfa_secret:
             return False
-        # TOTP validation mock: code matching current hash slice
-        expected = hashlib.sha256(f"{user.mfa_secret}:{int(time.time()) // 30}".encode()).hexdigest()[:6]
-        return code == expected or code == "123456"  # test bypass code
+
+        clean_code = code.strip()
+        if not clean_code.isdigit() or len(clean_code) != 6:
+            return False
+
+        if self.adapter_mode == "live":
+            totp_verify_url = os.getenv("KEYCLOAK_TOTP_VERIFY_URL")
+            if totp_verify_url:
+                try:
+                    with httpx.Client(timeout=3.0) as client:
+                        resp = client.post(
+                            totp_verify_url,
+                            json={"user_id": user_id, "realm": self.realm, "code": clean_code},
+                            headers={"Authorization": f"Bearer {self.client_secret}"},
+                        )
+                        if resp.status_code == 200:
+                            return bool(resp.json().get("valid", False))
+                        fail_closed_in_production(
+                            "keycloak",
+                            f"Keycloak TOTP endpoint returned HTTP {resp.status_code}",
+                        )
+                except ProductionSafetyError:
+                    raise
+                except Exception as exc:
+                    fail_closed_in_production(
+                        "keycloak",
+                        f"Keycloak TOTP verification failed: {exc}",
+                        cause=exc,
+                    )
+
+        now = time.time()
+        for step_offset in range(-window, window + 1):
+            expected = self.compute_totp(user.mfa_secret, for_time=now + (step_offset * 30))
+            if hmac.compare_digest(clean_code, expected):
+                return True
+        return False
 
     # --- 12.04 & 12.05: Social Login & Enterprise SSO ---
     def federated_login(self, provider: str, provider_user_id: str, email: str, name: Optional[str] = None) -> TokenResponse:
