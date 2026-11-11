@@ -45,8 +45,11 @@ central-intelligence/
 ├── pnpm-workspace.yaml           # Workspace definitions
 ├── turbo.json                    # Turbo pipeline orchestration
 ├── pyproject.toml                # Python project & pytest configuration
-├── requirements.txt              # Unified Python dependencies
-├── docker-compose.yml            # Version-pinned local infrastructure services
+├── requirements.txt              # Direct Python dependency constraints
+├── requirements.lock             # Cross-platform SHA256-pinned Python lockfile
+├── docker-compose.yml            # Version-pinned OSI-default infrastructure (+ opt-in self-hosted profile)
+├── tests/integration/
+│   └── test_compose_stack_e2e.py # Live Docker Compose E2E tests (Qdrant, Temporal, Keycloak, Valkey)
 ├── scripts/
 │   └── check_licenses.py         # License, compose tag, and secret hygiene verifier
 ├── docs/
@@ -86,11 +89,11 @@ central-intelligence/
 # 1. Configure required secrets and environment variables
 cp .env.example .env
 
-# 2. Install Python dependencies
-pip install -r requirements.txt
+# 2. Install SHA256-verified Python dependencies
+pip install --require-hashes -r requirements.lock
 
 # 3. Install Node/TypeScript workspace dependencies
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 ---
@@ -105,6 +108,9 @@ python -m pytest -q
 # Target a single layer suite
 python -m pytest cognitive/memory/tests/ -q
 python -m pytest control/safety/guardrails/tests/ -q
+
+# Live Docker Compose E2E tests (starts/uses Qdrant, Temporal, Keycloak, Valkey)
+COMPOSE_E2E_AUTO_START=1 python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v
 ```
 
 ### TypeScript Test Suites

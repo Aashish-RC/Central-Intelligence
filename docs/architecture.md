@@ -54,7 +54,7 @@ Measured source inventory across `.py`, `.ts`, `.tsx`, and `.go` files (excludin
 | L5 | `cognitive/action` | 172 | 16,780 | Agents, sandboxes, browser automation, and MCP/connector clients. |
 | L6 | `cognitive/output` | 61 | 5,359 | Media generation, TTS, and output routing. |
 | L7 | `cognitive/learning` | 57 | 4,752 | Recommender and skill packaging. |
-| L8 | `control/orchestration` | 223 | 36,869 | **Skewed by ported node catalog**: ~109 individual Rivet node definitions in `nodes/` (`MIT`) inflate line count relative to core engine code. |
+| L8 | `control/orchestration` | 230 | 37,010 | **Skewed by ported node catalog**: `24,331` lines (~66%) are individual Rivet node definitions in `nodes/` (`MIT`); core orchestrator/workflow/adapters total `12,679` lines. |
 | L9 | `control/context` | 27 | 2,880 | Focused context synthesis, cache, and compaction modules. |
 | L10 | `control/safety` | 89 | 11,571 | Guardrails, redteam suite, policy rules, and Merkle audit. |
 | L11 | `control/evaluation` | 54 | 8,096 | Benchmarks, A/B experiments, and telemetry. |
@@ -68,8 +68,10 @@ Measured source inventory across `.py`, `.ts`, `.tsx`, and `.go` files (excludin
 | L19 | `surface/federation` | 31 | 1,688 | README lists features `19.1`, `19.01`–`19.07`, `19.12`–`19.16`, `19.20`, `19.22`–`19.23`, `19.29`–`19.35`. |
 
 ### Layer Balance Observations
-1. **Why L8 is 36.9k lines**: `control/orchestration/nodes/` contains 109 granular visual-workflow node classes ported from Ironclad Rivet (MIT) alongside their TypeScript schemas and tests. The Python runtime (`control/orchestration/orchestrator/`) is comparable in size to other control layers.
-2. **Why L12–L19 are 1.3k–3.2k lines**: L12–L14 consolidate multiple roadmap IDs per adapter module (`ROADMAP_PROGRESS.md` documents full completion across `12.01`–`12.47`, `13.01`–`13.18` minus `13.07`, and `14.01`–`14.24`). L15–L19 implement core vertical-slice adapters whose README tables enumerate specific feature subsets (`15.1–15.39`, `16.05–16.30`, `17.1–17.15`, `18.1–18.42`, `19.1–19.35`) rather than the full specification archive. Features not yet expanded into standalone adapters should be tracked explicitly against the upstream specification archive before declaring L15–L19 feature-complete.
+1. **Why L8 is 37,010 lines**: `24,331` lines inside `control/orchestration/nodes/` come from 109 granular visual-workflow node classes ported from Ironclad Rivet (`MIT`). The core Python/TS engine (`control/orchestration/orchestrator/`, workflow adapters, and notifications) is `12,679` lines, comparable to `control/safety` (`11,571`) and `cognitive/action` (`16,780`).
+2. **Why L12–L19 are 1,279–3,163 lines & exact gaps vs feature ranges**:
+   - **L12–L14 (`ROADMAP_PROGRESS.md` tracked)**: L12 Identity covers all `12.01`–`12.47` (`47` features); L13 Billing lists `13.01`–`13.18` (`13.07` omitted from its roadmap table); L14 Observability covers `14.01`–`14.24` (`24` features).
+   - **L15–L19 (`README.md` feature subsets)**: No `.zip` specification archive is present in the repository to verify total upstream specification counts automatically. Based on module README tables, these layers currently implement vertical-slice adapters covering specific IDs (`L15`: `15.1–15.3, 15.34–15.39`; `L16`: `16.05, 16.07, 16.17, 16.22–16.30`; `L17`: `17.1–17.4, 17.08, 17.12–17.15`; `L18`: `18.1–18.4, 18.07, 18.09–18.11, 18.15, 18.18–18.24, 18.34–18.42`; `L19`: `19.1, 19.01–19.07, 19.12–19.16, 19.20, 19.22–19.23, 19.29–19.35`), with intervening IDs (e.g., `15.04–15.33`, `16.01–16.04`, `16.08–16.16`, `17.05–17.07`, `18.05–18.06`, `19.08–19.11`) unmapped locally until reconciled against the upstream zip archive.
 
 ---
 

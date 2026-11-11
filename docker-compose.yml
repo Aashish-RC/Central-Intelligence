@@ -36,16 +36,15 @@ services:
     volumes:
       - meili_data:/meili_data
 
-  # High-throughput In-Memory Cache & Pub/Sub (Dragonfly - Task 15.2)
-  # LICENSE NOTICE: BSL-1.1 (source-available, non-OSI; converts to Apache-2.0 after 4 years; Redis/Valkey BSD-3-Clause compatible)
-  dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1
-    container_name: central-dragonfly
+  # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause, replaces Dragonfly)
+  valkey:
+    image: valkey/valkey:8.0.2-alpine
+    container_name: central-valkey
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - dragonfly_data:/data
+      - valkey_data:/data
 
   # Alternative Vector Store for Offline Mode (Apache-2.0)
   chroma:
@@ -57,10 +56,11 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
 
-  # Graph Memory Tier (Tier 4) (BSL-1.1 / Apache-2.0 components)
+  # Graph Memory Tier (Tier 4) (BSL-1.1; self-hosted opt-in profile — OSI default uses supabase-db with Apache AGE)
   memgraph:
     image: memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1
     container_name: central-memgraph
+    profiles: ["self-hosted-non-osi"]
     restart: unless-stopped
     ports:
       - "7687:7687"
@@ -71,10 +71,11 @@ services:
       - memgraph_data:/var/lib/memgraph
 
   # GraphRAG Engine for L3 Knowledge
-  # LICENSE NOTICE: SSPL-v1 (non-OSI; quarantined behind network boundary; alternative: Apache AGE / Memgraph)
+  # LICENSE NOTICE: SSPL-v1 (non-OSI; quarantined to opt-in profile — OSI default uses supabase-db Apache AGE)
   falkordb:
     image: falkordb/falkordb:v4.22.3
     container_name: central-falkordb
+    profiles: ["self-hosted-non-osi"]
     restart: unless-stopped
     ports:
       - "6380:6379"
@@ -82,10 +83,11 @@ services:
       - falkordb_data:/data
 
   # Nango Federated OAuth Gateway for L5 Action
-  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; cannot be offered as a hosted/managed multi-tenant Nango service)
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only)
   nango:
     image: nangohq/nango-server:hosted-0.72.4
     container_name: central-nango
+    profiles: ["self-hosted-non-osi"]
     restart: unless-stopped
     ports:
       - "3003:3003"
@@ -97,23 +99,31 @@ services:
 
   # Temporal Server for L8 Durable Workflow Execution (MIT)
   temporal:
-    image: temporalio/auto-setup:1.23.1
+    image: temporalio/temporal:1.10.0
     container_name: central-temporal
     restart: unless-stopped
+    command: ["server", "start-dev", "--ip", "0.0.0.0"]
     ports:
       - "7233:7233"
       - "8233:8233"
-    environment:
-      - DB=sqlite
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     volumes:
-      - temporal_data:/etc/temporal/config/dynamicconfig
+      - temporal_data:/data
+
+  # OpenTelemetry Collector for L14 Observability (Apache-2.0, OSI default telemetry backend)
+  otel-collector:
+    image: otel/opentelemetry-collector:0.120.0
+    container_name: central-otel-collector
+    restart: unless-stopped
+    ports:
+      - "4317:4317"
+      - "4318:4318"
 
   # Arize Phoenix for L11 Evaluation, Hallucination Detection & Tracing
-  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; OTLP sidecar boundary only)
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only — OSI default uses otel-collector)
   phoenix:
     image: arizephoenix/phoenix:version-21.0.0
     container_name: central-phoenix
+    profiles: ["self-hosted-non-osi"]
     restart: unless-stopped
     ports:
       - "6006:6006"
@@ -213,7 +223,7 @@ volumes:
   qdrant_data:
   ollama_models:
   meili_data:
-  dragonfly_data:
+  valkey_data:
   chroma_data:
   memgraph_data:
   falkordb_data:

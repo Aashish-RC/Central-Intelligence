@@ -31,6 +31,7 @@ mypy>=1.9.0
 qdrant-client>=1.8.0
 meilisearch>=0.30.0
 redis>=5.0.0
+temporalio>=1.7.0
 chromadb>=0.4.22
 gqlalchemy>=1.10.0
 falkordb>=1.8.0

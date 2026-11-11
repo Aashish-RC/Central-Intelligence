@@ -1,4 +1,4 @@
-"""Repository license, Docker image pinning, and secret hygiene check."""
+"""Repository license, Docker image pinning, secret hygiene, and lockfile check."""
 
 from __future__ import annotations
 
@@ -20,12 +20,13 @@ REVIEWED_COMPOSE_SERVICES: dict[str, tuple[str, bool]] = {
     "qdrant": ("Apache-2.0", True),
     "ollama": ("MIT", True),
     "meilisearch": ("MIT", True),
-    "dragonfly": ("BSL-1.1", False),
+    "valkey": ("BSD-3-Clause", True),
     "chroma": ("Apache-2.0", True),
     "memgraph": ("BSL-1.1", False),
     "falkordb": ("SSPL-v1", False),
     "nango": ("Elastic-2.0", False),
     "temporal": ("MIT", True),
+    "otel-collector": ("Apache-2.0", True),
     "phoenix": ("Elastic-2.0", False),
     "keycloak": ("Apache-2.0", True),
     "openfga": ("Apache-2.0", True),
@@ -46,7 +47,7 @@ SECRET_FALLBACK_RE = re.compile(
 
 
 def check_repo_license_files() -> list[str]:
-    """Verify LICENSE, NOTICE, .env.example, and pyproject.toml metadata."""
+    """Verify LICENSE, NOTICE, .env.example, requirements.lock, and pyproject.toml metadata."""
     errors: list[str] = []
     license_path = REPO_ROOT / "LICENSE"
     if not license_path.is_file():
@@ -54,9 +55,19 @@ def check_repo_license_files() -> list[str]:
     elif "Apache License" not in license_path.read_text(encoding="utf-8"):
         errors.append("Root LICENSE does not contain Apache License text.")
 
-    for notice_rel in ("NOTICE", "control/orchestration/nodes/NOTICE", ".env.example"):
-        if not (REPO_ROOT / notice_rel).is_file():
-            errors.append(f"Missing required governance file: {notice_rel}")
+    for req_rel in ("NOTICE", "control/orchestration/nodes/NOTICE", ".env.example"):
+        if not (REPO_ROOT / req_rel).is_file():
+            errors.append(f"Missing required governance file: {req_rel}")
+
+    lock_path = REPO_ROOT / "requirements.lock"
+    if not lock_path.is_file():
+        errors.append("Missing pinned hashed lockfile: requirements.lock")
+    else:
+        lock_text = lock_path.read_text(encoding="utf-8")
+        if "--hash=sha256:" not in lock_text:
+            errors.append("requirements.lock must include --hash=sha256: entries.")
+        if re.search(r"(?m)^litellm==", lock_text):
+            errors.append("requirements.lock must not pin litellm directly.")
 
     pyproject_data = tomllib.loads(
         (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
@@ -74,9 +85,9 @@ def check_repo_license_files() -> list[str]:
     return errors
 
 
-def _parse_compose_images(compose_text: str) -> dict[str, str]:
-    """Extract top-level compose service -> image string mappings without PyYAML."""
-    images: dict[str, str] = {}
+def _parse_compose_services(compose_text: str) -> dict[str, dict[str, str]]:
+    """Extract top-level compose service metadata without external YAML parser."""
+    services: dict[str, dict[str, str]] = {}
     current_service: str | None = None
     in_services = False
 
@@ -93,24 +104,33 @@ def _parse_compose_images(compose_text: str) -> dict[str, str]:
             continue
         if indent == 2 and stripped.endswith(":"):
             current_service = stripped[:-1].strip()
-        elif indent == 4 and current_service and stripped.startswith("image:"):
-            images[current_service] = stripped.split("image:", 1)[1].strip().strip("'\"")
-    return images
+            services[current_service] = {}
+        elif indent == 4 and current_service:
+            if stripped.startswith("image:"):
+                services[current_service]["image"] = (
+                    stripped.split("image:", 1)[1].strip().strip("'\"")
+                )
+            elif stripped.startswith("profiles:"):
+                services[current_service]["profiles"] = (
+                    stripped.split("profiles:", 1)[1].strip()
+                )
+    return services
 
 
 def check_docker_compose() -> tuple[list[str], list[str]]:
-    """Validate pinned image tags, secret hygiene, and reviewed service licenses."""
+    """Validate pinned image tags, secret hygiene, and OSI-default profile gating."""
     errors: list[str] = []
     warnings: list[str] = []
     compose_path = REPO_ROOT / "docker-compose.yml"
     compose_text = compose_path.read_text(encoding="utf-8")
 
-    images = _parse_compose_images(compose_text)
-    if not images:
+    services = _parse_compose_services(compose_text)
+    if not services:
         errors.append("No services/images found in docker-compose.yml.")
         return errors, warnings
 
-    for service, image in images.items():
+    for service, meta in services.items():
+        image = meta.get("image", "")
         if ":" not in image or image.endswith(":latest"):
             errors.append(
                 f"Compose service '{service}' uses unpinned/latest image '{image}'."
@@ -121,9 +141,14 @@ def check_docker_compose() -> tuple[list[str], list[str]]:
                 f"Compose service '{service}' ({image}) is not documented in docs/LICENSE_AUDIT.md / check_licenses.py."
             )
         elif not review[1]:
-            warnings.append(
-                f"Audited non-OSI compose service '{service}' ({image}): {review[0]}"
-            )
+            if not meta.get("profiles"):
+                errors.append(
+                    f"Non-OSI service '{service}' ({review[0]}) must specify a compose profile so it is excluded from the default stack."
+                )
+            else:
+                warnings.append(
+                    f"Opt-in non-OSI compose service '{service}' ({image}, {review[0]}, profile={meta['profiles']})"
+                )
 
     for match in SECRET_FALLBACK_RE.finditer(compose_text):
         errors.append(
@@ -199,7 +224,7 @@ def main() -> int:
         return 1
 
     print(
-        "License, Docker tag pinning, and secret hygiene checks passed "
+        "License, lockfile hash, Docker tag pinning, and secret hygiene checks passed "
         f"({len(REVIEWED_COMPOSE_SERVICES)} compose services verified)."
     )
     return 0
@@ -207,4 +232,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

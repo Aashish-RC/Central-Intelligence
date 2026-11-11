@@ -30,6 +30,7 @@ dependencies = [
     "pypdf>=4.0.0",
     "qdrant-client>=1.8.0",
     "redis>=5.0.0",
+    "temporalio>=1.7.0",
     "nest-asyncio>=1.5.0",
 ]
 
@@ -70,7 +71,7 @@ pythonpath = [
     "surface/interaction",
     "surface/federation",
 ]
-testpaths = ["cognitive", "control", "platform_infra", "surface"]
+testpaths = ["cognitive", "control", "platform_infra", "surface", "tests"]
 python_files = ["test_*.py"]
 norecursedirs = [
     "node_modules",
