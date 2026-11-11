@@ -37,6 +37,9 @@ REVIEWED_COMPOSE_SERVICES: dict[str, tuple[str, bool]] = {
     "supabase-db": ("Apache-2.0 / PostgreSQL", True),
     "apache-age": ("Apache-2.0", True),
     "huly": ("EPL-2.0", True),
+    "kafka": ("Apache-2.0", True),
+    "svix": ("MIT", True),
+    "dragonfly": ("BSL-1.1", False),
 }
 
 # Packages that include dual licensing or permissive runtime exceptions alongside GPL.
