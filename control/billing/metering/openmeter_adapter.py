@@ -16,6 +16,10 @@ from uuid import uuid4
 import httpx
 
 from control.billing.models import MeteredUsageSummary, TokenUsageEvent
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("control.billing.metering")
 
@@ -28,11 +32,15 @@ class OpenMeterAdapter:
         endpoint_url: str = "http://localhost:8888",
         api_token: Optional[str] = None,
         source: str = "central-intelligence/reasoning",
+        _defer_prod_check: bool = False,
     ):
         self.endpoint_url = endpoint_url.rstrip("/")
         self.api_token = api_token
         self.source = source
         self._local_events: List[TokenUsageEvent] = []
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("openmeter")
+        )
 
     def record_event(
         self,

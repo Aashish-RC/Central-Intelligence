@@ -15,6 +15,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.evaluation.phoenix")
 
 
@@ -105,9 +110,13 @@ class PhoenixAdapter:
         self,
         endpoint: str = "http://localhost:6006",
         hallucination_threshold: float = 0.5,
+        _defer_prod_check: bool = False,
     ):
         self.endpoint = endpoint
         self.hallucination_threshold = hallucination_threshold
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("phoenix")
+        )
         self._traces: Dict[str, PhoenixTrace] = {}
 
     def start_trace(

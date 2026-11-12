@@ -16,6 +16,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from PIL import Image
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("cognitive.perception.vision.paddleocr")
 
 try:
@@ -59,11 +64,15 @@ class PaddleOCRAdapter:
         lang: str = "en",
         use_angle_cls: bool = True,
         use_gpu: bool = False,
+        _defer_prod_check: bool = False,
     ) -> None:
         self.lang = lang
         self.use_angle_cls = use_angle_cls
         self.use_gpu = use_gpu
         self._ocr_engine = None
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("paddleocr")
+        )
 
     def _get_engine(self) -> Any:
         if self._ocr_engine is None and _PADDLEOCR_AVAILABLE:
@@ -87,6 +96,7 @@ class PaddleOCRAdapter:
         Accepts file paths, raw bytes, or PIL Image objects.
         """
         start_t = time.perf_counter()
+        self.adapter_mode = require_live_adapter("paddleocr")
 
         # Load image into PIL for dimensions and consistency
         img: Optional[Image.Image] = None

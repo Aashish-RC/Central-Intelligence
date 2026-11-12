@@ -19,6 +19,11 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.evaluation.langwatch")
 
 
@@ -80,9 +85,12 @@ class SimulationSuiteReport:
 class LangWatchAdapter:
     """Adapter for multi-agent simulation testing and regression analysis."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, _defer_prod_check: bool = False):
         self.api_key = api_key
         self.client_ready = False
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("langwatch")
+        )
         if api_key:
             try:
                 import langwatch

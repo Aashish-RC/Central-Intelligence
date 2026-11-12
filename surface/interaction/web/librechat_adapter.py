@@ -12,6 +12,11 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +46,10 @@ class ChatConversation:
 class LibreChatAdapter:
     """Manages web chat sessions and seamlessly routes between diverse providers."""
 
-    def __init__(self) -> None:
+    def __init__(self, _defer_prod_check: bool = False) -> None:
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("librechat")
+        )
         self._conversations: Dict[str, ChatConversation] = {}
         self._providers = {
             "openai": ["gpt-4o", "gpt-4o-mini"],

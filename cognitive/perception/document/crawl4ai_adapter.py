@@ -18,6 +18,11 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("cognitive.perception.document.crawl4ai")
 
 try:
@@ -54,10 +59,14 @@ class Crawl4AIAdapter:
         headless: bool = True,
         user_agent: Optional[str] = None,
         timeout: float = 15.0,
+        _defer_prod_check: bool = False,
     ) -> None:
         self.headless = headless
         self.user_agent = user_agent or "Central-Intelligence-Perception/1.0"
         self.timeout = timeout
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("crawl4ai")
+        )
 
     def html_to_markdown(self, html: str, url: str = "") -> CrawlResult:
         """
@@ -151,6 +160,7 @@ class Crawl4AIAdapter:
         Acceptance: Can fetch a URL and return clean markdown.
         Uses AsyncWebCrawler when available, with fast HTTP fallback for local / mock environments.
         """
+        self.adapter_mode = require_live_adapter("crawl4ai")
         # 1. Check if file:// protocol
         if url.startswith("file://") or Path(url).exists():
             path_str = url[7:] if url.startswith("file://") else url

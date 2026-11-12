@@ -21,6 +21,10 @@ from ..core.models import (
     WorkflowGraph,
     WorkflowNodeType,
 )
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 
 class TemporalWorkflowAdapter(BaseOrchestratorBridge):
@@ -32,12 +36,16 @@ class TemporalWorkflowAdapter(BaseOrchestratorBridge):
         namespace: str = "default",
         task_queue: str = "central-workflows",
         checkpoint_dir: str = "./.temporal_checkpoints",
+        _defer_prod_check: bool = False,
     ):
         self.target_host = target_host
         self.namespace = namespace
         self.task_queue = task_queue
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("temporal")
+        )
         self._temporal_client: Optional[Any] = None
         self._init_client()
 

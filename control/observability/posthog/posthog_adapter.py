@@ -15,6 +15,11 @@ from uuid import uuid4
 
 import httpx
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.observability.posthog")
 
 
@@ -43,9 +48,13 @@ class PostHogAdapter:
         self,
         api_url: str = "http://localhost:8090",
         api_key: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ):
         self.api_url = api_url.rstrip("/")
         self.api_key = api_key or "posthog_local_test_key"
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("posthog")
+        )
 
         self._events: List[AnalyticsEvent] = []
         self._session_replays: Dict[str, List[Dict[str, Any]]] = {}

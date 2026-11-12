@@ -22,6 +22,10 @@ from uuid import uuid4
 import httpx
 
 from control.billing.models import BillingInvoice
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("control.billing.payments.hyperswitch")
 
@@ -81,10 +85,14 @@ class HyperswitchAdapter:
         api_url: str = "http://localhost:8080",
         api_key: Optional[str] = None,
         lago_adapter: Optional[Any] = None,
+        _defer_prod_check: bool = False,
     ) -> None:
         self.api_url = api_url.rstrip("/")
         self.api_key = api_key or "hs_test_key_central_intelligence"
         self._lago = lago_adapter
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("hyperswitch")
+        )
 
         # Hermetic in-memory store for offline & unit tests
         self._payments: Dict[str, PaymentIntent] = {}

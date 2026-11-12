@@ -12,6 +12,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,9 +40,17 @@ class LocalModelSession:
 class JanDesktopAdapter:
     """Adapter for Jan desktop app with local model execution and privacy guarantees."""
 
-    def __init__(self, data_directory: str = "~/.jan", privacy_mode: bool = True) -> None:
+    def __init__(
+        self,
+        data_directory: str = "~/.jan",
+        privacy_mode: bool = True,
+        _defer_prod_check: bool = False,
+    ) -> None:
         self.data_directory = data_directory
         self.privacy_mode = privacy_mode
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("jan")
+        )
         self.state = DesktopAppState.INITIALIZED
         self._active_local_model: Optional[LocalModelSession] = None
         self._local_history: List[Dict[str, str]] = []

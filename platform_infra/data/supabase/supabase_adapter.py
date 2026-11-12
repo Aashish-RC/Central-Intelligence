@@ -11,6 +11,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 
 @dataclass
 class VectorRecord:
@@ -44,8 +49,11 @@ class GraphEdge:
 class SupabaseAdapter:
     """Consolidated PostgreSQL adapter with RLS, pgvector, and Apache AGE graph querying."""
 
-    def __init__(self, connection_url: Optional[str] = None) -> None:
+    def __init__(self, connection_url: Optional[str] = None, _defer_prod_check: bool = False) -> None:
         self.connection_url = connection_url or "postgresql://postgres:postgres@localhost:5432/postgres"
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("supabase")
+        )
         # Table storage: table_name -> list of row dicts
         self.tables: Dict[str, List[Dict[str, Any]]] = {}
         # pgvector storage: collection_name -> list of VectorRecord

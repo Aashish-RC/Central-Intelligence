@@ -19,6 +19,10 @@ from uuid import uuid4
 import httpx
 
 from control.billing.models import BillingInvoice, SubscriptionTier
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("control.billing.engine")
 
@@ -59,9 +63,13 @@ class LagoAdapter:
         self,
         api_url: str = "http://localhost:3000",
         api_key: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ):
         self.api_url = api_url.rstrip("/")
         self.api_key = api_key or "lago_local_test_key"
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("lago")
+        )
 
         # Embedded state cache ensuring functionality in hermetic test and offline environments
         self._plans: Dict[str, PlanDefinition] = {}

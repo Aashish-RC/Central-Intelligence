@@ -18,6 +18,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.identity.secrets")
 
 
@@ -66,11 +71,15 @@ class InfisicalAdapter:
         project_id: str = "central-intelligence-vault",
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ):
         self.server_url = server_url
         self.project_id = project_id
         self.client_id = client_id
         self.client_secret = client_secret
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("infisical")
+        )
 
         # Internal encrypted vault store for standalone / hermetic runtime execution
         self._vault: Dict[Tuple[str, Optional[str], str], ScopedSecret] = {}  # (tenant_id, app_id, key) -> secret

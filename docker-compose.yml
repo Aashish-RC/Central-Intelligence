@@ -275,6 +275,91 @@ services:
     volumes:
       - dragonfly_data:/data
 
+  # OpenMeter Real-Time Metering & Token Ingestion for L13 Billing (Apache-2.0)
+  openmeter:
+    image: openmeter/openmeter:v1.0.0
+    container_name: central-openmeter
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      - OPENMETER_ADDRESS=0.0.0.0:8888
+      - OPENMETER_INGEST_KAFKA_BROKER=kafka:9092
+
+  # Lago Open Source Metering & Billing Engine for L13 Billing (AGPLv3 quarantined network)
+  lago:
+    image: getlago/api:v1.16.0
+    container_name: central-lago
+    profiles: ["agpl-quarantine", "self-hosted-non-osi"]
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - LAGO_REDIS_URL=redis://valkey:6379
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@supabase-db:5432/postgres
+    networks:
+      - default
+      - agpl_quarantine_net
+
+  # SigNoz APM, Distributed Tracing & Metrics for L14 Observability (MIT / Apache-2.0)
+  signoz:
+    image: signoz/signoz:v0.66.0
+    container_name: central-signoz
+    restart: unless-stopped
+    ports:
+      - "3301:3301"
+      - "4319:4317"
+    environment:
+      - SIGNOZ_PORT=3301
+    volumes:
+      - signoz_data:/var/lib/signoz
+
+  # Uptime Kuma Self-Hosted Status & Service Monitoring for L14 Observability (MIT)
+  uptime-kuma:
+    image: louislam/uptime-kuma:1.23.13
+    container_name: central-uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+
+  # PostHog Product Analytics & Event Funnels for L14 Observability (MIT)
+  posthog:
+    image: posthog/posthog:v1.50.0
+    container_name: central-posthog
+    restart: unless-stopped
+    ports:
+      - "8095:8000"
+    environment:
+      - POSTHOG_SECRET=${POSTHOG_SECRET:-posthog-secret-key-development}
+    volumes:
+      - posthog_data:/var/lib/posthog
+
+  # Bytebase Database Schema Migration & Version Control for L17 Release (Apache-2.0)
+  bytebase:
+    image: bytebase/bytebase:3.2.0
+    container_name: central-bytebase
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    volumes:
+      - bytebase_data:/var/opt/bytebase
+
+  # LibreChat Multi-Provider Web Interface for L18 Interaction (MIT)
+  librechat:
+    image: ghcr.io/danny-avila/librechat:v0.7.7
+    container_name: central-librechat
+    restart: unless-stopped
+    ports:
+      - "3080:3080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3080
+      - MONGO_URI=mongodb://localhost:27017/LibreChat
+    volumes:
+      - librechat_data:/app/data
+
 
 volumes:
   qdrant_data:
@@ -296,3 +381,13 @@ volumes:
   kafka_data:
   svix_data:
   dragonfly_data:
+  signoz_data:
+  uptime_kuma_data:
+  posthog_data:
+  bytebase_data:
+  librechat_data:
+
+networks:
+  default:
+  agpl_quarantine_net:
+    driver: bridge

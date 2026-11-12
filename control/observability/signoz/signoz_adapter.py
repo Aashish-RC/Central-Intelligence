@@ -20,6 +20,10 @@ from control.observability.models import (
     SpanRecord,
     TraceStatus,
 )
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("control.observability.signoz")
 
@@ -31,9 +35,13 @@ class SigNozAdapter:
         self,
         endpoint_url: str = "http://localhost:4317",
         service_name: str = "central-intelligence",
+        _defer_prod_check: bool = False,
     ):
         self.endpoint_url = endpoint_url
         self.service_name = service_name
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("signoz")
+        )
 
         # Local in-memory repository for trace inspection and hermetic tests
         self._spans: List[SpanRecord] = []

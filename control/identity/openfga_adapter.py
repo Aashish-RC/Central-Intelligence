@@ -18,6 +18,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.identity.openfga")
 
 
@@ -53,9 +58,13 @@ class OpenFGAAdapter:
         self,
         api_url: str = "http://localhost:8081",
         store_id: str = "central-intelligence-store",
+        _defer_prod_check: bool = False,
     ):
         self.api_url = api_url
         self.store_id = store_id
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("openfga")
+        )
 
         # Internal graph store for hermetic / offline execution and immediate verification
         self._tuples: Set[Tuple[str, str, str]] = set()  # (user, relation, object)

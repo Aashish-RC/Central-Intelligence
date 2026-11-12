@@ -16,6 +16,11 @@ from uuid import uuid4
 
 import httpx
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger("control.observability.uptime")
 
 
@@ -60,9 +65,13 @@ class UptimeKumaAdapter:
         self,
         api_url: str = "http://localhost:3001",
         alert_webhook_url: Optional[str] = None,
+        _defer_prod_check: bool = False,
     ):
         self.api_url = api_url.rstrip("/")
         self.alert_webhook_url = alert_webhook_url
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("uptime_kuma")
+        )
 
         self._monitors: Dict[str, ServiceMonitor] = [] if False else {}
         self._incidents: List[IncidentReport] = []

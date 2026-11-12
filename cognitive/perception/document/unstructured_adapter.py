@@ -16,6 +16,10 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from cognitive.perception.translation.core.detector import LocaleDetector
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 
 logger = logging.getLogger("cognitive.perception.document.unstructured")
 
@@ -85,10 +89,18 @@ class UnstructuredAdapter:
     Extracts structured JSON with tables, titles, form fields, and text blocks.
     """
 
-    def __init__(self, strategy: str = "auto", languages: Optional[List[str]] = None) -> None:
+    def __init__(
+        self,
+        strategy: str = "auto",
+        languages: Optional[List[str]] = None,
+        _defer_prod_check: bool = False,
+    ) -> None:
         self.strategy = strategy
         self.languages = list(languages) if languages else ["eng"]
         self._locale_detector = LocaleDetector()
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("unstructured")
+        )
 
     @staticmethod
     def _parse_table_rows(table_text: str) -> List[List[str]]:
@@ -175,6 +187,7 @@ class UnstructuredAdapter:
         """
         Parses document at file_path (PDF, DOCX, PPTX, XLSX, TXT) into structured JSON.
         """
+        self.adapter_mode = require_live_adapter("unstructured")
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"Document file not found: {file_path}")

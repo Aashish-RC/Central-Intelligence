@@ -13,6 +13,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,9 +55,17 @@ class SchemaMigration:
 class BytebaseAdapter:
     """Adapter for Bytebase database CI/CD and review workflows."""
 
-    def __init__(self, endpoint_url: str = "http://localhost:8080", project_id: str = "central-db") -> None:
+    def __init__(
+        self,
+        endpoint_url: str = "http://localhost:8080",
+        project_id: str = "central-db",
+        _defer_prod_check: bool = False,
+    ) -> None:
         self.endpoint_url = endpoint_url
         self.project_id = project_id
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("bytebase")
+        )
         self._migrations: Dict[str, SchemaMigration] = {}
         # database_name -> list of currently applied tables/columns
         self._schema_state: Dict[str, Dict[str, Any]] = {}

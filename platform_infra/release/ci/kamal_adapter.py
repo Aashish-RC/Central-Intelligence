@@ -13,6 +13,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,8 +62,11 @@ class KamalDeployment:
 class KamalAdapter:
     """Automates zero-downtime deploys from CI using Kamal protocol."""
 
-    def __init__(self, config: Optional[KamalConfig] = None) -> None:
+    def __init__(self, config: Optional[KamalConfig] = None, _defer_prod_check: bool = False) -> None:
         self.config = config or KamalConfig()
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("kamal")
+        )
         self._deployments: Dict[str, KamalDeployment] = {}
         # server -> currently running container version
         self._server_versions: Dict[str, str] = {s: "initial_v0" for s in self.config.servers}

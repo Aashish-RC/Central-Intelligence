@@ -14,6 +14,11 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
+
 
 class ConsentPurpose(str, Enum):
     TELEMETRY = "telemetry"
@@ -54,9 +59,12 @@ class C15tConsentAdapter:
     and enforcing Privacy Mode (Feature 10.35).
     """
 
-    def __init__(self, default_opt_in: bool = False):
+    def __init__(self, default_opt_in: bool = False, _defer_prod_check: bool = False):
         # By default, GDPR/privacy regulations require opt-in (default False)
         self.default_opt_in = default_opt_in
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("c15t")
+        )
         self._records: Dict[str, ConsentRecord] = {}
 
     def _key(self, user_id: str, tenant_id: str = "default") -> str:
