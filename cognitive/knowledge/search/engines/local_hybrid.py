@@ -52,7 +52,10 @@ class LocalHybridSearchEngine(BaseSearchEngine):
         return conn
 
     def _init_db(self) -> None:
-        from storage.migrations import SchemaMigrator, Migration, add_column_if_missing
+        try:
+            from storage.migrations import SchemaMigrator, Migration, add_column_if_missing
+        except ModuleNotFoundError:
+            from cognitive.memory.storage.migrations import SchemaMigrator, Migration, add_column_if_missing
         with self._lock:
             conn = self._get_connection()
             # Metadata store table

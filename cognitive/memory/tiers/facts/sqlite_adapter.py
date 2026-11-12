@@ -36,7 +36,10 @@ class SQLiteFactStore(BaseFactStore):
 
     def _init_db(self) -> None:
         """Create tables and indexes if they do not exist."""
-        from storage.migrations import SchemaMigrator, Migration, add_column_if_missing
+        try:
+            from storage.migrations import SchemaMigrator, Migration, add_column_if_missing
+        except ModuleNotFoundError:
+            from cognitive.memory.storage.migrations import SchemaMigrator, Migration, add_column_if_missing
         with self._lock:
             conn = self._get_connection()
             conn.execute("""
