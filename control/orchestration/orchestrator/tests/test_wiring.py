@@ -17,10 +17,25 @@ from notifications.storage.inbox_store import InboxStore
 
 
 def test_w6_orchestrator_runs_code_in_sandbox(monkeypatch):
-    """W6: Orchestrator executes a code node through the sandboxes engine."""
-    monkeypatch.setenv("SANDBOX_ALLOW_LOCAL", "1")
+    """W6: Orchestrator executes a code node through the sandboxes engine with authorized context."""
+    monkeypatch.setenv("CENTRAL_TRUSTED_HOST_TOKEN", "wiring-token")
+    monkeypatch.setenv("ENV", "development")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+
+    from sandboxes.trusted_host import TrustedExecutionContext
+    from sandboxes.runner.device_runner import DeviceRunner
+
+    trusted_ctx = TrustedExecutionContext(
+        caller_id="orchestrator",
+        capability="TEST_FIXTURE_EXECUTION",
+        auth_token="wiring-token",
+        purpose="orchestrator-wiring-test",
+    )
+    device_runner = DeviceRunner(trusted_context=trusted_ctx)
+    sm = SandboxManager(device_runner=device_runner)
+
     planner = MultiStepPlanner()
-    runner = ParallelDAGRunner(sandbox_manager=SandboxManager())
+    runner = ParallelDAGRunner(sandbox_manager=sm)
 
     specs = [
         {

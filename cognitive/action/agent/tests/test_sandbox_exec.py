@@ -9,20 +9,28 @@ from agent.sandbox.e2b_adapter import E2BSandboxAdapter
 
 @pytest.mark.asyncio
 async def test_local_sandbox_safe_command(monkeypatch: pytest.MonkeyPatch):
+    from unittest.mock import AsyncMock
     monkeypatch.delenv("ENVIRONMENT", raising=False)
     monkeypatch.delenv("ENV", raising=False)
-    monkeypatch.setenv("SANDBOX_ALLOW_LOCAL", "1")
-    sandbox = LocalDockerSandboxAdapter(allow_local_fallback=True)
+    mock_mgr = AsyncMock()
+    mock_mgr.execute_command.return_value = {
+        "exit_code": 0,
+        "stdout": "phoenix-sandbox-active\n",
+        "stderr": "",
+        "execution_time_ms": 12.5,
+        "status": "success",
+    }
+    sandbox = LocalDockerSandboxAdapter(manager=mock_mgr, allow_local_fallback=False)
     config = SandboxConfig(required=True, timeout_seconds=10)
 
     res = await sandbox.execute_command(
         command="echo 'phoenix-sandbox-active'",
         config=config,
-        trusted_local_path=True,
     )
     assert res["exit_code"] == 0
     assert "phoenix-sandbox-active" in res["stdout"]
     assert res["execution_time_ms"] > 0
+    mock_mgr.execute_command.assert_awaited_once()
 
 
 @pytest.mark.asyncio

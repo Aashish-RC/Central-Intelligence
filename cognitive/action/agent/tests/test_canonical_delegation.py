@@ -39,7 +39,11 @@ async def test_agent_runner_uses_canonical_sandbox_manager():
     assert isinstance(runner.sandbox, SandboxManager)
     assert runner.sandbox.governor is not None
 
-    # Execute safe command
+    # Execute safe command (using mock container command runner when Docker daemon is not present)
+    import subprocess
+    runner.sandbox.runner.command_runner = lambda cmd, **kwargs: subprocess.CompletedProcess(
+        args=cmd, returncode=0, stdout="test-ok\n", stderr=""
+    )
     res = await runner.sandbox.run_command("echo 'test-ok'")
     assert res.exit_code == 0
     assert "test-ok" in res.stdout

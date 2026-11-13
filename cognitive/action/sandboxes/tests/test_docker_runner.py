@@ -157,7 +157,7 @@ def test_docker_runner_handles_nonzero_exit_and_stderr():
 
 @pytest.mark.disallow_local
 def test_local_process_runner_blocked_when_env_not_set(tmp_path):
-    """LocalProcessRunner must block execution when SANDBOX_ALLOW_LOCAL is not 1."""
+    """LocalProcessRunner must block untrusted execution across all environments."""
     runner = LocalProcessRunner(SecurityGovernor())
     req = ExecutionRequest(
         language="python",
@@ -167,11 +167,11 @@ def test_local_process_runner_blocked_when_env_not_set(tmp_path):
 
     assert result.status == SandboxStatus.BLOCKED
     assert result.exit_code == -1
-    assert "SANDBOX_ALLOW_LOCAL=1" in result.stderr
+    assert "Untrusted command execution on the host machine is strictly prohibited" in result.stderr
 
 
-def test_local_process_runner_allowed_when_env_set(tmp_path, monkeypatch):
-    """LocalProcessRunner allows execution when SANDBOX_ALLOW_LOCAL=1 is set."""
+def test_local_process_runner_blocked_even_with_env_set(tmp_path, monkeypatch):
+    """LocalProcessRunner blocks untrusted execution even if SANDBOX_ALLOW_LOCAL=1 is set."""
     monkeypatch.setenv("SANDBOX_ALLOW_LOCAL", "1")
     runner = LocalProcessRunner(SecurityGovernor())
     req = ExecutionRequest(
@@ -180,9 +180,61 @@ def test_local_process_runner_allowed_when_env_set(tmp_path, monkeypatch):
     )
     result = runner.execute(req, scratch_dir=str(tmp_path))
 
+    assert result.status == SandboxStatus.BLOCKED
+    assert result.exit_code == -1
+    assert "Untrusted command execution on the host machine is strictly prohibited" in result.stderr
+
+
+def test_local_process_runner_allowed_with_valid_trusted_context(tmp_path, monkeypatch):
+    """LocalProcessRunner allows execution when explicitly authorized via TrustedExecutionContext in non-prod."""
+    from sandboxes.trusted_host import TrustedExecutionContext
+    monkeypatch.setenv("CENTRAL_TRUSTED_HOST_TOKEN", "valid-test-token")
+    monkeypatch.setenv("ENV", "development")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+
+    trusted_ctx = TrustedExecutionContext(
+        caller_id="orchestrator",
+        purpose="system-maintenance-test",
+        auth_token="valid-test-token",
+        capability="TEST_FIXTURE_EXECUTION",
+    )
+    runner = LocalProcessRunner(SecurityGovernor())
+    req = ExecutionRequest(
+        language="python",
+        code="print('trusted host execution allowed')",
+        trusted_context=trusted_ctx,
+    )
+    result = runner.execute(req, scratch_dir=str(tmp_path))
+
     assert result.status == SandboxStatus.SUCCESS
     assert result.exit_code == 0
-    assert "local allowed" in result.stdout
+    assert "trusted host execution allowed" in result.stdout
+
+
+def test_local_process_runner_blocked_in_production_even_with_trusted_context(tmp_path, monkeypatch):
+    """LocalProcessRunner unconditionally blocks host execution in production."""
+    from sandboxes.trusted_host import TrustedExecutionContext
+    monkeypatch.setenv("CENTRAL_TRUSTED_HOST_TOKEN", "valid-test-token")
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("ENVIRONMENT", "production")
+
+    trusted_ctx = TrustedExecutionContext(
+        caller_id="orchestrator",
+        purpose="system-maintenance-test",
+        auth_token="valid-test-token",
+        capability="TEST_FIXTURE_EXECUTION",
+    )
+    runner = LocalProcessRunner(SecurityGovernor())
+    req = ExecutionRequest(
+        language="python",
+        code="print('should never run in prod')",
+        trusted_context=trusted_ctx,
+    )
+    result = runner.execute(req, scratch_dir=str(tmp_path))
+
+    assert result.status == SandboxStatus.BLOCKED
+    assert result.exit_code == -1
+    assert "strictly forbidden in production" in result.stderr
 
 
 def test_sandbox_manager_defaults_to_docker_runner(monkeypatch):

@@ -4,11 +4,13 @@ from pathlib import Path
 import pytest
 from sandboxes.core.models import ExecutionRequest, SandboxStatus
 from sandboxes.manager import SandboxManager
+from sandboxes.runner.device_runner import DeviceRunner
 
 
 @pytest.fixture
-def manager():
-    return SandboxManager()
+def manager(test_trusted_context):
+    runner = DeviceRunner(trusted_context=test_trusted_context)
+    return SandboxManager(device_runner=runner)
 
 
 def test_virtual_files_and_ephemeral_cleanup(manager):

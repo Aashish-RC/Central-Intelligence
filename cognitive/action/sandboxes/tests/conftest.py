@@ -4,10 +4,16 @@ import os
 import pytest
 
 
-@pytest.fixture(autouse=True)
-def setup_sandbox_test_env(monkeypatch, request):
-    """Ensure SANDBOX_ALLOW_LOCAL=1 for tests unless explicitly disabled with @pytest.mark.disallow_local."""
-    if "disallow_local" not in request.keywords:
-        monkeypatch.setenv("SANDBOX_ALLOW_LOCAL", "1")
-    else:
-        monkeypatch.delenv("SANDBOX_ALLOW_LOCAL", raising=False)
+@pytest.fixture
+def test_trusted_context(monkeypatch):
+    """Provide a validated TrustedExecutionContext for authorized unit test fixtures."""
+    monkeypatch.setenv("CENTRAL_TRUSTED_HOST_TOKEN", "ci-fixture-token")
+    monkeypatch.setenv("ENV", "development")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    from sandboxes.trusted_host import TrustedExecutionContext
+    return TrustedExecutionContext(
+        caller_id="test_runner",
+        auth_token="ci-fixture-token",
+        capability="TEST_FIXTURE_EXECUTION",
+        purpose="unit-test-fixtures",
+    )
