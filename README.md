@@ -114,6 +114,15 @@ python -m pytest -q
 python -m pytest cognitive/memory/tests/ -q
 python -m pytest control/safety/guardrails/tests/ -q
 
+# Live Adapters Verification Suite (Tasks 10.1 - 10.10)
+python -m pytest tests/integration/test_live_adapters.py -v
+
+# Full Stack 14-Step E2E Flow (Tasks 11.1 - 11.6)
+python -m pytest tests/integration/test_e2e_full_flow.py -v
+
+# High-Concurrency Load Tests (1000 concurrent reqs, P99 < 5s) (Task 12.1)
+python -m pytest tests/load/ -v
+
 # Live Docker Compose E2E tests (starts/uses Qdrant, Apache AGE, Temporal, Keycloak, Valkey)
 COMPOSE_E2E_AUTO_START=1 python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v
 ```
@@ -132,6 +141,18 @@ pnpm run test:orchestration
 # L18 Interaction surface adapter tests
 pnpm run test:surface
 ```
+
+---
+
+## Documentation
+
+- [System Architecture Specification (L1–L19)](docs/ARCHITECTURE.md)
+- [Unified REST API Documentation](docs/API.md)
+- [Security Review & Hardening Audit](docs/SECURITY_REVIEW.md)
+- [Deployment & Operations Guide](docs/DEPLOYMENT.md)
+- [Production Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [License Audit & Quarantine](docs/LICENSE_AUDIT.md)
+- [Feature Audit & Matrix](docs/FEATURE_AUDIT.md)
 
 ### License & Infrastructure Checks
 ```bash
