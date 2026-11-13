@@ -1,7 +1,8 @@
 """Tier 2: Production PostgreSQL Structured Fact Store."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+import urllib.parse
 from uuid import UUID
 
 from memory.core.interfaces import BaseFactStore
@@ -9,9 +10,69 @@ from memory.core.models import FactItem, FactCategory, utc_now
 from memory.core.exceptions import AdapterConnectionError
 
 
+class _Pg8000DictCursor:
+    """Wrapper around a pg8000 DB-API cursor providing dictionary-like row access."""
+
+    def __init__(self, cursor: Any) -> None:
+        self._cursor = cursor
+
+    def execute(self, operation: str, parameters: Any = None) -> Any:
+        return self._cursor.execute(operation, parameters)
+
+    def executemany(self, operation: str, seq_of_parameters: Any) -> Any:
+        return self._cursor.executemany(operation, seq_of_parameters)
+
+    def fetchone(self) -> Optional[Dict[str, Any]]:
+        row = self._cursor.fetchone()
+        if row is None:
+            return None
+        col_names = [d[0] for d in self._cursor.description]
+        return dict(zip(col_names, row))
+
+    def fetchall(self) -> List[Dict[str, Any]]:
+        rows = self._cursor.fetchall()
+        if not rows:
+            return []
+        col_names = [d[0] for d in self._cursor.description]
+        return [dict(zip(col_names, r)) for r in rows]
+
+    @property
+    def rowcount(self) -> int:
+        return self._cursor.rowcount
+
+    def close(self) -> None:
+        self._cursor.close()
+
+    def __enter__(self) -> "_Pg8000DictCursor":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self._cursor.close()
+
+
+class _Pg8000ConnectionWrapper:
+    """Wrapper around a pg8000 DB-API connection providing RealDictCursor semantics."""
+
+    def __init__(self, conn: Any) -> None:
+        self._conn = conn
+
+    def cursor(self) -> _Pg8000DictCursor:
+        return _Pg8000DictCursor(self._conn.cursor())
+
+    def commit(self) -> None:
+        self._conn.commit()
+
+    def rollback(self) -> None:
+        self._conn.rollback()
+
+    def close(self) -> None:
+        self._conn.close()
+
+
 class PostgreSQLFactStore(BaseFactStore):
     """PostgreSQL structured fact store with schema auto-initialization,
     versioning, and soft decay.
+    Supports pure-Python pg8000 driver (preferred) and psycopg2 fallback.
     """
 
     def __init__(self, connection_url: Optional[str] = None):
@@ -23,12 +84,44 @@ class PostgreSQLFactStore(BaseFactStore):
     def _get_connection(self):
         if not self._url:
             raise AdapterConnectionError("PostgreSQL connection URL is not configured.")
+
+        # 1. Prefer pg8000 (locked in requirements.lock, pure-Python)
+        pg8000_err = None
+        try:
+            import pg8000.dbapi
+
+            parsed = urllib.parse.urlparse(self._url)
+            conn = pg8000.dbapi.connect(
+                user=parsed.username or "postgres",
+                password=parsed.password or "",
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 5432,
+                database=parsed.path.lstrip("/") or "postgres",
+            )
+            return _Pg8000ConnectionWrapper(conn)
+        except ImportError:
+            pass
+        except Exception as exc:
+            pg8000_err = exc
+
+        # 2. Fall back to psycopg2 if available
         try:
             import psycopg2
             from psycopg2.extras import RealDictCursor
+
             return psycopg2.connect(self._url, cursor_factory=RealDictCursor)
-        except Exception as e:
-            raise AdapterConnectionError(f"Failed to connect to PostgreSQL: {e}")
+        except ImportError:
+            pass
+        except Exception as exc:
+            raise AdapterConnectionError(f"Failed to connect to PostgreSQL via psycopg2: {exc}") from exc
+
+        if pg8000_err is not None:
+            raise AdapterConnectionError(f"Failed to connect to PostgreSQL via pg8000: {pg8000_err}") from pg8000_err
+
+        raise AdapterConnectionError(
+            "Neither 'pg8000' nor 'psycopg2' is available to connect to PostgreSQL. "
+            "Please ensure pg8000 (specified in pyproject.toml) is installed."
+        )
 
     def _init_db(self) -> None:
         if not self._url:
