@@ -48,6 +48,7 @@ def _default_compose_env() -> dict[str, str]:
     env.setdefault("INFISICAL_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef")
     env.setdefault("LIVEKIT_KEYS", "e2ekey: e2esecret")
     env.setdefault("POSTGRES_PASSWORD", "e2e-postgres-pass")
+    env.setdefault("POSTHOG_SECRET", "e2e-test-posthog-secret")
     env.setdefault("SVIX_JWT_SECRET", "e2e-svix-jwt-secret-placeholder")
     return env
 
