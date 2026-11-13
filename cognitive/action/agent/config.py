@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
 
+from control.safety.production_guard import get_environment_name, is_production
+
 
 class AgentLayerConfig(BaseModel):
     """Runtime configuration for Agent Layer services."""
 
-    environment: str = Field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))
+    environment: str = Field(default_factory=get_environment_name)
     port: int = Field(default_factory=lambda: int(os.getenv("PORT", "8002")))
     host: str = Field(default_factory=lambda: os.getenv("HOST", "0.0.0.0"))
 
