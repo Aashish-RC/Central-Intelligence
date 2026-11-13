@@ -271,7 +271,7 @@ def test_tier2_postgres_fact_store_operations_mocked():
         "key": "framework",
         "value": "FastAPI",
         "category": "preference",
-        "source_event_id": "evt-001",
+        "source_event_id": "22222222-2222-2222-2222-222222222222",
         "version": 1,
         "is_active": True,
         "confidence_score": 0.95,
@@ -284,6 +284,7 @@ def test_tier2_postgres_fact_store_operations_mocked():
 
     fact = store._dict_to_fact(raw_dict)
     assert str(fact.id) == "11111111-1111-1111-1111-111111111111"
+    assert str(fact.source_event_id) == "22222222-2222-2222-2222-222222222222"
     assert fact.user_id == "alice"
     assert fact.key == "framework"
     assert fact.value == "FastAPI"

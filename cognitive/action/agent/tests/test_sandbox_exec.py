@@ -43,17 +43,30 @@ async def test_local_sandbox_prohibits_unauthorized_host_fallback(monkeypatch: p
 async def test_local_sandbox_prohibits_host_execution_in_production(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SANDBOX_ALLOW_LOCAL", "1")
-    sandbox = LocalDockerSandboxAdapter(allow_local_fallback=True)
     config = SandboxConfig(required=True, timeout_seconds=10)
 
+    # Case 1: When container manager is unavailable in production, host execution is unconditionally blocked
+    sandbox_no_mgr = LocalDockerSandboxAdapter(manager=None, allow_local_fallback=True)
     with pytest.raises(SandboxExecutionError) as exc_info:
-        await sandbox.execute_command(
+        await sandbox_no_mgr.execute_command(
             command="echo 'in-production'",
             config=config,
             trusted_local_path=True,
         )
-
     assert "Host subprocess execution is strictly forbidden in production" in str(exc_info.value)
+
+    # Case 2: When container execution encounters an error in production, fallback to host is prohibited
+    from unittest.mock import AsyncMock, MagicMock
+    mock_mgr = MagicMock()
+    mock_mgr.execute_command = AsyncMock(side_effect=RuntimeError("Docker daemon connection failed"))
+    sandbox_docker_err = LocalDockerSandboxAdapter(manager=mock_mgr, allow_local_fallback=True)
+    with pytest.raises(SandboxExecutionError) as exc_info2:
+        await sandbox_docker_err.execute_command(
+            command="echo 'in-production'",
+            config=config,
+            trusted_local_path=True,
+        )
+    assert "Prohibited sandbox fallback" in str(exc_info2.value)
 
 
 @pytest.mark.asyncio

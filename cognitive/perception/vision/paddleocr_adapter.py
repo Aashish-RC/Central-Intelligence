@@ -116,9 +116,20 @@ class PaddleOCRAdapter:
 
         # Try PaddleOCR execution
         engine = self._get_engine()
-        if engine is not None and isinstance(image_input, (str, Path)):
+        if engine is not None:
             try:
-                raw_results = engine.ocr(str(image_input), cls=self.use_angle_cls)
+                if isinstance(image_input, (str, Path)):
+                    ocr_target = str(image_input)
+                elif isinstance(image_input, Image.Image):
+                    try:
+                        import numpy as np
+                        ocr_target = np.array(image_input)
+                    except ImportError:
+                        ocr_target = image_input
+                else:
+                    ocr_target = image_input
+
+                raw_results = engine.ocr(ocr_target, cls=self.use_angle_cls)
                 boxes: List[OCRTextBox] = []
                 extracted_lines: List[str] = []
 
@@ -136,15 +147,14 @@ class PaddleOCRAdapter:
                         )
                         extracted_lines.append(text.strip())
 
-                if boxes:
-                    elapsed_ms = (time.perf_counter() - start_t) * 1000.0
-                    return ImageOCRResult(
-                        full_text="\n".join(extracted_lines),
-                        text_boxes=boxes,
-                        language=self.lang,
-                        image_dimensions=dimensions,
-                        processing_time_ms=round(elapsed_ms, 2),
-                    )
+                elapsed_ms = (time.perf_counter() - start_t) * 1000.0
+                return ImageOCRResult(
+                    full_text="\n".join(extracted_lines),
+                    text_boxes=boxes,
+                    language=self.lang,
+                    image_dimensions=dimensions,
+                    processing_time_ms=round(elapsed_ms, 2),
+                )
             except Exception as e:
                 logger.debug("PaddleOCR native execution fallback: %s", e)
                 if self.adapter_mode == "live":

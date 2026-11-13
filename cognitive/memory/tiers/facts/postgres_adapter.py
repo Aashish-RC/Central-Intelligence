@@ -156,17 +156,27 @@ class PostgreSQLFactStore(BaseFactStore):
             conn.close()
 
     def _dict_to_fact(self, row: dict) -> FactItem:
+        raw_source = row.get("source_event_id")
+        source_id = None
+        if raw_source is not None:
+            source_id = raw_source if isinstance(raw_source, UUID) else UUID(str(raw_source))
+
+        raw_superseded = row.get("superseded_by")
+        superseded_id = None
+        if raw_superseded is not None:
+            superseded_id = raw_superseded if isinstance(raw_superseded, UUID) else UUID(str(raw_superseded))
+
         return FactItem(
             id=row["id"] if isinstance(row["id"], UUID) else UUID(str(row["id"])),
             user_id=row["user_id"],
             key=row["key"],
             value=row["value"],
             category=FactCategory(row["category"]),
-            source_event_id=row["source_event_id"],
+            source_event_id=source_id,
             version=row["version"],
             is_active=row["is_active"],
             confidence_score=float(row["confidence_score"]),
-            superseded_by=row["superseded_by"],
+            superseded_by=superseded_id,
             created_at=row["created_at"],
             updated_at=row["updated_at"],
             last_accessed_at=row["last_accessed_at"],

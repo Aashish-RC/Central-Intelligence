@@ -169,26 +169,26 @@ def test_10_2_unstructured_adapter_live(monkeypatch: pytest.MonkeyPatch, tmp_pat
 
 def test_10_2_paddleocr_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("PADDLEOCR_ADAPTER_MODE", "live")
-    adapter = PaddleOCRAdapter()
-    assert adapter.adapter_mode == "live"
-
-    # Provide a mock OCR engine to test live OCR path without heavy native weights
-    mock_engine = MagicMock()
-    mock_engine.ocr.return_value = [[[[[0, 0], [200, 0], [200, 50], [0, 50]], ("HELLO LIVE", 0.99)]]]
-    adapter._ocr_engine = mock_engine
-
-    # Test OCR with a simple high-contrast image
     img = Image.new("RGB", (200, 50), color=(255, 255, 255))
     d = ImageDraw.Draw(img)
     d.text((10, 10), "HELLO LIVE", fill=(0, 0, 0))
-    res = adapter.extract_text_from_image(img)
+
+    # Case 1: Fail-closed behavior with a missing engine in live mode
+    adapter_unavail = PaddleOCRAdapter()
+    monkeypatch.setattr(adapter_unavail, "_get_engine", lambda: None)
+    with pytest.raises(ProductionSafetyError):
+        adapter_unavail.extract_text_from_image(img)
+
+    # Case 2: Successful extraction using a deterministic mocked backend
+    adapter_live = PaddleOCRAdapter()
+    mock_engine = MagicMock()
+    mock_engine.ocr.return_value = [[[[[0, 0], [200, 0], [200, 50], [0, 50]], ("HELLO LIVE", 0.99)]]]
+    adapter_live._ocr_engine = mock_engine
+    monkeypatch.setattr(adapter_live, "_get_engine", lambda: mock_engine)
+
+    res = adapter_live.extract_text_from_image(img)
     assert res.image_dimensions == (200, 50)
     assert "HELLO LIVE" in res.full_text
-
-    # Without OCR engine, live mode must fail closed rather than returning fake text
-    adapter._ocr_engine = None
-    with pytest.raises(ProductionSafetyError):
-        adapter.extract_text_from_image(img)
 
 
 def test_10_2_vlm_client_live(monkeypatch: pytest.MonkeyPatch):
@@ -322,9 +322,42 @@ def test_10_4_lago_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_4_hyperswitch_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("HYPERSWITCH_ADAPTER_MODE", "live")
-    adapter = HyperswitchAdapter()
+    lago = LagoAdapter()
+    adapter = HyperswitchAdapter(lago_adapter=lago)
     assert adapter.adapter_mode == "live"
 
+    # Case 1: Unreachable live endpoint fails closed and never settles invoices
+    invoice_unreachable = lago.generate_invoice(customer_id="cust_refused")
+    assert invoice_unreachable.status == "open"
+
+    with pytest.raises(ProductionSafetyError):
+        adapter.create_payment(
+            amount_cents=2900,
+            currency="USD",
+            customer_id="cust_refused",
+            gateway="stripe",
+            payment_method=PaymentMethod.CARD,
+            confirm=True,
+            invoice_id=invoice_unreachable.invoice_id,
+        )
+    assert invoice_unreachable.status == "open"
+    assert invoice_unreachable.paid_at is None
+
+    # Case 2: Deterministic HTTP mocking for verified live payment success
+    def mock_post(self, url, *args, **kwargs):
+        return httpx.Response(
+            200,
+            json={
+                "payment_id": "pay_live_mock_2900",
+                "status": "succeeded",
+                "client_secret": "secret_live_2900",
+            },
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+
+    invoice_success = lago.generate_invoice(customer_id="cust_42")
     payment = adapter.create_payment(
         amount_cents=2900,
         currency="USD",
@@ -332,9 +365,12 @@ def test_10_4_hyperswitch_adapter_live(monkeypatch: pytest.MonkeyPatch):
         gateway="stripe",
         payment_method=PaymentMethod.CARD,
         confirm=True,
+        invoice_id=invoice_success.invoice_id,
     )
     assert payment.status == PaymentStatus.SUCCEEDED
     assert payment.amount_cents == 2900
+    assert payment.payment_id == "pay_live_mock_2900"
+    assert invoice_success.status == "paid"
 
 
 # ---------------------------------------------------------------------------

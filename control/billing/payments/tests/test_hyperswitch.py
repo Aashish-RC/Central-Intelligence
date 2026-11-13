@@ -110,7 +110,10 @@ def test_live_payment_network_timeout_fails_closed(monkeypatch: pytest.MonkeyPat
     from control.safety.production_guard import ProductionSafetyError
 
     monkeypatch.setenv("HYPERSWITCH_MODE", "live")
-    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+    lago = LagoAdapter()
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345", lago_adapter=lago)
+    invoice = lago.generate_invoice(customer_id="cust_timeout_test")
+    assert invoice.status == "open"
 
     def mock_post_timeout(*args, **kwargs):
         raise httpx.ConnectTimeout("Connection to hyperswitch:8080 timed out")
@@ -118,8 +121,13 @@ def test_live_payment_network_timeout_fails_closed(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(httpx.Client, "post", mock_post_timeout)
 
     with pytest.raises(ProductionSafetyError) as exc_info:
-        hyperswitch.create_payment(amount_cents=1000, confirm=True)
-    assert "Live payment execution failed" in str(exc_info.value)
+        hyperswitch.create_payment(amount_cents=1000, confirm=True, invoice_id=invoice.invoice_id)
+    assert exc_info.type is ProductionSafetyError
+    assert "payment" in str(exc_info.value).lower()
+    assert invoice.status == "open"
+    assert invoice.paid_at is None
+    failed_payments = [p for p in hyperswitch._payments.values() if p.status == PaymentStatus.FAILED]
+    assert len(failed_payments) == 1
 
 
 def test_live_payment_http_error_fails_closed(monkeypatch: pytest.MonkeyPatch):
@@ -127,7 +135,10 @@ def test_live_payment_http_error_fails_closed(monkeypatch: pytest.MonkeyPatch):
     from control.safety.production_guard import ProductionSafetyError
 
     monkeypatch.setenv("HYPERSWITCH_MODE", "live")
-    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+    lago = LagoAdapter()
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345", lago_adapter=lago)
+    invoice = lago.generate_invoice(customer_id="cust_http_error_test")
+    assert invoice.status == "open"
 
     def mock_post_500(*args, **kwargs):
         return httpx.Response(500, text="Internal Gateway Error", request=httpx.Request("POST", "http://test"))
@@ -135,8 +146,13 @@ def test_live_payment_http_error_fails_closed(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(httpx.Client, "post", mock_post_500)
 
     with pytest.raises(ProductionSafetyError) as exc_info:
-        hyperswitch.create_payment(amount_cents=1000, confirm=True)
-    assert "Hyperswitch payment API returned HTTP 500" in str(exc_info.value)
+        hyperswitch.create_payment(amount_cents=1000, confirm=True, invoice_id=invoice.invoice_id)
+    assert exc_info.type is ProductionSafetyError
+    assert "500" in str(exc_info.value)
+    assert invoice.status == "open"
+    assert invoice.paid_at is None
+    failed_payments = [p for p in hyperswitch._payments.values() if p.status == PaymentStatus.FAILED]
+    assert len(failed_payments) == 1
 
 
 def test_live_payment_malformed_response_fails_closed(monkeypatch: pytest.MonkeyPatch):
@@ -144,7 +160,10 @@ def test_live_payment_malformed_response_fails_closed(monkeypatch: pytest.Monkey
     from control.safety.production_guard import ProductionSafetyError
 
     monkeypatch.setenv("HYPERSWITCH_MODE", "live")
-    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+    lago = LagoAdapter()
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345", lago_adapter=lago)
+    invoice = lago.generate_invoice(customer_id="cust_malformed_test")
+    assert invoice.status == "open"
 
     def mock_post_bad_json(*args, **kwargs):
         return httpx.Response(200, text="NOT_JSON_HTML_ERROR", request=httpx.Request("POST", "http://test"))
@@ -152,8 +171,13 @@ def test_live_payment_malformed_response_fails_closed(monkeypatch: pytest.Monkey
     monkeypatch.setattr(httpx.Client, "post", mock_post_bad_json)
 
     with pytest.raises(ProductionSafetyError) as exc_info:
-        hyperswitch.create_payment(amount_cents=1000, confirm=True)
-    assert "malformed non-JSON response" in str(exc_info.value)
+        hyperswitch.create_payment(amount_cents=1000, confirm=True, invoice_id=invoice.invoice_id)
+    assert exc_info.type is ProductionSafetyError
+    assert "malformed" in str(exc_info.value).lower()
+    assert invoice.status == "open"
+    assert invoice.paid_at is None
+    failed_payments = [p for p in hyperswitch._payments.values() if p.status == PaymentStatus.FAILED]
+    assert len(failed_payments) == 1
 
 
 def test_live_payment_declined_state_does_not_settle_invoice(monkeypatch: pytest.MonkeyPatch):
