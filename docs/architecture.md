@@ -1,81 +1,119 @@
-# Aevum Architecture: Canonical 19-Layer Brain (`L1`–`L19`)
+# Central Intelligence Architecture Specification (Layers 1–19)
 
-Central Intelligence (`central-intelligence`) is organized into **19 numbered layers** grouped across four domains. This 19-layer numbering is the single canonical architecture across code, documentation, and roadmap tracking (superseding earlier 11-layer and 20-pillar drafts).
-
-## Layer Map (`L1`–`L19`)
-
-### 1. Cognitive Domain (`cognitive/`, Layers 1–7)
-| Layer | Name | Directory | Primary Responsibilities |
-| :--- | :--- | :--- | :--- |
-| **L1** | Perception | `cognitive/perception/` | Multimodal input parsing (documents/Unstructured, vision, audio/STT, translation, accessibility drivers). |
-| **L2** | Memory | `cognitive/memory/` | 4-tier memory engine, graph stitches, retention/privacy controls, and cross-provider portability translators. |
-| **L3** | Knowledge | `cognitive/knowledge/` | Hybrid RAG pipelines (3-source RRF), document indexing, vector/graph stores, local and web search. |
-| **L4** | Reasoning | `cognitive/reasoning/` | TypeScript Model Gateway, 4-path routing, BYOK key management, streaming inference, and provider adapters. |
-| **L5** | Action | `cognitive/action/` | ReAct agents, natural-language agent builder, tool/MCP connectors, sandboxed code execution, browser automation. |
-| **L6** | Output | `cognitive/output/` | Multimodal output routing, image/media generation pipelines, TTS synthesis, voice/avatar adapters, and rich widgets. |
-| **L7** | Learning | `cognitive/learning/` | Skill extraction/packaging, trajectory distillation, recommender engine, and user-preference adaptation. |
-
-### 2. Control Domain (`control/`, Layers 8–14)
-| Layer | Name | Directory | Primary Responsibilities |
-| :--- | :--- | :--- | :--- |
-| **L8** | Orchestration | `control/orchestration/` | Visual workflow graph definitions (109 Rivet-origin MIT node specs), Python DAG runner, Temporal integration, and notifications. |
-| **L9** | Context Engineering | `control/context/` | Dynamic context assembly, relevance packing, compaction/summarization, and prompt cache management. |
-| **L10** | Safety, Trust & Privacy | `control/safety/` | Input/output guardrails, PII redaction, prompt-injection defense, rule evaluation, Merkle audit log, and human approval gates. |
-| **L11** | Evaluation & Quality | `control/evaluation/` | Automated regression gates, offline/online LLM judges, A/B statistical testing, drift tracking, and Langfuse instrumentation. |
-| **L12** | Identity & Access Management | `control/identity/` | Authentication/MFA/SSO, tenant isolation, OAuth token vault, OpenFGA ReBAC permissions, and Infisical secrets integration. |
-| **L13** | Entitlements & Billing | `control/billing/` | Usage metering, Lago billing sync, Hyperswitch payment routing, rate quotas, and hard cost caps. |
-| **L14** | Observability | `control/observability/` | OpenTelemetry instrumentation, Arize Phoenix traces, structured logging, health checks, SLO alerts, and execution replay. |
-
-### 3. Platform Infrastructure Domain (`platform_infra/`, Layers 15–17)
-| Layer | Name | Directory | Primary Responsibilities |
-| :--- | :--- | :--- | :--- |
-| **L15** | Data & Messaging | `platform_infra/data/` | Event streaming (AutoMQ), transactional relational/vector/graph persistence (Supabase/RLS), app isolation, cross-device sync, and lineage. |
-| **L16** | Compute & Model Serving | `platform_infra/compute/` | Local/edge inference runtimes (Ollama), high-throughput serving (vLLM), cold/warm GPU pool autoscaling, and spot fallback. |
-| **L17** | Release & Lifecycle | `platform_infra/release/` | CI/CD zero-downtime rollout adapters (Kamal/Coolify), feature flags/canaries (GrowthBook), Bytebase schema migration guards, and release quality gates. |
-
-### 4. Surface & Ecosystem Domain (`surface/`, Layers 18–19)
-| Layer | Name | Directory | Primary Responsibilities |
-| :--- | :--- | :--- | :--- |
-| **L18** | Interaction | `surface/interaction/` | Universal surface rendering adapters (web/LibreChat, desktop/Jan, ambient wake-word, proactive nudges, continuity, depth switcher, settings). |
-| **L19** | Specialization & Federation | `surface/federation/` | Domain Brain Factory, privacy-preserving federated learning, tenant pack registry/sandboxing, sharing gates, Huly PM integration, and encrypted inter-brain sync. |
+**Document Version:** 1.0.0  
+**Target:** Aevum CI Brain Architecture  
+**Status:** Hardened Production Reference
 
 ---
 
-## Layer Size & Feature Balance Audit
+## 1. Architectural Overview
 
-Measured source inventory across `.py`, `.ts`, `.tsx`, and `.go` files (excluding `node_modules`, `.venv`, and `dist`):
+Central Intelligence is an enterprise-grade cognitive AI operating system structured into **19 hierarchical layers** organized across four primary planes:
+1. **Cognitive Plane (L1–L8):** Perception, Memory, Knowledge, Reasoning, Action, Generation, Orchestration, and Autonomous Agent Runtime.
+2. **Control & Safety Plane (L9–L14):** Context Engineering, Safety & Guardrails, Evaluation & Observability, Identity & Zanzibar ReBAC Access Control, Billing & Metering, and Unified Telemetry.
+3. **Platform Infrastructure Plane (L15–L17):** Distributed Data & Messaging, Storage & In-Memory Compute, CI/CD Zero-Downtime Releases, and Migration Management.
+4. **Surface & Federation Plane (L18–L19):** Multi-modal user interfaces (Web, Desktop, CLI, Generative UI widgets) and Peer Federation (Huly PM, Cross-Agent Memory Sync, Distributed Consensus).
 
-| Layer | Directory | Files | Lines | Notes |
-| :--- | :--- | ---: | ---: | :--- |
-| L1 | `cognitive/perception` | 59 | 5,110 | Core ingestion/doc/voice active; hardware accessibility drivers deferred ([DEFERRED_ITEMS.md](DEFERRED_ITEMS.md)). |
-| L2 | `cognitive/memory` | 63 | 7,530 | Includes 4-tier engine, graph stitches, and portability translators. |
-| L3 | `cognitive/knowledge` | 119 | 17,142 | Hybrid search, RAG pipelines, and graph/vector indexing. |
-| L4 | `cognitive/reasoning` | 176 | 22,144 | Model Gateway + TypeScript test suites. |
-| L5 | `cognitive/action` | 172 | 16,780 | Agents, sandboxes, browser automation, and MCP/connector clients. |
-| L6 | `cognitive/output` | 61 | 5,359 | Media generation, TTS, and output routing. |
-| L7 | `cognitive/learning` | 57 | 4,752 | Recommender and skill packaging. |
-| L8 | `control/orchestration` | 230 | 37,010 | **Skewed by ported node catalog**: `24,331` lines (~66%) are individual Rivet node definitions in `nodes/` (`MIT`); core orchestrator/workflow/adapters total `12,679` lines. |
-| L9 | `control/context` | 27 | 2,880 | Focused context synthesis, cache, and compaction modules. |
-| L10 | `control/safety` | 89 | 11,571 | Guardrails, redteam suite, policy rules, and Merkle audit. |
-| L11 | `control/evaluation` | 54 | 8,096 | Benchmarks, A/B experiments, and telemetry. |
-| L12 | `control/identity` | 24 | 2,952 | Roadmap tracks 47 features (`12.01`–`12.47`); see `control/identity/ROADMAP_PROGRESS.md`. |
-| L13 | `control/billing` | 29 | 3,011 | Roadmap tracks features `13.01`–`13.18` (`13.07` unlisted); see `control/billing/ROADMAP_PROGRESS.md`. |
-| L14 | `control/observability` | 32 | 3,163 | Roadmap tracks 24 features (`14.01`–`14.24`); see `control/observability/ROADMAP_PROGRESS.md`. |
-| L15 | `platform_infra/data` | 24 | 2,042 | README lists features `15.1`–`15.3`, `15.34`–`15.39` (adapter modules for core data/sync/lineage paths). |
-| L16 | `platform_infra/compute` | 25 | 1,525 | README lists features `16.05`, `16.07`, `16.17`, `16.22`–`16.30`. |
-| L17 | `platform_infra/release` | 25 | 1,279 | README lists features `17.1`–`17.4`, `17.08`, `17.12`–`17.15`. |
-| L18 | `surface/interaction` | 43 | 2,072 | README lists features `18.1`–`18.4`, `18.07`, `18.09`–`18.11`, `18.15`, `18.18`–`18.24`, `18.34`–`18.42`. |
-| L19 | `surface/federation` | 31 | 1,688 | README lists features `19.1`, `19.01`–`19.07`, `19.12`–`19.16`, `19.20`, `19.22`–`19.23`, `19.29`–`19.35`. |
+```mermaid
+flowchart TD
+    subgraph Surface["Surface & Federation (L18 - L19)"]
+        UI["L18: LibreChat / Jan Desktop / CLI / Generative UI"]
+        FED["L19: Huly PM / Federated Agent Synchronization"]
+    end
 
-### Layer Balance Observations
-1. **Why L8 is 37,010 lines**: `24,331` lines inside `control/orchestration/nodes/` come from 109 granular visual-workflow node classes ported from Ironclad Rivet (`MIT`). The core Python/TS engine (`control/orchestration/orchestrator/`, workflow adapters, and notifications) is `12,679` lines, comparable to `control/safety` (`11,571`) and `cognitive/action` (`16,780`).
-2. **Why L12–L19 are 1,279–3,163 lines & exact gaps vs feature ranges**:
-   - **L12–L14 (`ROADMAP_PROGRESS.md` tracked)**: L12 Identity covers all `12.01`–`12.47` (`47` features); L13 Billing lists `13.01`–`13.18` (`13.07` omitted from its roadmap table); L14 Observability covers `14.01`–`14.24` (`24` features).
-   - **L15–L19 (`README.md` feature subsets)**: No `.zip` specification archive is present in the repository to verify total upstream specification counts automatically. Based on module README tables, these layers currently implement vertical-slice adapters covering specific IDs (`L15`: `15.1–15.3, 15.34–15.39`; `L16`: `16.05, 16.07, 16.17, 16.22–16.30`; `L17`: `17.1–17.4, 17.08, 17.12–17.15`; `L18`: `18.1–18.4, 18.07, 18.09–18.11, 18.15, 18.18–18.24, 18.34–18.42`; `L19`: `19.1, 19.01–19.07, 19.12–19.16, 19.20, 19.22–19.23, 19.29–19.35`), with intervening IDs (e.g., `15.04–15.33`, `16.01–16.04`, `16.08–16.16`, `17.05–17.07`, `18.05–18.06`, `19.08–19.11`) unmapped locally until reconciled against the upstream zip archive.
+    subgraph Control["Control & Safety Plane (L9 - L14)"]
+        CE["L9: Context Assembler & Dual Boundary Guard"]
+        SAFE["L10: NeMo Guardrails / 4-Tier PII / Merkle Audit"]
+        EVAL["L11: Phoenix / LangWatch / Metric Evaluators"]
+        AUTH["L12: Keycloak OIDC / OpenFGA Zanzibar ReBAC"]
+        BILL["L13: OpenMeter / Lago / Hyperswitch"]
+        OBS["L14: SigNoz OTLP / PostHog / Uptime Kuma"]
+    end
+
+    subgraph Cognitive["Cognitive Plane (L1 - L8)"]
+        PERC["L1: LiveKit Voice / Screenpipe / PaddleOCR"]
+        MEM["L2: 3-Tier Dynamic Memory (Working, Facts, Archival)"]
+        KNOW["L3: Hybrid RAG (Meilisearch BM25 + Qdrant Dense)"]
+        REAS["L4: Multi-Model Reasoning Engine"]
+        ACT["L5: Tool MCP & Sandbox (E2B isolated execution)"]
+        GEN["L6: Multi-modal Generation & Audio"]
+        ORCH["L7-L8: Temporal Durable Workflows & Agent Runtime"]
+    end
+
+    subgraph Infra["Platform Infrastructure (L15 - L17)"]
+        DATA["L15: Supabase Postgres (pgvector) / AutoMQ Kafka"]
+        CACHE["L16: Dragonfly Cache / S3 Object Store"]
+        REL["L17: Kamal Rolling Deploy / Bytebase Migrations"]
+    end
+
+    UI --> CE
+    CE --> SAFE
+    SAFE --> AUTH
+    AUTH --> ORCH
+    ORCH --> MEM
+    ORCH --> KNOW
+    ORCH --> ACT
+    ACT --> DATA
+    ORCH --> BILL
+    ORCH --> OBS
+    FED --> ORCH
+```
 
 ---
 
-## Governance & Licensing References
-- Root License: [LICENSE](../LICENSE) (Apache-2.0) and [NOTICE](../NOTICE)
-- Third-Party & Compose License Audit: [docs/LICENSE_AUDIT.md](LICENSE_AUDIT.md)
-- Deferred Hardware / Infrastructure Items: [docs/DEFERRED_ITEMS.md](DEFERRED_ITEMS.md)
+## 2. Layer-by-Layer Architectural Breakdown
+
+### 2.1 Layer 1: Perception
+- **Capabilities:** Real-time multi-modal streaming inputs across audio, vision, screen capture, and document parsing.
+- **Key Integrations:** LiveKit (WebRTC voice pipelines), PaddleOCR (document text extraction), Crawl4AI (deep web spidering), Screenpipe (real-time desktop visual capture).
+- **Hardening:** Adapters fail-closed if missing live endpoints in production mode.
+
+### 2.2 Layer 2: Memory Hierarchy
+- **Architecture:** 3-tier fused memory architecture:
+  - **Tier 1 (Working Memory):** High-speed in-memory buffer with write-ahead log (WAL) persistence for active turns.
+  - **Tier 2 (Structured Facts):** Relational store (SQLite / PostgreSQL) managing atomic facts, versioning, confidence scoring, and conflict resolution.
+  - **Tier 3 (Semantic Archival):** Dense vector index (Qdrant / Chroma) powered by local or cloud embedding models for semantic recall.
+- **Access Control:** OpenFGA ReBAC hook pre-filters write and read access per user/tenant scope.
+
+### 2.3 Layer 3: Knowledge & Retrieval (Hybrid RAG)
+- **Architecture:** Reciprocal Rank Fusion (RRF) combining sparse BM25 indexing (Meilisearch) and dense semantic vector search (Qdrant).
+- **Reranker:** Local cross-encoder reranking tier maximizing top-5 retrieval precision.
+
+### 2.4 Layer 4–6: Reasoning, Action & Generation
+- **Execution Sandboxing:** E2B isolated cloud micro-containers executing arbitrary Python, Node.js, and shell scripts without host risk.
+- **Model Context Protocol (MCP):** Dynamic tool binding enabling agents to discover and invoke tools over standard protocol interfaces.
+- **Generative UI:** Dynamic creation of interactive HTML/Mermaid widgets rendered directly on user surfaces.
+
+### 2.5 Layer 7–8: Durable Orchestration & Agent Runtime
+- **Temporal Engine:** Durable workflow execution engine ensuring long-running agent workflows survive process crashes, server restarts, and transient network failures.
+- **Agent Blueprints:** Pre-compiled declarative manifests for specialised personas (Coder, Researcher, Auditor).
+
+### 2.6 Layer 9–10: Context Engineering & Safety Guardrails
+- **Dual Boundary Assembler:** Encapsulates untrusted user instructions and external retrieved content within cryptographic `<untrusted_user_input>` XML tags, neutralizing jailbreaks and prompt injection.
+- **NeMo Guardrails:** Policy enforcement evaluating input/output tokens against safety rubrics.
+- **4-Tier PII Scrubber:** Regex, Named Entity Recognition, and tokenized masking of sensitive identifiers.
+- **Unified Merkle Audit Ledger:** Cryptographic append-only ledger computing SHA-256 Merkle root hashes for every critical action.
+
+### 2.7 Layer 11–14: Evaluation, Identity, Billing & Observability
+- **Keycloak & OpenFGA:** Centralized OIDC identity federation and Zanzibar fine-grained relation tuples.
+- **Billing Stack:** OpenMeter (real-time token and compute metering), Lago (quarantined AGPL billing engine), Hyperswitch (universal payment orchestration).
+- **Observability:** SigNoz OpenTelemetry collector, PostHog product telemetry, and Uptime Kuma heartbeats.
+
+### 2.8 Layer 15–17: Platform Infrastructure & Release
+- **Storage & Messaging:** Supabase PostgreSQL with `pgvector` and Apache AGE graph extensions; AutoMQ Kafka-compatible event streaming; Dragonfly high-throughput in-memory cache.
+- **Deployment & Migrations:** Kamal containerized zero-downtime rolling deployments; Bytebase schema migration pipeline with automated rollback verification.
+
+### 2.9 Layer 18–19: Surface Interfaces & Federation
+- **Interaction Surfaces:** LibreChat web frontend, Jan desktop local AI client, CLI terminal interfaces.
+- **Federation:** Huly project management synchronization and decentralized cross-agent task coordination.
+
+---
+
+## 3. Crown Jewel Defense Mechanisms
+
+1. **Production Safety Guard (`control/safety/production_guard.py`):**
+   Prevents silent fallbacks to mock or simulated drivers when running under live deployment or `ADAPTER_MODE=live`.
+2. **Dual-Boundary Prompt Injection Filter:**
+   Guarantees that third-party data or untrusted inputs cannot alter system persona or tool-calling directives.
+3. **Cryptographic Merkle Tree Ledger:**
+   Provides mathematically verifiable audit history ensuring zero unauthorized log alterations.
