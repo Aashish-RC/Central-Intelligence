@@ -30,6 +30,7 @@ from surface.federation.pm.huly_adapter import HulyAdapter
 
 def test_dev_defaults_to_simulated(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.delenv("ADAPTER_MODE", raising=False)
     monkeypatch.delenv("HANDY_MODE", raising=False)
     monkeypatch.delenv("HANDY_ADAPTER_MODE", raising=False)
@@ -37,6 +38,75 @@ def test_dev_defaults_to_simulated(monkeypatch: pytest.MonkeyPatch):
     assert is_production() is False
     assert get_adapter_mode("handy") == "simulated"
     assert require_live_adapter("handy") == "simulated"
+
+
+def test_production_detection_aliases_and_env_vars(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("ADAPTER_MODE", raising=False)
+
+    # ENV=production alone
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENV", "production")
+    assert is_production() is True
+
+    # ENVIRONMENT=prod and ENV=prod
+    monkeypatch.setenv("ENVIRONMENT", "prod")
+    monkeypatch.delenv("ENV", raising=False)
+    assert is_production() is True
+
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENV", "prod")
+    assert is_production() is True
+
+    # Live aliases with whitespace and casing
+    monkeypatch.setenv("ENVIRONMENT", " LIVE ")
+    monkeypatch.delenv("ENV", raising=False)
+    assert is_production() is True
+
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENV", " Production ")
+    assert is_production() is True
+
+    # Both set and agreeing on production
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("ENV", "prod")
+    assert is_production() is True
+
+    # Both set and agreeing on development
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("ENV", "dev")
+    assert is_production() is False
+
+    # Empty string handling
+    monkeypatch.setenv("ENVIRONMENT", "")
+    monkeypatch.setenv("ENV", "production")
+    assert is_production() is True
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("ENV", "")
+    assert is_production() is True
+
+
+def test_production_detection_conflicting_settings(monkeypatch: pytest.MonkeyPatch):
+    # Conflicting: ENVIRONMENT says production, ENV says development
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("ENV", "development")
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        is_production()
+    assert "Conflicting environment configuration" in str(exc_info.value)
+
+    # Conflicting: ENVIRONMENT says dev, ENV says prod
+    monkeypatch.setenv("ENVIRONMENT", "dev")
+    monkeypatch.setenv("ENV", "prod")
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        is_production()
+    assert "Conflicting environment configuration" in str(exc_info.value)
+
+    # Conflicting: ENVIRONMENT says live, ENV says test
+    monkeypatch.setenv("ENVIRONMENT", "live")
+    monkeypatch.setenv("ENV", "test")
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        is_production()
+    assert "Conflicting environment configuration" in str(exc_info.value)
 
 
 def test_production_fails_closed_when_simulated(monkeypatch: pytest.MonkeyPatch):

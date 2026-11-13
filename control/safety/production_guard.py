@@ -11,6 +11,15 @@ import os
 from typing import Mapping, Optional
 
 VALID_ADAPTER_MODES = ("live", "simulated")
+_PROD_ALIASES = frozenset({"production", "prod", "live"})
+_DEV_ALIASES = frozenset({
+    "development",
+    "dev",
+    "test",
+    "testing",
+    "sandbox",
+    "local",
+})
 _MOCK_SENTINEL_PREFIXES = ("mock", "test", "dummy", "fake", "placeholder")
 _KNOWN_INSECURE_DEFAULTS = frozenset({
     "mock-secret-key",
@@ -27,9 +36,53 @@ class ProductionSafetyError(RuntimeError):
     """Raised when a simulated adapter, mock credential, or fallback is used in production."""
 
 
+def get_environment_name() -> str:
+    """Resolve environment name from ``ENVIRONMENT`` or ``ENV``.
+
+    Fails closed with ``ProductionSafetyError`` if conflicting modes are configured.
+    """
+    raw_env_var = os.getenv("ENVIRONMENT")
+    raw_short_env = os.getenv("ENV")
+
+    env_val = raw_env_var.strip().lower() if raw_env_var is not None else None
+    short_val = raw_short_env.strip().lower() if raw_short_env is not None else None
+
+    # Handle empty strings as unset
+    if env_val == "":
+        env_val = None
+    if short_val == "":
+        short_val = None
+
+    if env_val is None and short_val is None:
+        return "development"
+
+    if env_val is not None and short_val is None:
+        return env_val
+
+    if short_val is not None and env_val is None:
+        return short_val
+
+    # Both are set and non-empty: check for contradictory production status
+    assert env_val is not None and short_val is not None
+    is_env_prod = env_val in _PROD_ALIASES
+    is_short_prod = short_val in _PROD_ALIASES
+
+    if is_env_prod != is_short_prod:
+        raise ProductionSafetyError(
+            f"Conflicting environment configuration: ENVIRONMENT='{raw_env_var}' and "
+            f"ENV='{raw_short_env}'. Production detection cannot be ambiguously bypassed."
+        )
+
+    return env_val
+
+
 def is_production() -> bool:
-    """Return True if ``ENVIRONMENT`` is set to ``production``."""
-    return os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+    """Return True if running in production mode via ``ENVIRONMENT`` or ``ENV``.
+
+    Fails closed with ``ProductionSafetyError`` if configuration values conflict.
+    """
+    env_name = get_environment_name()
+    return env_name in _PROD_ALIASES
 
 
 def get_adapter_mode(adapter_name: str, default: str = "simulated") -> str:
