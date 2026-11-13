@@ -40,6 +40,13 @@ REVIEWED_COMPOSE_SERVICES: dict[str, tuple[str, bool]] = {
     "kafka": ("Apache-2.0", True),
     "svix": ("MIT", True),
     "dragonfly": ("BSL-1.1", False),
+    "openmeter": ("Apache-2.0", True),
+    "lago": ("AGPL-3.0", False),
+    "signoz": ("MIT / Apache-2.0", True),
+    "uptime-kuma": ("MIT", True),
+    "posthog": ("MIT", True),
+    "bytebase": ("Apache-2.0", True),
+    "librechat": ("MIT", True),
 }
 
 # Packages that include dual licensing or permissive runtime exceptions alongside GPL.

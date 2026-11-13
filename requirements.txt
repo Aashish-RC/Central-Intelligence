@@ -34,3 +34,4 @@ redis>=5.0.0
 temporalio>=1.7.0
 chromadb>=0.4.22
 pg8000>=1.31.0
+livekit-api>=1.2.0

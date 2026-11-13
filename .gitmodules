@@ -1,0 +1,3 @@
+[submodule "cognitive/knowledge/rag_api"]
+	path = cognitive/knowledge/rag_api
+	url = https://github.com/LibreChat-AI/rag-api.git

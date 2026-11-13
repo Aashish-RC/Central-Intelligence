@@ -91,6 +91,8 @@ jobs:
           INFISICAL_ENCRYPTION_KEY: ci-dummy-infisical-key
           LIVEKIT_KEYS: "ci-key: ci-secret"
           POSTGRES_PASSWORD: ci-dummy-postgres-password
+          POSTHOG_SECRET: ci-dummy-posthog-secret
+          SVIX_JWT_SECRET: ci-dummy-svix-jwt-secret
         run: docker compose config -q
 
   compose-e2e:

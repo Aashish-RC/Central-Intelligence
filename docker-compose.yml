@@ -332,7 +332,7 @@ services:
     ports:
       - "8095:8000"
     environment:
-      - POSTHOG_SECRET=${POSTHOG_SECRET:-posthog-secret-key-development}
+      - POSTHOG_SECRET=${POSTHOG_SECRET:?POSTHOG_SECRET must be set}
     volumes:
       - posthog_data:/var/lib/posthog
 

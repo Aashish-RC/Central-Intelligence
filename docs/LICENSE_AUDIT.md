@@ -39,6 +39,14 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 | `supabase-db` | `supabase/postgres:15.1.1.78` | Apache-2.0 / PostgreSQL | L15 Relational + `pgvector` + RLS store |
 | `apache-age` | `apache/age:release_PG16_1.6.0` | Apache-2.0 | **L2/L3 default open OpenCypher graph DB** (replaces FalkorDB/Memgraph for hosted launches) |
 | `huly` | `hardcoreeng/front:v0.7.432` | EPL-2.0 | Separate container boundary; distribute modifications under EPL-2.0 if modified |
+| `kafka` | `apache/kafka:3.8.0` | Apache-2.0 | L15 Event messaging backbone |
+| `svix` | `svix/svix-server:v1.57.0` | MIT | L15 Webhook delivery service |
+| `openmeter` | `openmeter/openmeter:v1.0.0` | Apache-2.0 | L13 Real-time metering & token ingestion |
+| `signoz` | `signoz/signoz:v0.66.0` | MIT / Apache-2.0 | L14 APM, distributed tracing & metrics (core FOSS) |
+| `uptime-kuma` | `louislam/uptime-kuma:1.23.13` | MIT | L14 Self-hosted status & service monitoring |
+| `posthog` | `posthog/posthog:v1.50.0` | MIT | L14 Product analytics & event funnels (core FOSS) |
+| `bytebase` | `bytebase/bytebase:3.2.0` | Apache-2.0 | L17 Database schema migration & version control |
+| `librechat` | `ghcr.io/danny-avila/librechat:v0.7.7` | MIT | L18 Multi-provider web chat interface |
 
 ### Opt-In Non-OSI Self-Hosted Services (`profiles: ["self-hosted-non-osi"]`)
 | Service | Image (Pinned) | License | OSI Alternative & Hosted-SaaS Rule |
@@ -47,6 +55,8 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 | `memgraph` | `memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1` | **BSL-1.1** | Excluded from default stack. Hosted deployments use `supabase-db` (Postgres + Apache AGE) or in-memory NetworkX. |
 | `phoenix` | `arizephoenix/phoenix:version-21.0.0` | **Elastic-2.0** | Excluded from default stack. Hosted deployments route OTLP to `otel-collector` (or SigNoz MIT/Apache-2.0 core). |
 | `nango` | `nangohq/nango-server:hosted-0.72.4` | **Elastic-2.0** | Excluded from default stack. Self-hosting only; replace with native OAuth broker before offering managed OAuth-as-a-service. |
+| `dragonfly` | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.26.1` | **BSL-1.1** | Excluded from default stack. Default stack uses `valkey` (BSD-3-Clause). |
+| `lago` | `getlago/api:v1.16.0` | **AGPL-3.0** | Quarantined (`agpl-quarantine`, `self-hosted-non-osi`). Zero Python imports/vendoring; REST HTTP/JSON process boundary only. |
 
 ---
 
