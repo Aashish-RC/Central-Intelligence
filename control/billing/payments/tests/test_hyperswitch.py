@@ -104,3 +104,83 @@ def test_refund_processing():
     assert p_after_2.refunded_cents == 5000
     assert p_after_2.status == PaymentStatus.REFUNDED
 
+
+def test_live_payment_network_timeout_fails_closed(monkeypatch: pytest.MonkeyPatch):
+    import httpx
+    from control.safety.production_guard import ProductionSafetyError
+
+    monkeypatch.setenv("HYPERSWITCH_MODE", "live")
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+
+    def mock_post_timeout(*args, **kwargs):
+        raise httpx.ConnectTimeout("Connection to hyperswitch:8080 timed out")
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post_timeout)
+
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        hyperswitch.create_payment(amount_cents=1000, confirm=True)
+    assert "Live payment execution failed" in str(exc_info.value)
+
+
+def test_live_payment_http_error_fails_closed(monkeypatch: pytest.MonkeyPatch):
+    import httpx
+    from control.safety.production_guard import ProductionSafetyError
+
+    monkeypatch.setenv("HYPERSWITCH_MODE", "live")
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+
+    def mock_post_500(*args, **kwargs):
+        return httpx.Response(500, text="Internal Gateway Error", request=httpx.Request("POST", "http://test"))
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post_500)
+
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        hyperswitch.create_payment(amount_cents=1000, confirm=True)
+    assert "Hyperswitch payment API returned HTTP 500" in str(exc_info.value)
+
+
+def test_live_payment_malformed_response_fails_closed(monkeypatch: pytest.MonkeyPatch):
+    import httpx
+    from control.safety.production_guard import ProductionSafetyError
+
+    monkeypatch.setenv("HYPERSWITCH_MODE", "live")
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345")
+
+    def mock_post_bad_json(*args, **kwargs):
+        return httpx.Response(200, text="NOT_JSON_HTML_ERROR", request=httpx.Request("POST", "http://test"))
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post_bad_json)
+
+    with pytest.raises(ProductionSafetyError) as exc_info:
+        hyperswitch.create_payment(amount_cents=1000, confirm=True)
+    assert "malformed non-JSON response" in str(exc_info.value)
+
+
+def test_live_payment_declined_state_does_not_settle_invoice(monkeypatch: pytest.MonkeyPatch):
+    import httpx
+
+    monkeypatch.setenv("HYPERSWITCH_MODE", "live")
+    lago = LagoAdapter()
+    hyperswitch = HyperswitchAdapter(api_key="real_live_key_12345", lago_adapter=lago)
+
+    customer_id = "cust_declined_test"
+    lago.subscribe_customer(customer_id, "free")
+    invoice = lago.generate_invoice(customer_id=customer_id)
+    assert invoice.status == "open"
+
+    def mock_post_declined(*args, **kwargs):
+        return httpx.Response(
+            200,
+            json={"payment_id": "pay_declined_123", "status": "failed"},
+            request=httpx.Request("POST", "http://test"),
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post_declined)
+
+    intent = hyperswitch.process_invoice_payment(invoice, gateway="stripe")
+    assert intent.status == PaymentStatus.FAILED
+    # Crucial: invoice MUST NOT be marked paid!
+    assert invoice.status == "open"
+    assert invoice.paid_at is None
+
+

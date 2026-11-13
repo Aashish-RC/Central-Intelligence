@@ -23,6 +23,7 @@ import httpx
 
 from control.billing.models import BillingInvoice
 from control.safety.production_guard import (
+    ProductionSafetyError,
     fail_closed_in_production,
     require_live_adapter,
 )
@@ -123,44 +124,90 @@ class HyperswitchAdapter:
         If confirm is True, immediately attempts authorization/capture.
         """
         payment_id = f"pay_{secrets.token_hex(8)}"
+        is_live = (self.adapter_mode == "live")
+
         intent = PaymentIntent(
             payment_id=payment_id,
             amount_cents=amount_cents,
             currency=currency.upper(),
             customer_id=customer_id,
-            status=PaymentStatus.SUCCEEDED if confirm else PaymentStatus.PROCESSING,
+            status=PaymentStatus.PROCESSING,
             payment_method=payment_method,
             gateway=gateway,
             invoice_id=invoice_id,
             metadata=metadata or {},
         )
 
-        # Attempt live REST call if live daemon is reachable
-        try:
-            with httpx.Client(timeout=0.1) as client:
-                resp = client.post(
-                    f"{self.api_url}/payments",
-                    headers={"api-key": self.api_key, "Content-Type": "application/json"},
-                    json={
-                        "amount": amount_cents,
-                        "currency": currency.upper(),
-                        "customer_id": customer_id,
-                        "confirm": confirm,
-                        "capture_method": "automatic",
-                        "metadata": {"invoice_id": invoice_id, "gateway": gateway},
-                    },
-                )
-                if resp.status_code in (200, 201):
+        if is_live:
+            # Live REST execution path: require real endpoint confirmation
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(
+                        f"{self.api_url}/payments",
+                        headers={"api-key": self.api_key, "Content-Type": "application/json"},
+                        json={
+                            "amount": amount_cents,
+                            "currency": currency.upper(),
+                            "customer_id": customer_id,
+                            "confirm": confirm,
+                            "capture_method": "automatic",
+                            "metadata": {"invoice_id": invoice_id, "gateway": gateway},
+                        },
+                    )
+
+                if resp.status_code not in (200, 201):
+                    intent.status = PaymentStatus.FAILED
+                    self._payments[intent.payment_id] = intent
+                    raise ProductionSafetyError(
+                        f"hyperswitch adapter payment API returned HTTP {resp.status_code}: {resp.text}"
+                    )
+
+                try:
                     data = resp.json()
-                    intent.payment_id = data.get("payment_id", payment_id)
-                    intent.client_secret = data.get("client_secret", intent.client_secret)
-        except Exception:
-            # Fallback to hermetic in-memory router
-            pass
+                except Exception as json_err:
+                    intent.status = PaymentStatus.FAILED
+                    self._payments[intent.payment_id] = intent
+                    raise ProductionSafetyError(
+                        "hyperswitch adapter returned malformed non-JSON response"
+                    ) from json_err
+
+                intent.payment_id = data.get("payment_id", payment_id)
+                intent.client_secret = data.get("client_secret", intent.client_secret)
+
+                raw_status = str(data.get("status", "")).strip().lower()
+                if raw_status == "succeeded":
+                    intent.status = PaymentStatus.SUCCEEDED
+                elif raw_status in ("requires_customer_action", "processing"):
+                    intent.status = PaymentStatus.PROCESSING
+                elif raw_status == "cancelled":
+                    intent.status = PaymentStatus.CANCELLED
+                else:
+                    intent.status = PaymentStatus.FAILED
+
+                if intent.status != PaymentStatus.SUCCEEDED:
+                    self._payments[intent.payment_id] = intent
+                    logger.warning(
+                        "Hyperswitch live payment %s was not successful (status: %s)",
+                        intent.payment_id,
+                        intent.status.value,
+                    )
+                    return intent
+
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                intent.status = PaymentStatus.FAILED
+                self._payments[intent.payment_id] = intent
+                raise ProductionSafetyError(
+                    f"hyperswitch adapter live payment execution failed: {exc}"
+                ) from exc
+        else:
+            # Hermetic in-memory simulation for offline development & tests
+            intent.status = PaymentStatus.SUCCEEDED if confirm else PaymentStatus.PROCESSING
 
         self._payments[intent.payment_id] = intent
 
-        # If linked to Lago invoice, settle the invoice status (Feature 13.13)
+        # Only settle invoice if payment verified SUCCEEDED
         if invoice_id and intent.status == PaymentStatus.SUCCEEDED:
             self._settle_lago_invoice(invoice_id, intent)
 
