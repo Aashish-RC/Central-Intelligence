@@ -147,6 +147,18 @@ class PaddleOCRAdapter:
                     )
             except Exception as e:
                 logger.debug("PaddleOCR native execution fallback: %s", e)
+                if self.adapter_mode == "live":
+                    fail_closed_in_production(
+                        "paddleocr",
+                        f"PaddleOCR native execution failed: {e}",
+                        cause=e,
+                    )
+
+        if self.adapter_mode == "live":
+            fail_closed_in_production(
+                "paddleocr",
+                "PaddleOCR engine is unavailable for live OCR extraction",
+            )
 
         # Hermetic / fallback OCR simulation for deterministic test environments
         # Inspects image EXIF/metadata or synthetic pattern

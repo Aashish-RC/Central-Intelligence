@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from control.safety.production_guard import (
+    ProductionSafetyError,
     fail_closed_in_production,
     require_live_adapter,
 )
@@ -85,6 +86,31 @@ class InfisicalAdapter:
         self._vault: Dict[Tuple[str, Optional[str], str], ScopedSecret] = {}  # (tenant_id, app_id, key) -> secret
         self._audit_log: List[SecretAuditEntry] = []
 
+        if not _defer_prod_check and self.adapter_mode == "live":
+            self._ensure_live_backend()
+
+    def _ensure_live_backend(self) -> None:
+        """Verify live Infisical connection in live mode."""
+        if self.adapter_mode != "live":
+            return
+        try:
+            import httpx
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get(f"{self.server_url}/api/v1/status")
+                if resp.status_code not in (200, 204):
+                    fail_closed_in_production(
+                        "infisical",
+                        f"Infisical server returned HTTP {resp.status_code}",
+                    )
+        except ProductionSafetyError:
+            raise
+        except Exception as exc:
+            fail_closed_in_production(
+                "infisical",
+                f"Live Infisical vault at {self.server_url} is unreachable: {exc}",
+                cause=exc,
+            )
+
     def _scope_key(self, key: str, tenant_id: str = "default", app_id: Optional[str] = None) -> Tuple[str, Optional[str], str]:
         return (tenant_id, app_id, key)
 
@@ -119,6 +145,7 @@ class InfisicalAdapter:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> ScopedSecret:
         """Stores a new scoped secret or replaces value starting at version 1."""
+        self._ensure_live_backend()
         s_key = self._scope_key(key, tenant_id, app_id)
         now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -147,6 +174,7 @@ class InfisicalAdapter:
         version: Optional[int] = None,
     ) -> str:
         """Retrieves current or specific version of secret and records audit event."""
+        self._ensure_live_backend()
         s_key = self._scope_key(key, tenant_id, app_id)
         secret = self._vault.get(s_key)
         if not secret:

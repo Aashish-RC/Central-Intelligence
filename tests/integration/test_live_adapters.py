@@ -17,6 +17,8 @@ from PIL import Image, ImageDraw
 import httpx
 import pytest
 
+from control.safety.production_guard import ProductionSafetyError
+
 # L1 Perception
 from cognitive.perception.audio.livekit_adapter import LiveKitAdapter, AudioChunk
 from cognitive.perception.audio.handy_adapter import HandyAdapter, TranscriptionSegment
@@ -170,12 +172,23 @@ def test_10_2_paddleocr_adapter_live(monkeypatch: pytest.MonkeyPatch):
     adapter = PaddleOCRAdapter()
     assert adapter.adapter_mode == "live"
 
+    # Provide a mock OCR engine to test live OCR path without heavy native weights
+    mock_engine = MagicMock()
+    mock_engine.ocr.return_value = [[[[[0, 0], [200, 0], [200, 50], [0, 50]], ("HELLO LIVE", 0.99)]]]
+    adapter._ocr_engine = mock_engine
+
     # Test OCR with a simple high-contrast image
     img = Image.new("RGB", (200, 50), color=(255, 255, 255))
     d = ImageDraw.Draw(img)
-    d.text((10, 10), "HELLO", fill=(0, 0, 0))
+    d.text((10, 10), "HELLO LIVE", fill=(0, 0, 0))
     res = adapter.extract_text_from_image(img)
     assert res.image_dimensions == (200, 50)
+    assert "HELLO LIVE" in res.full_text
+
+    # Without OCR engine, live mode must fail closed rather than returning fake text
+    adapter._ocr_engine = None
+    with pytest.raises(ProductionSafetyError):
+        adapter.extract_text_from_image(img)
 
 
 def test_10_2_vlm_client_live(monkeypatch: pytest.MonkeyPatch):
@@ -219,6 +232,16 @@ def test_10_3_keycloak_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_3_openfga_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("OPENFGA_ADAPTER_MODE", "live")
+
+    # When live OpenFGA backend is unreachable, initialization or access fails closed
+    with pytest.raises(ProductionSafetyError):
+        OpenFGAAdapter()
+
+    # When live OpenFGA daemon is responsive, live adapter operations proceed
+    def mock_get(self, url, *args, **kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", url))
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
     adapter = OpenFGAAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -231,6 +254,16 @@ def test_10_3_openfga_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_3_infisical_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("INFISICAL_ADAPTER_MODE", "live")
+
+    # When live Infisical backend is unreachable, initialization or access fails closed
+    with pytest.raises(ProductionSafetyError):
+        InfisicalAdapter()
+
+    # When live Infisical vault daemon is responsive, live adapter operations proceed
+    def mock_get(self, url, *args, **kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", url))
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
     adapter = InfisicalAdapter()
     assert adapter.adapter_mode == "live"
 

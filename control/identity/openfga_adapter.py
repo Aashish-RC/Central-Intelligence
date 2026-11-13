@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from control.safety.production_guard import (
+    ProductionSafetyError,
     fail_closed_in_production,
     require_live_adapter,
 )
@@ -71,6 +72,31 @@ class OpenFGAAdapter:
         self._tuple_conditions: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
         self._delegations: Dict[str, DelegationGrant] = {}  # delegation_id -> grant
 
+        if not _defer_prod_check and self.adapter_mode == "live":
+            self._ensure_live_backend()
+
+    def _ensure_live_backend(self) -> None:
+        """Verify live OpenFGA connection in live mode."""
+        if self.adapter_mode != "live":
+            return
+        try:
+            import httpx
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get(f"{self.api_url}/healthz")
+                if resp.status_code not in (200, 204):
+                    fail_closed_in_production(
+                        "openfga",
+                        f"OpenFGA server returned HTTP {resp.status_code}",
+                    )
+        except ProductionSafetyError:
+            raise
+        except Exception as exc:
+            fail_closed_in_production(
+                "openfga",
+                f"Live OpenFGA server at {self.api_url} is unreachable: {exc}",
+                cause=exc,
+            )
+
     def _normalize_id(self, entity: str, default_type: str) -> str:
         if ":" in entity:
             return entity
@@ -85,6 +111,7 @@ class OpenFGAAdapter:
         ttl_seconds: Optional[int] = None,
     ) -> None:
         """Writes relationship tuple (user, relation, object)."""
+        self._ensure_live_backend()
         u = self._normalize_id(user, "user")
         o = self._normalize_id(object, "resource")
         key = (u, relation, o)
@@ -137,6 +164,7 @@ class OpenFGAAdapter:
         context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Evaluates whether actor has permission on resource according to Zanzibar model rules."""
+        self._ensure_live_backend()
         u = self._normalize_id(user, "user")
         r = self._normalize_id(resource, "resource")
         res_type = r.split(":")[0]
