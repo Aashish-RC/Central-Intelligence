@@ -5,25 +5,53 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from typing import Dict
+from typing import Dict, Optional
 from ..core.interfaces import BaseDeviceRunner
 from ..core.models import ExecutionRequest, SandboxResult, SandboxStatus
 from ..governor.security_governor import SecurityGovernor
+from control.safety.production_guard import is_production
 
 
 class LocalProcessRunner(BaseDeviceRunner):
     """Executes sandboxed scripts in a guarded local subprocess environment."""
 
-    def __init__(self, governor: SecurityGovernor):
-        self.governor = governor
+    def __init__(self, governor: Optional[SecurityGovernor] = None):
+        self.governor = governor or SecurityGovernor()
 
     def execute(self, request: ExecutionRequest, scratch_dir: str) -> SandboxResult:
-        if os.getenv("SANDBOX_ALLOW_LOCAL") != "1":
+        # 1. Host execution is unconditionally forbidden in production
+        if is_production():
             return SandboxResult(
                 request_id=request.id,
                 status=SandboxStatus.BLOCKED,
                 exit_code=-1,
-                stderr="Local subprocess execution disallowed; set SANDBOX_ALLOW_LOCAL=1 to allow.",
+                stderr="Host subprocess execution is strictly forbidden in production.",
+            )
+
+        # 2. Establish single trust boundary: untrusted commands must never execute on host
+        trusted_ctx = getattr(request, "trusted_context", None)
+        if not trusted_ctx:
+            return SandboxResult(
+                request_id=request.id,
+                status=SandboxStatus.BLOCKED,
+                exit_code=-1,
+                stderr=(
+                    "Untrusted command execution on the host machine is strictly prohibited across all environments. "
+                    "Hardened container isolation (Docker/E2B) is mandatory."
+                ),
+            )
+
+        # 3. For requests with explicit trusted context, validate against policy
+        from ..trusted_host import TrustedHostExecutionPolicy, TrustedHostExecutionError
+        policy = TrustedHostExecutionPolicy()
+        try:
+            policy.validate_context(trusted_ctx)
+        except TrustedHostExecutionError as auth_err:
+            return SandboxResult(
+                request_id=request.id,
+                status=SandboxStatus.BLOCKED,
+                exit_code=-1,
+                stderr=f"Host execution rejected by security policy: {auth_err}",
             )
 
         scratch_path = Path(scratch_dir).resolve()

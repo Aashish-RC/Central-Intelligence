@@ -62,6 +62,7 @@ class ExecutionRequest(BaseModel):
     limits: ResourceLimits = Field(default_factory=ResourceLimits)
     environment: Dict[str, str] = Field(default_factory=dict)
     files: Dict[str, str] = Field(default_factory=dict, description="Relative path -> file content")
+    trusted_context: Optional[Any] = None
 
 
 class SandboxResult(BaseModel):

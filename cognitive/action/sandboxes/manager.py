@@ -37,13 +37,7 @@ class SandboxManager(BaseSandboxManager):
         if engine or device_runner:
             self.runner = engine or device_runner
         else:
-            docker_runner = DockerRunner(self.governor)
-            if docker_runner.is_docker_available():
-                self.runner = docker_runner
-            elif os.getenv("SANDBOX_ALLOW_LOCAL") == "1":
-                self.runner = DeviceRunner(self.governor)
-            else:
-                self.runner = docker_runner
+            self.runner = DockerRunner(self.governor)
 
     def run(
         self,

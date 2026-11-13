@@ -31,7 +31,7 @@ class DockerExecutionEngine(BaseDeviceRunner):
     ):
         self.image = image
         self.governor = governor or SecurityGovernor()
-        self._fallback_runner = fallback_runner or LocalProcessRunner(self.governor)
+        self._fallback_runner = fallback_runner
         self._docker_available: Optional[bool] = None
 
     def is_docker_available(self) -> bool:
@@ -58,7 +58,14 @@ class DockerExecutionEngine(BaseDeviceRunner):
 
     def execute(self, request: ExecutionRequest, scratch_dir: str) -> SandboxResult:
         if not self.is_docker_available():
-            return self._fallback_runner.execute(request, scratch_dir)
+            if self._fallback_runner is not None:
+                return self._fallback_runner.execute(request, scratch_dir)
+            return SandboxResult(
+                request_id=request.id,
+                status=SandboxStatus.BLOCKED,
+                exit_code=-1,
+                stderr="Docker container execution is unavailable. Untrusted host fallback is prohibited.",
+            )
 
         scratch_path = Path(scratch_dir).resolve()
         scratch_path.mkdir(parents=True, exist_ok=True)

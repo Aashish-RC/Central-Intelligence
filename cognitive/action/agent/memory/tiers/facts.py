@@ -15,7 +15,13 @@ class FactStoreTier:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or os.getenv("SQLITE_DB_PATH", str(Path.home() / ".pheonix" / "agent_facts.db"))
         if self.db_path != ":memory:":
-            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            try:
+                Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            except OSError:
+                import tempfile
+                tmp_dir = Path(tempfile.gettempdir()) / "pheonix"
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+                self.db_path = str(tmp_dir / "agent_facts.db")
         self._init_db()
 
     def _init_db(self) -> None:

@@ -1,8 +1,8 @@
 """Device Runner: Hardware-aware execution selector and sandbox dispatcher."""
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from ..core.interfaces import BaseDeviceRunner
-from ..core.models import ExecutionRequest, ResourceLimits, SandboxResult
+from ..core.models import ExecutionRequest, ResourceLimits, SandboxResult, SandboxStatus
 from ..governor.security_governor import SecurityGovernor
 from .local_process_runner import LocalProcessRunner
 
@@ -10,15 +10,22 @@ from .local_process_runner import LocalProcessRunner
 class DeviceRunner(BaseDeviceRunner):
     """Dynamic device runner selecting local process isolation or containerized execution."""
 
-    def __init__(self, governor: Optional[SecurityGovernor] = None):
+    def __init__(
+        self,
+        governor: Optional[SecurityGovernor] = None,
+        trusted_context: Optional[Any] = None,
+    ):
         self.governor = governor or SecurityGovernor()
         self.local_runner = LocalProcessRunner(self.governor)
+        self.trusted_context = trusted_context
 
     def execute(self, request: ExecutionRequest, scratch_dir: str) -> SandboxResult:
+        if request.trusted_context is None and self.trusted_context is not None:
+            request.trusted_context = self.trusted_context
+
         # Validate request against security policy first
         is_valid, err = self.governor.validate_request(request)
         if not is_valid:
-            from ..core.models import SandboxStatus
             return SandboxResult(
                 request_id=request.id,
                 status=SandboxStatus.BLOCKED,
@@ -34,12 +41,14 @@ class DeviceRunner(BaseDeviceRunner):
         limits: Optional[ResourceLimits] = None,
         files: Optional[Dict[str, str]] = None,
         scratch_dir: str = "./sandbox_scratch",
+        trusted_context: Optional[Any] = None,
     ) -> SandboxResult:
         req = ExecutionRequest(
             language="python",
             code=code,
             limits=limits or ResourceLimits(),
             files=files or {},
+            trusted_context=trusted_context or self.trusted_context,
         )
         return self.execute(req, scratch_dir)
 
@@ -48,10 +57,12 @@ class DeviceRunner(BaseDeviceRunner):
         command: str,
         limits: Optional[ResourceLimits] = None,
         scratch_dir: str = "./sandbox_scratch",
+        trusted_context: Optional[Any] = None,
     ) -> SandboxResult:
         req = ExecutionRequest(
             language="shell",
             code=command,
             limits=limits or ResourceLimits(),
+            trusted_context=trusted_context or self.trusted_context,
         )
         return self.execute(req, scratch_dir)

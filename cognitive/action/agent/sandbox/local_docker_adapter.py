@@ -62,11 +62,7 @@ class LocalDockerSandboxAdapter:
 
                 gov = SecurityGovernor()
                 dk = DockerRunner(gov)
-                if dk.is_docker_available():
-                    runner = dk
-                else:
-                    # Do NOT silently default SANDBOX_ALLOW_LOCAL=1
-                    runner = DeviceRunner(gov)
+                runner = dk
                 self.manager = SandboxManager(governor=gov, device_runner=runner)
             except ImportError:
                 self.manager = None
@@ -124,72 +120,17 @@ class LocalDockerSandboxAdapter:
             except SandboxExecutionError:
                 raise
             except Exception as mgr_err:
-                # If manager raised because docker is unavailable, do NOT silently fall through to host shell
-                has_local_auth = (
-                    self.allow_local_fallback
-                    or trusted_local_path
-                    or os.getenv("SANDBOX_ALLOW_LOCAL") == "1"
-                )
-                if not has_local_auth or is_production():
-                    raise SandboxExecutionError(
-                        f"Prohibited sandbox fallback: Container execution failed and host fallback is prohibited: {mgr_err}"
-                    ) from mgr_err
+                raise SandboxExecutionError(
+                    f"Prohibited sandbox fallback: Container execution failed and host fallback is prohibited: {mgr_err}"
+                ) from mgr_err
 
-        # 2. Check if local host execution is permitted
-        # Host execution is unconditionally forbidden in production
+        # 2. Host execution is strictly forbidden for untrusted commands
         if is_production():
             raise SandboxExecutionError(
-                "Prohibited sandbox fallback: Host subprocess execution is strictly forbidden in production. "
-                "Hardened container execution (Docker or E2B) is mandatory."
+                "Prohibited sandbox fallback: Host subprocess execution is strictly forbidden in production."
             )
-
-        # In dev/test, explicit authorization via SANDBOX_ALLOW_LOCAL=1 or trusted parameter is required
-        has_local_auth = (
-            self.allow_local_fallback
-            or trusted_local_path
-            or os.getenv("SANDBOX_ALLOW_LOCAL") == "1"
+        raise SandboxExecutionError(
+            "Prohibited sandbox fallback: Isolated container execution is unavailable. "
+            "Untrusted host execution is strictly forbidden across all environments."
         )
-        if not has_local_auth:
-            raise SandboxExecutionError(
-                "Prohibited sandbox fallback: Docker container is unavailable and local host execution "
-                "is disabled. Set SANDBOX_ALLOW_LOCAL=1 or authorize via trusted_local_path=True."
-            )
-
-        # 3. Authorized trusted local execution path
-        start_time = time.perf_counter()
-        timeout = config.timeout_seconds if config else 60
-
-        try:
-            proc = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd,
-            )
-
-            try:
-                stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                    proc.communicate(),
-                    timeout=float(timeout),
-                )
-            except asyncio.TimeoutError:
-                try:
-                    proc.kill()
-                except ProcessLookupError:
-                    pass
-                raise SandboxExecutionError(f"Command timed out after {timeout} seconds: '{command}'")
-
-            duration_ms = (time.perf_counter() - start_time) * 1000
-            return {
-                "exit_code": proc.returncode,
-                "stdout": stdout_bytes.decode("utf-8", errors="replace"),
-                "stderr": stderr_bytes.decode("utf-8", errors="replace"),
-                "execution_time_ms": duration_ms,
-                "provider": "authorized-local-subprocess",
-            }
-
-        except SandboxExecutionError:
-            raise
-        except Exception as e:
-            raise SandboxExecutionError(f"Subprocess execution error: {str(e)}")
 

@@ -127,14 +127,14 @@ class DockerRunner(BaseDeviceRunner):
 
         # 2. Check Docker availability when running real commands
         if self.command_runner == subprocess.run and not self.is_docker_available():
-            if os.getenv("SANDBOX_ALLOW_LOCAL") == "1":
-                from .local_process_runner import LocalProcessRunner
-                return LocalProcessRunner(self.governor).execute(request, scratch_dir or "")
             return SandboxResult(
                 request_id=request.id,
                 status=SandboxStatus.BLOCKED,
                 exit_code=-1,
-                stderr="Docker is not available and local execution is disabled; set SANDBOX_ALLOW_LOCAL=1 to allow.",
+                stderr=(
+                    "Hardened container execution (Docker) is unavailable. "
+                    "Untrusted host execution is strictly prohibited across all environments."
+                ),
             )
 
         container_name = f"pheonix-sb-{uuid.uuid4().hex[:12]}"
