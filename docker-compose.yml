@@ -11,6 +11,12 @@ services:
       - QDRANT__SERVICE__GRPC_PORT=6334
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:6333/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Local Model Serving for Offline / Dev Execution (MIT)
   ollama:
@@ -21,6 +27,12 @@ services:
       - "11434:11434"
     volumes:
       - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   # Global Fast Search Engine (MIT)
   meilisearch:
@@ -35,6 +47,12 @@ services:
       - MEILI_NO_ANALYTICS=true
     volumes:
       - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:7700/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause, replaces Dragonfly)
   valkey:
@@ -45,6 +63,12 @@ services:
       - "6379:6379"
     volumes:
       - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   # Alternative Vector Store for Offline Mode (Apache-2.0)
   chroma:
@@ -55,6 +79,12 @@ services:
       - "8000:8000"
     volumes:
       - chroma_data:/chroma/chroma
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8000/api/v1/heartbeat || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Graph Memory Tier (Tier 4) (BSL-1.1; self-hosted opt-in profile — OSI default uses supabase-db with Apache AGE)
   memgraph:
@@ -69,6 +99,12 @@ services:
       - MEMGRAPH=--log-level=WARNING
     volumes:
       - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole > /dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # GraphRAG Engine for L3 Knowledge
   # LICENSE NOTICE: SSPL-v1 (non-OSI; quarantined to opt-in profile — OSI default uses supabase-db Apache AGE)
@@ -81,6 +117,12 @@ services:
       - "6380:6379"
     volumes:
       - falkordb_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   # Nango Federated OAuth Gateway for L5 Action
   # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only)
@@ -96,6 +138,12 @@ services:
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:?NANGO_SECRET_KEY must be set}
     volumes:
       - nango_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3003/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
 
   # Temporal Server for L8 Durable Workflow Execution (MIT)
   temporal:
@@ -108,6 +156,12 @@ services:
       - "8233:8233"
     volumes:
       - temporal_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "temporal operator cluster health --address localhost:7233 > /dev/null 2>&1 || grpcurl -plaintext localhost:7233 list > /dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   # OpenTelemetry Collector for L14 Observability (Apache-2.0, OSI default telemetry backend)
   otel-collector:
@@ -117,6 +171,12 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+    healthcheck:
+      test: ["CMD-SHELL", "grpcurl -plaintext localhost:4317 list > /dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Arize Phoenix for L11 Evaluation, Hallucination Detection & Tracing
   # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only — OSI default uses otel-collector)
@@ -129,6 +189,12 @@ services:
       - "6006:6006"
     volumes:
       - phoenix_data:/root/.phoenix
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:6006/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys) (Apache-2.0)
   keycloak:
@@ -143,6 +209,12 @@ services:
       - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD must be set}
     volumes:
       - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 25s
 
   # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
   openfga:
@@ -157,6 +229,12 @@ services:
       - OPENFGA_DATA_STORE_ENGINE=memory
     volumes:
       - openfga_data:/var/lib/openfga
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Infisical Vault for L12 Secret Management & Key Rotation (MIT)
   infisical:
@@ -169,6 +247,12 @@ services:
       - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:?INFISICAL_ENCRYPTION_KEY must be set}
     volumes:
       - infisical_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8083/status || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13) (Apache-2.0)
   hyperswitch:
@@ -180,6 +264,12 @@ services:
     environment:
       - ROUTER_PORT=8080
       - ENVIRONMENT=sandbox
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1) (Apache-2.0)
   livekit:
@@ -192,6 +282,12 @@ services:
       - "7882:7882/udp"
     environment:
       - LIVEKIT_KEYS=${LIVEKIT_KEYS:?LIVEKIT_KEYS must be set}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:7880/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Supabase Postgres + pgvector + RLS for L15 Data (Task 15.1) (Apache-2.0 / PostgreSQL)
   supabase-db:
@@ -205,6 +301,12 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
     volumes:
       - supabase_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Apache AGE (PostgreSQL + OpenCypher) for L2/L3 Default Open Graph Store (Apache-2.0)
   apache-age:
@@ -219,6 +321,12 @@ services:
       - POSTGRES_DB=${AGE_POSTGRES_DB:-postgres}
     volumes:
       - age_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${AGE_POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Unified Project Management & Docs Workspace (Huly - Task 19.1) (EPL-2.0)
   huly:
@@ -231,6 +339,12 @@ services:
       - HULY_ENV=production
     volumes:
       - huly_data:/var/lib/huly
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   # Kafka Event Streaming Broker for L15 Messaging Dev/AutoMQ-compatible bus (Apache-2.0)
   kafka:
@@ -250,6 +364,12 @@ services:
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
     volumes:
       - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   # Svix Webhook Delivery Service for L15 Data & Event Webhooks (MIT)
   svix:
@@ -263,6 +383,12 @@ services:
       - WAIT_FOR=false
     volumes:
       - svix_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8071/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # Dragonfly High-Throughput Redis-Compatible Cache (BSL-1.1; opt-in non-OSI profile; default uses valkey)
   dragonfly:
@@ -274,6 +400,12 @@ services:
       - "6381:6379"
     volumes:
       - dragonfly_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   # OpenMeter Real-Time Metering & Token Ingestion for L13 Billing (Apache-2.0)
   openmeter:
@@ -285,6 +417,15 @@ services:
     environment:
       - OPENMETER_ADDRESS=0.0.0.0:8888
       - OPENMETER_INGEST_KAFKA_BROKER=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8888/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Lago Open Source Metering & Billing Engine for L13 Billing (AGPLv3 quarantined network)
   lago:
@@ -300,6 +441,17 @@ services:
     networks:
       - default
       - agpl_quarantine_net
+    depends_on:
+      valkey:
+        condition: service_healthy
+      supabase-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   # SigNoz APM, Distributed Tracing & Metrics for L14 Observability (MIT / Apache-2.0)
   signoz:
@@ -313,6 +465,12 @@ services:
       - SIGNOZ_PORT=3301
     volumes:
       - signoz_data:/var/lib/signoz
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3301/api/v1/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Uptime Kuma Self-Hosted Status & Service Monitoring for L14 Observability (MIT)
   uptime-kuma:
@@ -323,6 +481,12 @@ services:
       - "3001:3001"
     volumes:
       - uptime_kuma_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3001/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   # PostHog Product Analytics & Event Funnels for L14 Observability (MIT)
   posthog:
@@ -335,6 +499,12 @@ services:
       - POSTHOG_SECRET=${POSTHOG_SECRET:?POSTHOG_SECRET must be set}
     volumes:
       - posthog_data:/var/lib/posthog
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8000/_health/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 25s
 
   # Bytebase Database Schema Migration & Version Control for L17 Release (Apache-2.0)
   bytebase:
@@ -345,6 +515,12 @@ services:
       - "5678:5678"
     volumes:
       - bytebase_data:/var/opt/bytebase
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # LibreChat Multi-Provider Web Interface for L18 Interaction (MIT)
   librechat:
@@ -359,6 +535,12 @@ services:
       - MONGO_URI=mongodb://localhost:27017/LibreChat
     volumes:
       - librechat_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
 
 volumes:
