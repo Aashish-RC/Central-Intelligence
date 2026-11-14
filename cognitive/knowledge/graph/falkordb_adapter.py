@@ -12,7 +12,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 try:
-    from memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
+    from cognitive.memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 except ModuleNotFoundError:  # pragma: no cover - root-only sys.path invocation
     from cognitive.memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 

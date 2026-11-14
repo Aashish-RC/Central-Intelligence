@@ -69,7 +69,7 @@ class MemoryManager:
         engine = self.canonical_engine
         if engine is None:
             try:
-                from memory.engine import MemoryEngine
+                from cognitive.memory.engine import MemoryEngine
                 engine = MemoryEngine()
                 self.canonical_engine = engine
             except Exception:
@@ -77,7 +77,7 @@ class MemoryManager:
 
         if engine is not None:
             try:
-                from memory.core.models import TurnRole
+                from cognitive.memory.core.models import TurnRole
                 try:
                     turn_role = TurnRole(role.lower())
                 except (ValueError, AttributeError):

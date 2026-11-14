@@ -2,7 +2,7 @@
 
 import json
 from typing import Optional
-from memory.engine import MemoryEngine
+from cognitive.memory.engine import MemoryEngine
 
 try:
     # mcp 2.x

@@ -1,9 +1,9 @@
 """Unit tests for Lessons-Learned Auto-Extractor (Features 2.49, 7.27)."""
 
 import pytest
-from memory.core.models import Turn, TurnRole
-from memory.engine import MemoryEngine
-from memory.lessons import (
+from cognitive.memory.core.models import Turn, TurnRole
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.lessons import (
     LessonCategory,
     LessonRecord,
     LessonStore,

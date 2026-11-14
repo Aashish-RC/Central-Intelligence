@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 try:
-    from memory.tiers.graph.age_adapter import ApacheAGEAdapter
+    from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
 except ModuleNotFoundError:  # pragma: no cover - root-only sys.path invocation
     from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
 

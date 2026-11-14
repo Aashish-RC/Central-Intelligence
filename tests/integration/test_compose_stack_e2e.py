@@ -225,8 +225,8 @@ def test_keycloak_oidc_and_admin_api_e2e() -> None:
 
 def test_memory_qdrant_adapter_v120_e2e() -> None:
     """Exercise the real L2 QdrantAdapter against live Qdrant v1.20.0 (query_points API)."""
-    from memory.core.models import MemoryRecord, utc_now
-    from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
+    from cognitive.memory.core.models import MemoryRecord, utc_now
+    from cognitive.memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
     collection = f"e2e_mem_{uuid4().hex[:8]}"
@@ -288,7 +288,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
     import json
     import pg8000.dbapi
     from knowledge.graph import ApacheAGEGraphAdapter
-    from memory.tiers.graph.age_adapter import ApacheAGEAdapter
+    from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
 
     pg_password = os.getenv("POSTGRES_PASSWORD", "e2e-postgres-pass")
     age_port = int(os.getenv("AGE_POSTGRES_PORT", "5433"))

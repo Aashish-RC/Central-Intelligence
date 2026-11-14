@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
-from memory.portability.models import (
+from cognitive.memory.portability.models import (
     MemoryPortabilityFormat,
     StandardFactRecord,
     StandardMemoryExport,

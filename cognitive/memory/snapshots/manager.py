@@ -3,7 +3,7 @@
 import sqlite3
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
-from memory.snapshots.models import (
+from cognitive.memory.snapshots.models import (
     FactSnapshotItem,
     LessonSnapshotItem,
     MemorySnapshot,
@@ -199,7 +199,7 @@ class MemorySnapshotManager:
 
             # Restore facts present in snapshot
             for sf in snapshot.facts:
-                from memory.core.models import FactItem, FactCategory
+                from cognitive.memory.core.models import FactItem, FactCategory
                 cat = FactCategory(sf.category) if sf.category in FactCategory._value2member_map_ else FactCategory.FACT
                 item = FactItem(
                     user_id=user_id,
@@ -226,7 +226,7 @@ class MemorySnapshotManager:
                     lessons_removed += 1
 
             for sl in snapshot.lessons:
-                from memory.lessons.models import LessonRecord, LessonCategory
+                from cognitive.memory.lessons.models import LessonRecord, LessonCategory
                 cat = LessonCategory(sl.category) if sl.category in LessonCategory._value2member_map_ else LessonCategory.GENERAL
                 record = LessonRecord(
                     lesson_id=sl.lesson_id,

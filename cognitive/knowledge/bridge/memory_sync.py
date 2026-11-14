@@ -14,7 +14,7 @@ class KnowledgeMemoryBridge(BaseKnowledgeMemoryBridge):
         if engine is None:
             # Lazy import from memory package if not injected
             try:
-                from memory.engine import MemoryEngine
+                from cognitive.memory.engine import MemoryEngine
                 engine = MemoryEngine()
                 self._memory_engine = engine
             except Exception as e:

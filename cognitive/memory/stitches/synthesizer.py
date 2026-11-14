@@ -3,8 +3,8 @@
 from typing import List, Optional
 import tiktoken
 
-from memory.core.models import ContextPackage, Turn, FactItem, MemoryRecord
-from memory.config import MemoryConfig
+from cognitive.memory.core.models import ContextPackage, Turn, FactItem, MemoryRecord
+from cognitive.memory.config import MemoryConfig
 
 
 class ContextSynthesizer:
@@ -14,7 +14,7 @@ class ContextSynthesizer:
 
     def __init__(self, config: Optional[MemoryConfig] = None):
         if config is None:
-            from memory.config import default_config
+            from cognitive.memory.config import default_config
             config = default_config
         self._config = config
         self._max_tokens = config.max_context_tokens

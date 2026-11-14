@@ -1,13 +1,13 @@
 """Portability Manager for Cross-Assistant Memory Migration (Features 2.46, 2.50)."""
 
 from typing import Any, Dict, List, Optional, Union
-from memory.portability.models import (
+from cognitive.memory.portability.models import (
     ImportStats,
     MemoryPortabilityFormat,
     StandardFactRecord,
     StandardTurnRecord,
 )
-from memory.portability.translators import (
+from cognitive.memory.portability.translators import (
     BaseTranslator,
     ChatGPTTranslator,
     ClaudeTranslator,
@@ -104,7 +104,7 @@ class MemoryPortabilityManager:
         if hasattr(engine, "facts") and engine.facts is not None:
             for f in facts:
                 try:
-                    from memory.tiers.facts.schema import FactItem
+                    from cognitive.memory.tiers.facts.schema import FactItem
                     item = FactItem(
                         user_id=user_id,
                         subject=f.subject,

@@ -3,15 +3,15 @@
 import json
 import tempfile
 import pytest
-from memory.config import (
+from cognitive.memory.config import (
     MemoryConfig,
     WorkingMemoryBackend,
     FactStoreBackend,
     VectorStoreBackend,
     EmbeddingBackend,
 )
-from memory.engine import MemoryEngine
-from memory.portability import (
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.portability import (
     MemoryPortabilityManager,
     MemoryPortabilityFormat,
     ChatGPTTranslator,

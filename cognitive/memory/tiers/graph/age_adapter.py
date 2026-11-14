@@ -14,9 +14,9 @@ import secrets
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from memory.core.exceptions import AdapterConnectionError
-from memory.core.interfaces import BaseGraphStore
-from memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
+from cognitive.memory.core.exceptions import AdapterConnectionError
+from cognitive.memory.core.interfaces import BaseGraphStore
+from cognitive.memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 
 
 def _make_dollar_tag(cypher: str, tag_prefix: Optional[str] = None) -> str:

@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from memory.config import (
+from cognitive.memory.config import (
     GraphStoreBackend,
     MemoryConfig,
     default_config,
@@ -13,7 +13,7 @@ from memory.config import (
     FactStoreBackend,
     VectorStoreBackend,
 )
-from memory.core.models import (
+from cognitive.memory.core.models import (
     ContextPackage,
     FactCategory,
     FactItem,
@@ -23,45 +23,45 @@ from memory.core.models import (
     MemorySourcesView,
     utc_now,
 )
-from memory.core.interfaces import (
+from cognitive.memory.core.interfaces import (
     BaseWorkingMemory,
     BaseFactStore,
     BaseVectorStore,
     BaseGraphStore,
     BaseEmbedder,
 )
-from memory.tiers.working.in_memory import InMemoryWorkingMemory
-from memory.tiers.working.redis_adapter import RedisWorkingMemory
-from memory.tiers.facts.sqlite_adapter import SQLiteFactStore
-from memory.tiers.facts.postgres_adapter import PostgreSQLFactStore
-from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
-from memory.tiers.semantic.chroma_adapter import ChromaAdapter
-from memory.tiers.graph.age_adapter import ApacheAGEAdapter
-from memory.tiers.graph.memgraph_adapter import MemgraphAdapter
-from memory.embeddings.embedder import get_embedder
-from memory.stitches.extractor import FactExtractor
-from memory.stitches.conflict_resolver import ConflictResolver
-from memory.stitches.synthesizer import ContextSynthesizer
-from memory.stitches.consolidation import ConsolidationEngine, ConsolidationResult
-from memory.stitches.sources_view import MemorySourcesViewBuilder
-from memory.integrity.poisoning_defense import (
+from cognitive.memory.tiers.working.in_memory import InMemoryWorkingMemory
+from cognitive.memory.tiers.working.redis_adapter import RedisWorkingMemory
+from cognitive.memory.tiers.facts.sqlite_adapter import SQLiteFactStore
+from cognitive.memory.tiers.facts.postgres_adapter import PostgreSQLFactStore
+from cognitive.memory.tiers.semantic.qdrant_adapter import QdrantAdapter
+from cognitive.memory.tiers.semantic.chroma_adapter import ChromaAdapter
+from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
+from cognitive.memory.tiers.graph.memgraph_adapter import MemgraphAdapter
+from cognitive.memory.embeddings.embedder import get_embedder
+from cognitive.memory.stitches.extractor import FactExtractor
+from cognitive.memory.stitches.conflict_resolver import ConflictResolver
+from cognitive.memory.stitches.synthesizer import ContextSynthesizer
+from cognitive.memory.stitches.consolidation import ConsolidationEngine, ConsolidationResult
+from cognitive.memory.stitches.sources_view import MemorySourcesViewBuilder
+from cognitive.memory.integrity.poisoning_defense import (
     MemoryPoisoningDefense,
     MemoryPoisoningError,
     PoisoningDetectionResult,
     SecurityPolicyViolationError,
 )
-from memory.lessons import (
+from cognitive.memory.lessons import (
     LessonsLearnedExtractor,
     LessonStore,
     LessonRecord,
     LessonCategory,
 )
-from memory.portability import (
+from cognitive.memory.portability import (
     MemoryPortabilityManager,
     MemoryPortabilityFormat,
     ImportStats,
 )
-from memory.snapshots import (
+from cognitive.memory.snapshots import (
     MemorySnapshotManager,
     MemorySnapshot,
     RollbackResult,
@@ -204,7 +204,7 @@ class MemoryEngine:
         # Feature 2.38 (DEF-01): L12 Memory Access Control Pre-Write Hook
         memory_scope = metadata.get("target_memory_scope", user_id)
         try:
-            from memory.access_control.openfga_bridge import check_memory_access
+            from cognitive.memory.access_control.openfga_bridge import check_memory_access
             check_memory_access(user_id=user_id, action="write", memory_scope=memory_scope)
         except ImportError:
             try:
@@ -371,7 +371,7 @@ class MemoryEngine:
         # Feature 2.38 (DEF-01): L12 Memory Access Control Pre-Read Hook
         target_scope = target_memory_scope or user_id
         try:
-            from memory.access_control.openfga_bridge import check_memory_access
+            from cognitive.memory.access_control.openfga_bridge import check_memory_access
             check_memory_access(user_id=user_id, action="read", memory_scope=target_scope)
         except ImportError:
             try:

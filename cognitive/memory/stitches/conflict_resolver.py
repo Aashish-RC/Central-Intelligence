@@ -1,8 +1,8 @@
 """Stitch 3: Deduplication and Contradiction Resolution."""
 
 from typing import List, Optional
-from memory.core.models import FactItem
-from memory.core.interfaces import BaseFactStore
+from cognitive.memory.core.models import FactItem
+from cognitive.memory.core.interfaces import BaseFactStore
 
 
 class ConflictResolver:

@@ -11,9 +11,9 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
 
-from memory.core.exceptions import AdapterConnectionError
-from memory.core.interfaces import BaseGraphStore
-from memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
+from cognitive.memory.core.exceptions import AdapterConnectionError
+from cognitive.memory.core.interfaces import BaseGraphStore
+from cognitive.memory.tiers.graph._nx_fallback import NetworkXGraphFallback, utc_now_str
 
 
 class MemgraphAdapter(BaseGraphStore):

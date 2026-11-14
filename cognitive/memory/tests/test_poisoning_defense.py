@@ -2,8 +2,8 @@
 
 import base64
 import pytest
-from memory.engine import MemoryEngine
-from memory.integrity.poisoning_defense import (
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.integrity.poisoning_defense import (
     MemoryPoisoningDefense,
     MemoryPoisoningError,
     PoisoningDetectionResult,

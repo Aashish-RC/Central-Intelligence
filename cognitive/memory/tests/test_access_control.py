@@ -1,7 +1,7 @@
 """Tests for Memory Access Control Bridge (Task 12.12, Feature 2.38 — DEF-01 UNBLOCKED)."""
 
 import pytest
-from memory.access_control.openfga_bridge import (
+from cognitive.memory.access_control.openfga_bridge import (
     AccessDeniedError,
     check_memory_access,
 )
@@ -58,8 +58,8 @@ def test_memory_access_control_rebac_acceptance():
 
 def test_engine_integration_access_control(tmp_path):
     """Verify MemoryEngine.remember and MemoryEngine.recall enforce access control."""
-    from memory.engine import MemoryEngine
-    from memory.config import (
+    from cognitive.memory.engine import MemoryEngine
+    from cognitive.memory.config import (
         MemoryConfig,
         WorkingMemoryBackend,
         FactStoreBackend,

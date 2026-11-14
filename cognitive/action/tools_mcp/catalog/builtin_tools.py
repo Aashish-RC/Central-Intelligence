@@ -215,7 +215,7 @@ def memory_recall_handler(args: Dict[str, Any]) -> Dict[str, Any]:
     user_id = args.get("user_id", "default")
     tenant_id = args.get("tenant_id", "default")
     try:
-        from memory.engine import MemoryEngine
+        from cognitive.memory.engine import MemoryEngine
         engine = MemoryEngine()
         pkg = engine.recall(user_id=user_id, query=query, tenant_id=tenant_id)
         return {

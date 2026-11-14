@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import math
 from typing import Any, Dict, List, Optional, Set
-from memory.core.models import FactCategory, FactItem, MemoryRecord, utc_now
+from cognitive.memory.core.models import FactCategory, FactItem, MemoryRecord, utc_now
 
 
 @dataclass

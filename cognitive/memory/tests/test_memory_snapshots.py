@@ -2,16 +2,16 @@
 
 import tempfile
 import pytest
-from memory.config import (
+from cognitive.memory.config import (
     MemoryConfig,
     WorkingMemoryBackend,
     FactStoreBackend,
     VectorStoreBackend,
     EmbeddingBackend,
 )
-from memory.engine import MemoryEngine
-from memory.lessons.models import LessonRecord, LessonCategory
-from memory.core.models import FactItem
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.lessons.models import LessonRecord, LessonCategory
+from cognitive.memory.core.models import FactItem
 
 
 @pytest.fixture

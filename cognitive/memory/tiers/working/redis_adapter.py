@@ -4,9 +4,9 @@ import json
 from typing import List, Optional
 import redis
 
-from memory.core.interfaces import BaseWorkingMemory
-from memory.core.models import Turn
-from memory.core.exceptions import AdapterConnectionError
+from cognitive.memory.core.interfaces import BaseWorkingMemory
+from cognitive.memory.core.models import Turn
+from cognitive.memory.core.exceptions import AdapterConnectionError
 
 
 class RedisWorkingMemory(BaseWorkingMemory):

@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional
 import urllib.parse
 from uuid import UUID
 
-from memory.core.interfaces import BaseFactStore
-from memory.core.models import FactItem, FactCategory, utc_now
-from memory.core.exceptions import AdapterConnectionError
+from cognitive.memory.core.interfaces import BaseFactStore
+from cognitive.memory.core.models import FactItem, FactCategory, utc_now
+from cognitive.memory.core.exceptions import AdapterConnectionError
 
 
 class _Pg8000DictCursor:

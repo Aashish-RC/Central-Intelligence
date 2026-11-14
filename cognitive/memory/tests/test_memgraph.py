@@ -1,9 +1,9 @@
 """Unit and integration tests for Tier 4: Memgraph Knowledge Graph Store."""
 
 import pytest
-from memory.tiers.graph.memgraph_adapter import MemgraphAdapter
-from memory.engine import MemoryEngine
-from memory.config import MemoryConfig
+from cognitive.memory.tiers.graph.memgraph_adapter import MemgraphAdapter
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.config import MemoryConfig
 
 
 @pytest.fixture
@@ -165,8 +165,8 @@ def test_memory_engine_graph_tier_integration():
 
 def test_default_memory_engine_uses_apache_age():
     """Default MemoryConfig routes Tier 4 graph queries through ApacheAGEAdapter."""
-    from memory.tiers.graph.age_adapter import ApacheAGEAdapter
-    from memory.config import GraphStoreBackend
+    from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
+    from cognitive.memory.config import GraphStoreBackend
 
     config = MemoryConfig(memgraph_host=":memory:")
     assert config.graph_backend == GraphStoreBackend.POSTGRES_AGE
@@ -197,7 +197,7 @@ def test_apache_age_dollar_quote_and_injection_roundtrip():
     """Values containing $$$, $$$$, and SQL/dollar injection must parameterize & round-trip unchanged."""
     import json
     from unittest.mock import MagicMock
-    from memory.tiers.graph.age_adapter import ApacheAGEAdapter, _make_dollar_tag
+    from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter, _make_dollar_tag
 
     adversarial_values = [
         "$$$",

@@ -6,9 +6,9 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field
 
-from memory.core.models import MemoryRecord, Turn, FactItem, utc_now
-from memory.core.interfaces import BaseWorkingMemory, BaseFactStore, BaseVectorStore, BaseEmbedder
-from memory.config import MemoryConfig
+from cognitive.memory.core.models import MemoryRecord, Turn, FactItem, utc_now
+from cognitive.memory.core.interfaces import BaseWorkingMemory, BaseFactStore, BaseVectorStore, BaseEmbedder
+from cognitive.memory.config import MemoryConfig
 
 
 class ConsolidationResult(BaseModel):
@@ -39,7 +39,7 @@ class ConsolidationEngine:
         self._vectors = vector_store
         self._embedder = embedder
         if config is None:
-            from memory.config import default_config
+            from cognitive.memory.config import default_config
             config = default_config
         self._config = config
 

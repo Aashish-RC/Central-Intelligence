@@ -1,18 +1,18 @@
 """Cross-Assistant Memory Portability package (Features 2.46, 2.50)."""
 
-from memory.portability.models import (
+from cognitive.memory.portability.models import (
     ImportStats,
     MemoryPortabilityFormat,
     StandardFactRecord,
     StandardMemoryExport,
     StandardTurnRecord,
 )
-from memory.portability.translators import (
+from cognitive.memory.portability.translators import (
     ChatGPTTranslator,
     ClaudeTranslator,
     StandardCITranslator,
 )
-from memory.portability.manager import MemoryPortabilityManager
+from cognitive.memory.portability.manager import MemoryPortabilityManager
 
 __all__ = [
     "ImportStats",

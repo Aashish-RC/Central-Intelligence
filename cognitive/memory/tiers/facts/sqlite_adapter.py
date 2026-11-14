@@ -7,8 +7,8 @@ import threading
 from typing import List, Optional
 from uuid import UUID
 
-from memory.core.interfaces import BaseFactStore
-from memory.core.models import FactItem, FactCategory, utc_now
+from cognitive.memory.core.interfaces import BaseFactStore
+from cognitive.memory.core.models import FactItem, FactCategory, utc_now
 
 
 class SQLiteFactStore(BaseFactStore):

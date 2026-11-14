@@ -10,7 +10,7 @@ Features: 2.49, 7.27
 
 import re
 from typing import List, Optional
-from memory.core.models import Turn, TurnRole
+from cognitive.memory.core.models import Turn, TurnRole
 from .models import LessonCategory, LessonRecord
 
 

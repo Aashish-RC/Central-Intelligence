@@ -15,7 +15,7 @@ from agent.memory.tiers.working import WorkingMemoryTier
 from agent.memory.tiers.facts import FactStoreTier
 from agent.memory.tiers.vector import VectorMemoryTier
 from sandboxes.manager import SandboxManager
-from memory.engine import MemoryEngine
+from cognitive.memory.engine import MemoryEngine
 
 
 @pytest.mark.asyncio

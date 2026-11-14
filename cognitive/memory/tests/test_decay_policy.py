@@ -2,8 +2,8 @@
 
 from datetime import datetime, timedelta, timezone
 import pytest
-from memory.core.models import FactCategory, FactItem, MemoryRecord, utc_now
-from memory.consolidation.decay_policy import (
+from cognitive.memory.core.models import FactCategory, FactItem, MemoryRecord, utc_now
+from cognitive.memory.consolidation.decay_policy import (
     DecayCompressionPolicyEngine,
     MemoryDecayPolicy,
 )

@@ -5,17 +5,17 @@ import tempfile
 from uuid import uuid4
 import pytest
 
-from memory.core.models import Turn, TurnRole, FactItem, FactCategory, MemoryRecord
-from memory.tiers.working.in_memory import InMemoryWorkingMemory
-from memory.tiers.facts.sqlite_adapter import SQLiteFactStore
-from memory.tiers.facts.postgres_adapter import (
+from cognitive.memory.core.models import Turn, TurnRole, FactItem, FactCategory, MemoryRecord
+from cognitive.memory.tiers.working.in_memory import InMemoryWorkingMemory
+from cognitive.memory.tiers.facts.sqlite_adapter import SQLiteFactStore
+from cognitive.memory.tiers.facts.postgres_adapter import (
     PostgreSQLFactStore,
     _Pg8000DictCursor,
     _Pg8000ConnectionWrapper,
 )
-from memory.core.exceptions import AdapterConnectionError
-from memory.tiers.semantic.qdrant_adapter import QdrantAdapter
-from memory.embeddings.embedder import LocalHashEmbedder
+from cognitive.memory.core.exceptions import AdapterConnectionError
+from cognitive.memory.tiers.semantic.qdrant_adapter import QdrantAdapter
+from cognitive.memory.embeddings.embedder import LocalHashEmbedder
 
 
 def test_tier1_in_memory_and_wal():

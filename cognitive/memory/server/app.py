@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from memory.engine import MemoryEngine
-from memory.core.models import ContextPackage, TurnRole
+from cognitive.memory.engine import MemoryEngine
+from cognitive.memory.core.models import ContextPackage, TurnRole
 
 
 app = FastAPI(
