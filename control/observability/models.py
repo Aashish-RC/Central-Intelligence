@@ -30,12 +30,22 @@ class SpanRecord:
     duration_ms: float = 0.0
     attributes: Dict[str, Any] = field(default_factory=dict)
     events: List[Dict[str, Any]] = field(default_factory=list)
+    otel_span: Optional[Any] = None
 
     def finish(self, status: TraceStatus = TraceStatus.OK) -> None:
         if self.end_time is None:
             self.end_time = time.time()
         self.duration_ms = (self.end_time - self.start_time) * 1000.0
         self.status = status
+        if self.otel_span is not None:
+            try:
+                self.otel_span.end()
+            except Exception:
+                pass
+
+    def end(self, status: TraceStatus = TraceStatus.OK) -> None:
+        """Alias for finish() conforming to OpenTelemetry API conventions."""
+        self.finish(status)
 
 
 @dataclass

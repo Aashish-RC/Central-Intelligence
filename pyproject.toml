@@ -39,6 +39,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+observability = [
+    "opentelemetry-api>=1.24.0",
+    "opentelemetry-sdk>=1.24.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.24.0",
+]
 graph-non-osi = [
     "gqlalchemy>=1.10.0",
     "falkordb>=1.8.0",
