@@ -50,12 +50,112 @@ class TemporalWorkflowAdapter(BaseOrchestratorBridge):
         self._init_client()
 
     def _init_client(self) -> None:
+        """Initialize live Temporal client when in live mode."""
+        if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
+            self._client_module = None
+            return
         try:
             from temporalio.client import Client
-            # Client connects asynchronously; client placeholder initialized
             self._client_module = Client
-        except ImportError:
-            self._client_module = None
+        except ImportError as exc:
+            fail_closed_in_production(
+                "temporal",
+                "temporalio package is not installed; pip install temporalio>=1.7.0",
+                cause=exc,
+            )
+
+    async def _get_client(self) -> Any:
+        """Connect to live Temporal server, caching the client for reuse."""
+        if self._temporal_client is not None:
+            return self._temporal_client
+        if self._client_module is None:
+            try:
+                from temporalio.client import Client
+                self._client_module = Client
+            except ImportError as exc:
+                fail_closed_in_production(
+                    "temporal",
+                    "temporalio package is not installed; pip install temporalio>=1.7.0",
+                    cause=exc,
+                )
+        try:
+            self._temporal_client = await self._client_module.connect(
+                target_host=self.target_host,
+                namespace=self.namespace,
+            )
+            return self._temporal_client
+        except Exception as exc:
+            fail_closed_in_production(
+                "temporal",
+                f"Failed to connect to Temporal at {self.target_host}: {exc}",
+                cause=exc,
+            )
+
+    async def start_worker(self) -> None:
+        """Start a long-running Temporal worker on this process.
+
+        Call this from a dedicated worker process, NOT from request handlers.
+        The worker listens on self.task_queue and executes CIDagWorkflow.
+        """
+        if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
+            return
+        try:
+            from temporalio.worker import Worker
+            from .temporal_workflow import CIDagWorkflow
+            from .temporal_activities import execute_node
+
+            client = await self._get_client()
+            worker = Worker(
+                client,
+                task_queue=self.task_queue,
+                workflows=[CIDagWorkflow],
+                activities=[execute_node],
+            )
+            await worker.run()
+        except Exception as exc:
+            fail_closed_in_production(
+                "temporal",
+                f"Temporal worker failed to start: {exc}",
+                cause=exc,
+            )
+
+    async def execute_workflow_live(
+        self,
+        graph: WorkflowGraph,
+        initial_input: str = "",
+    ) -> WorkflowExecutionReport:
+        """Live-mode workflow execution via Temporal server."""
+        from .temporal_workflow import CIDagWorkflow
+
+        client = await self._get_client()
+        graph_dict = graph.to_dict()
+
+        workflow_id = graph.workflow_id or f"wf-{int(time.time()*1000)}"
+        start_time = time.perf_counter()
+        try:
+            handle = await client.start_workflow(
+                CIDagWorkflow.run,
+                graph_dict,
+                initial_input,
+                id=workflow_id,
+                task_queue=self.task_queue,
+            )
+            result = await handle.result()
+            duration_ms = (time.perf_counter() - start_time) * 1000.0
+            return WorkflowExecutionReport(
+                workflow_id=workflow_id,
+                nodes_executed=result.get("nodes_executed", []),
+                parallel_branches_executed=0,
+                success=result.get("success", True),
+                duration_ms=round(duration_ms, 2),
+                outputs=result.get("outputs", {}),
+            )
+        except Exception as exc:
+            fail_closed_in_production(
+                "temporal",
+                f"Workflow {workflow_id} failed: {exc}",
+                cause=exc,
+            )
 
     def _get_checkpoint_path(self, workflow_id: str) -> Path:
         return self.checkpoint_dir / f"{workflow_id}.json"
@@ -107,6 +207,10 @@ class TemporalWorkflowAdapter(BaseOrchestratorBridge):
         If killed or failed previously, execution seamlessly resumes from
         the last recorded checkpoint without repeating already completed steps.
         """
+        if self.adapter_mode == "live" and os.getenv("CI_TEST_MODE") != "1":
+            import asyncio
+            return asyncio.run(self.execute_workflow_live(graph, initial_input))
+
         start_time = time.perf_counter()
         workflow_id = graph.workflow_id
         executed_nodes: List[str] = []

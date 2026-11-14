@@ -46,6 +46,69 @@ class WorkflowGraph(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
 
+    def to_dict(self) -> dict:
+        return {
+            "workflow_id": self.workflow_id,
+            "name": self.name,
+            "description": self.description,
+            "nodes": {
+                nid: {
+                    "node_id": n.node_id,
+                    "action_name": n.action_name,
+                    "label": n.label,
+                    "node_type": n.node_type.value if hasattr(n.node_type, "value") else str(n.node_type),
+                    "parameters": n.parameters,
+                    "upstream_dependencies": list(n.upstream_dependencies),
+                    "timeout_seconds": n.timeout_seconds,
+                }
+                for nid, n in self.nodes.items()
+            },
+            "edges": [
+                {
+                    "source_node_id": e.source_node_id,
+                    "target_node_id": e.target_node_id,
+                    "condition": e.condition,
+                }
+                for e in self.edges
+            ],
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "WorkflowGraph":
+        nodes = {}
+        for nid, nd in d.get("nodes", {}).items():
+            nt_val = nd.get("node_type", "agent_step")
+            try:
+                nt = WorkflowNodeType(nt_val)
+            except ValueError:
+                nt = WorkflowNodeType.AGENT_STEP
+            nodes[nid] = WorkflowNode(
+                node_id=nd.get("node_id", nid),
+                node_type=nt,
+                label=nd.get("label", nid),
+                action_name=nd.get("action_name", ""),
+                parameters=nd.get("parameters", {}),
+                upstream_dependencies=nd.get("upstream_dependencies", []),
+                timeout_seconds=float(nd.get("timeout_seconds", 60.0)),
+            )
+        edges = [
+            WorkflowEdge(
+                source_node_id=ed["source_node_id"],
+                target_node_id=ed["target_node_id"],
+                condition=ed.get("condition"),
+            )
+            for ed in d.get("edges", [])
+        ]
+        return cls(
+            workflow_id=d.get("workflow_id", f"wf_{uuid.uuid4().hex[:8]}"),
+            name=d.get("name", "workflow"),
+            description=d.get("description", ""),
+            nodes=nodes,
+            edges=edges,
+            metadata=d.get("metadata", {}),
+        )
+
     def to_plan_dag(
         self,
         project_id: str = "default",
