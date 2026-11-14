@@ -846,3 +846,153 @@ asyncio.run(main())
     assert p.returncode == 0, f"Container execution failed: {p.stderr}"
 
 
+def test_kamal_invokes_real_cli(monkeypatch):
+    """Verify Kamal deploy invokes real CLI commands in sequence (F-OPS-01)."""
+    if os.getenv("KAMAL_LIVE") != "1":
+        pytest.skip("KAMAL_LIVE=1 not set; skipping Kamal live CLI invocation test")
+
+    from unittest.mock import MagicMock
+    from platform_infra.release.ci.kamal_adapter import KamalAdapter, KamalConfig, DeploymentPhase
+
+    monkeypatch.setenv("ADAPTER_MODE", "live")
+    monkeypatch.delenv("CI_TEST_MODE", raising=False)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/local/bin/kamal")
+
+    executed_commands = []
+
+    def fake_run(cmd, capture_output=True, text=True, env=None, timeout=600, check=True):
+        executed_commands.append(list(cmd))
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    monkeypatch.setattr("httpx.get", lambda url, timeout=1.0: mock_resp)
+
+    config = KamalConfig(
+        service_name="central-intelligence-api",
+        servers=["192.168.1.101"],
+        healthcheck_path="/healthz",
+    )
+    adapter = KamalAdapter(config=config)
+    deployment = adapter.deploy(version_tag="v3.0.0")
+
+    assert deployment.phase == DeploymentPhase.COMPLETED
+    expected = [
+        ["kamal", "lock", "acquire"],
+        ["kamal", "registry", "push"],
+        ["kamal", "app", "boot", "--version", "v3.0.0"],
+        ["kamal", "proxy", "boot"],
+        ["kamal", "app", "stop", "--version", "previous"],
+        ["kamal", "lock", "release"],
+    ]
+    assert executed_commands == expected
+
+
+def test_bytebase_migration_executes_real_ddl():
+    """Verify Bytebase apply_migration executes real DDL observable in Postgres (F-OPS-02)."""
+    bytebase_url = os.getenv("BYTEBASE_LIVE_URL")
+    if not bytebase_url:
+        pytest.skip("BYTEBASE_LIVE_URL not set; skipping live Bytebase DDL test")
+
+    import pg8000.native
+    from platform_infra.release.db.bytebase_adapter import BytebaseAdapter, MigrationStatus
+
+    token = os.getenv("BYTEBASE_API_TOKEN", "bb_test_token")
+    adapter = BytebaseAdapter(endpoint_url=bytebase_url, api_token=token, _defer_prod_check=True)
+    adapter.adapter_mode = "live"
+
+    v = f"e2e_{uuid4().hex[:6]}"
+    table_name = f"e2e_bb_{v}"
+    up_sql = f"CREATE TABLE IF NOT EXISTS {table_name} (id SERIAL PRIMARY KEY, val TEXT);"
+    down_sql = f"DROP TABLE IF EXISTS {table_name};"
+
+    mig = adapter.create_migration(
+        database_name="postgres",
+        version=v,
+        title=f"E2E create {table_name}",
+        up_sql=up_sql,
+        down_sql=down_sql,
+    )
+    adapter.review_migration(mig.migration_id, approved=True, reviewer="e2e_runner")
+    applied = adapter.apply_migration(mig.migration_id)
+    assert applied.execution_status == MigrationStatus.APPLIED
+
+    pg_host = os.getenv("POSTGRES_HOST", "localhost")
+    pg_port = int(os.getenv("POSTGRES_PORT", "5432"))
+    pg_user = os.getenv("POSTGRES_USER", "postgres")
+    pg_pass = os.getenv("POSTGRES_PASSWORD", "postgres")
+    pg_db = os.getenv("POSTGRES_DB", "postgres")
+
+    conn = pg8000.native.Connection(
+        host=pg_host,
+        port=pg_port,
+        user=pg_user,
+        password=pg_pass,
+        database=pg_db,
+    )
+    try:
+        rows = conn.run(f"SELECT table_name FROM information_schema.tables WHERE table_name = '{table_name}'")
+        assert len(rows) == 1
+    finally:
+        adapter.rollback_migration(mig.migration_id)
+        conn.close()
+
+
+def test_librechat_routes_to_reasoning_gateway():
+    """Verify LibreChat adapter bridges to Layer 4 gateway and returns dynamic completions."""
+    gateway_url = os.getenv("REASONING_GATEWAY_URL")
+    if not gateway_url:
+        pytest.skip("REASONING_GATEWAY_URL not set; skipping live LibreChat gateway test")
+
+    from surface.interaction.web.librechat_adapter import LibreChatAdapter
+
+    adapter = LibreChatAdapter(
+        gateway_url=gateway_url,
+        api_key=os.getenv("REASONING_GATEWAY_API_KEY", "test_key"),
+        _defer_prod_check=True,
+    )
+    adapter.adapter_mode = "live"
+
+    conv1 = adapter.create_conversation(title="E2E Gateway 1")
+    reply1 = adapter.send_message(conv1.conversation_id, "What is 2+2? Answer with just the digit.")
+    assert reply1.role == "assistant"
+
+    conv2 = adapter.create_conversation(title="E2E Gateway 2")
+    reply2 = adapter.send_message(conv2.conversation_id, "What is 5+5? Answer with just the digit.")
+    assert reply2.role == "assistant"
+    assert reply1.content != reply2.content
+
+
+def test_paddleocr_fails_closed_without_deps(monkeypatch):
+    """Verify PaddleOCR fails closed with ProductionSafetyError when uninstalled (F-DEP-01)."""
+    from PIL import Image
+    from control.safety.production_guard import ProductionSafetyError
+    import cognitive.perception.vision.paddleocr_adapter as ocr_module
+    from cognitive.perception.vision.paddleocr_adapter import PaddleOCRAdapter
+
+    monkeypatch.setattr(ocr_module, "_PADDLEOCR_AVAILABLE", False)
+    monkeypatch.setenv("ADAPTER_MODE", "live")
+    monkeypatch.delenv("CI_TEST_MODE", raising=False)
+
+    adapter = PaddleOCRAdapter(_defer_prod_check=True)
+    adapter.adapter_mode = "live"
+    img = Image.new("RGB", (50, 50), color="white")
+
+    with pytest.raises(ProductionSafetyError):
+        adapter.extract_text_from_image(img)
+
+
+def test_dual_boundary_tag_form_matches_docs():
+    """Verify docs directory contains zero references to deprecated untrusted_user_input (F-DOC-01)."""
+    docs_dir = REPO_ROOT / "docs"
+    old_form = "untrusted_user_input"
+    offenders = []
+    for md in docs_dir.rglob("*.md"):
+        if old_form in md.read_text(encoding="utf-8"):
+            offenders.append(str(md.relative_to(docs_dir)))
+    assert not offenders, f"Docs still reference deprecated tag form: {offenders}"
+
+
+
