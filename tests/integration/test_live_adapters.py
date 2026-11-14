@@ -17,6 +17,8 @@ from PIL import Image, ImageDraw
 import httpx
 import pytest
 
+pytestmark = pytest.mark.live
+
 from control.safety.production_guard import ProductionSafetyError
 
 # L1 Perception

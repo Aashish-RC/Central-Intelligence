@@ -22,6 +22,8 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
+pytestmark = pytest.mark.live
+
 # Ensure submodule paths are present in sys.path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 for p in [

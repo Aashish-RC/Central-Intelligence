@@ -66,6 +66,11 @@ dev = [
     "mypy>=1.9.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cognitive*", "control*", "surface*", "platform_infra*"]
+exclude = ["node_modules*", "tests*", "docs*", "scripts*"]
+
 [tool.pytest.ini_options]
 pythonpath = [
     ".",

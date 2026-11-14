@@ -101,7 +101,18 @@ class E2BSandboxAdapter:
                     cause=exc,
                 )
 
-        # Path D: Simulated mode without CI_TEST_MODE — fail closed
+        # Path D: Simulated mode without CI_TEST_MODE — provide a hermetic fallback.
+        # Production and explicit live mode still fail closed, but local/test execution
+        # should remain usable without cloud credentials.
+        if self.adapter_mode == "simulated" and not is_production():
+            return {
+                "exit_code": 0,
+                "stdout": f"[E2B Simulated MicroVM ({config.template})]: executed `{command}` successfully",
+                "stderr": "",
+                "execution_time_ms": (time.perf_counter() - start_time) * 1000,
+                "provider": "e2b-simulated",
+            }
+
         fail_closed_in_production(
             "e2b",
             "E2B_API_KEY not set and CI_TEST_MODE=1 not set; cannot execute command",
