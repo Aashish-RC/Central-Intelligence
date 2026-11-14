@@ -256,7 +256,7 @@ services:
 
   # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13) (Apache-2.0)
   hyperswitch:
-    image: juspaydotin/hyperswitch-router:v1.129.0-standalone
+    image: juspaydotin/hyperswitch-router:2026.11.13.1-standalone
     container_name: central-hyperswitch
     restart: unless-stopped
     ports:
@@ -373,7 +373,7 @@ services:
 
   # Svix Webhook Delivery Service for L15 Data & Event Webhooks (MIT)
   svix:
-    image: svix/svix-server:v1.57.0
+    image: svix/svix-server:v1.105.0
     container_name: central-svix
     restart: unless-stopped
     ports:
@@ -508,7 +508,7 @@ services:
 
   # Bytebase Database Schema Migration & Version Control for L17 Release (Apache-2.0)
   bytebase:
-    image: bytebase/bytebase:3.2.0
+    image: bytebase/bytebase:3.24.1
     container_name: central-bytebase
     restart: unless-stopped
     ports:
