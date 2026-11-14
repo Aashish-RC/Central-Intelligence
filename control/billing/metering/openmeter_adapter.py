@@ -8,6 +8,7 @@ Supports live HTTP dispatch to OpenMeter instances and local in-memory aggregati
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -17,6 +18,7 @@ import httpx
 
 from control.billing.models import MeteredUsageSummary, TokenUsageEvent
 from control.safety.production_guard import (
+    ProductionSafetyError,
     fail_closed_in_production,
     require_live_adapter,
 )
@@ -38,9 +40,25 @@ class OpenMeterAdapter:
         self.api_token = api_token
         self.source = source
         self._local_events: List[TokenUsageEvent] = []
+        self._client: Optional[httpx.Client] = None
         self.adapter_mode = (
             "simulated" if _defer_prod_check else require_live_adapter("openmeter")
         )
+
+    def _http_client(self) -> httpx.Client:
+        """Cached httpx.Client bound to endpoint_url with 5-second timeout."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.Client(
+                base_url=self.endpoint_url,
+                timeout=5.0,
+            )
+        return self._client
+
+    def _auth_headers(self) -> Dict[str, str]:
+        headers: Dict[str, str] = {}
+        if self.api_token:
+            headers["Authorization"] = f"Bearer {self.api_token}"
+        return headers
 
     def record_event(
         self,
@@ -79,16 +97,15 @@ class OpenMeterAdapter:
         if dispatch_remote:
             try:
                 headers = {"Content-Type": "application/cloudevents+json"}
-                if self.api_token:
-                    headers["Authorization"] = f"Bearer {self.api_token}"
+                headers.update(self._auth_headers())
 
-                with httpx.Client(timeout=1.0) as client:
-                    resp = client.post(
-                        f"{self.endpoint_url}/api/v1/events",
-                        json=cloud_event,
-                        headers=headers,
-                    )
-                    remote_success = resp.status_code in (200, 201, 202)
+                resp = self._http_client().post(
+                    "/api/v1/events",
+                    json=cloud_event,
+                    headers=headers,
+                    timeout=1.0,
+                )
+                remote_success = resp.status_code in (200, 201, 202)
             except Exception as e:
                 logger.debug("OpenMeter remote dispatch failed, retained in local buffer: %s", e)
                 remote_success = False
@@ -100,6 +117,41 @@ class OpenMeterAdapter:
             "stored_locally": True,
         }
 
+    def _build_summary_from_openmeter_response(
+        self,
+        data: Any,
+        user_id: Optional[str],
+        tenant_id: Optional[str],
+        app_id: Optional[str],
+    ) -> MeteredUsageSummary:
+        summary = MeteredUsageSummary(
+            user_id=user_id or "all",
+            tenant_id=tenant_id or "all",
+            app_id=app_id,
+        )
+        rows: List[Any] = []
+        if isinstance(data, dict):
+            if "data" in data and isinstance(data["data"], list):
+                rows = data["data"]
+            else:
+                rows = [data]
+        elif isinstance(data, list):
+            rows = data
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            val = int(row.get("value", 0))
+            summary.total_tokens += val
+            summary.billable_tokens += val
+            summary.events_count += 1
+            grp = row.get("groupBy") or row.get("groupedBy")
+            if isinstance(grp, dict):
+                model = grp.get("model")
+                if model:
+                    summary.by_model[model] = summary.by_model.get(model, 0) + val
+        return summary
+
     def query_usage(
         self,
         user_id: Optional[str] = None,
@@ -108,6 +160,31 @@ class OpenMeterAdapter:
         since: Optional[float] = None,
     ) -> MeteredUsageSummary:
         """Aggregates metered usage across criteria."""
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            try:
+                params: Dict[str, Any] = {"from": int(since * 1000) if since else 0}
+                if user_id:
+                    params["subject"] = f"user:{user_id}"
+                resp = self._http_client().get(
+                    "/api/v1/meters/token_consumption/query",
+                    params=params,
+                    headers=self._auth_headers(),
+                    timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return self._build_summary_from_openmeter_response(
+                        data, user_id, tenant_id, app_id
+                    )
+                fail_closed_in_production(
+                    "openmeter",
+                    f"OpenMeter query returned HTTP {resp.status_code}: {resp.text}",
+                )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("openmeter", f"OpenMeter query failed: {exc}", cause=exc)
+
         filtered = self._local_events
         if user_id:
             filtered = [e for e in filtered if e.user_id == user_id]
