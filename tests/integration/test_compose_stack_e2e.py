@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from uuid import uuid4
@@ -81,12 +82,11 @@ def compose_stack_lifecycle():
             env=env,
             check=True,
         )
-
-    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-    keycloak_url = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
-
-    _wait_for_http(f"{qdrant_url}/readyz", timeout_s=90.0)
-    _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=120.0)
+        _wait_for_http(f"{qdrant_url}/readyz", timeout_s=90.0)
+        _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=120.0)
+    elif os.getenv("QDRANT_URL") or os.getenv("KEYCLOAK_URL"):
+        _wait_for_http(f"{qdrant_url}/readyz", timeout_s=10.0)
+        _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=10.0)
 
     yield env
 
@@ -367,4 +367,289 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
     finally:
         l2_graph.close()
         l3_graph.close()
+
+
+def test_openfga_persists_across_python_restart():
+    """Verify OpenFGA state survives Python process restart (F-INT-01)."""
+    openfga_url = os.getenv("OPENFGA_LIVE_URL")
+    if not openfga_url:
+        pytest.skip("OPENFGA_LIVE_URL not set; skipping live persistence test")
+
+    client = httpx.Client(base_url=openfga_url, timeout=5.0)
+    store_name = f"e2e-fga-{uuid4().hex[:8]}"
+    create_resp = client.post("/stores", json={"name": store_name})
+    assert create_resp.status_code in (200, 201)
+    store_id = create_resp.json()["id"]
+
+    model_payload = {
+        "schema_version": "1.1",
+        "type_definitions": [
+            {"type": "user", "relations": {}},
+            {
+                "type": "document",
+                "relations": {"viewer": {"this": {}}},
+                "metadata": {
+                    "relations": {"viewer": {"directly_related_user_types": [{"type": "user"}]}}
+                },
+            },
+        ],
+    }
+    m_resp = client.post(f"/stores/{store_id}/authorization-models", json=model_payload)
+    assert m_resp.status_code in (200, 201)
+
+    user_id = f"user:{uuid4().hex[:8]}"
+    doc_id = f"document:{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: write tuple
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os
+from control.identity.openfga_adapter import OpenFGAAdapter
+adapter = OpenFGAAdapter(api_url='{openfga_url}', store_id='{store_id}')
+adapter.write_tuple('{user_id}', 'viewer', '{doc_id}')
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 write failed: {p1.stderr}"
+
+    # Subprocess 2: check tuple from fresh process
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys
+from control.identity.openfga_adapter import OpenFGAAdapter
+adapter = OpenFGAAdapter(api_url='{openfga_url}', store_id='{store_id}')
+allowed = adapter.check_permission('{user_id}', 'viewer', '{doc_id}')
+sys.exit(0 if allowed else 1)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 check failed: {p2.stderr}"
+
+
+def test_infisical_persists_across_python_restart():
+    """Verify Infisical secrets survive Python process restart (F-INT-02)."""
+    infisical_url = os.getenv("INFISICAL_LIVE_URL")
+    if not infisical_url:
+        pytest.skip("INFISICAL_LIVE_URL not set; skipping live persistence test")
+
+    client_id = os.getenv("INFISICAL_CLIENT_ID", "")
+    client_secret = os.getenv("INFISICAL_CLIENT_SECRET", "")
+    key = f"E2E_SECRET_{uuid4().hex[:8]}"
+    val = f"val_{uuid4().hex}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: store secret
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os
+from control.identity.secrets.infisical_adapter import InfisicalAdapter
+adapter = InfisicalAdapter(server_url='{infisical_url}', client_id='{client_id}', client_secret='{client_secret}')
+adapter.store_secret('{key}', '{val}')
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 store failed: {p1.stderr}"
+
+    # Subprocess 2: retrieve secret
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys
+from control.identity.secrets.infisical_adapter import InfisicalAdapter
+adapter = InfisicalAdapter(server_url='{infisical_url}', client_id='{client_id}', client_secret='{client_secret}')
+retrieved = adapter.get_secret('{key}')
+sys.exit(0 if retrieved == '{val}' else 1)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 retrieve failed: {p2.stderr}"
+
+
+def test_lago_persists_across_python_restart():
+    """Verify Lago customer subscriptions survive Python process restart (F-INT-03)."""
+    lago_url = os.getenv("LAGO_LIVE_URL")
+    if not lago_url:
+        pytest.skip("LAGO_LIVE_URL not set; skipping live persistence test")
+
+    api_key = os.getenv("LAGO_API_KEY", "")
+    customer_id = f"e2e_cust_{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: subscribe customer
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os
+from control.billing.engine.lago_adapter import LagoAdapter
+adapter = LagoAdapter(api_url='{lago_url}', api_key='{api_key}')
+adapter.subscribe_customer('{customer_id}', 'free')
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 subscribe failed: {p1.stderr}"
+
+    # Subprocess 2: check entitlement from fresh process
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys
+from control.billing.engine.lago_adapter import LagoAdapter
+adapter = LagoAdapter(api_url='{lago_url}', api_key='{api_key}')
+allowed, _ = adapter.check_entitlement('{customer_id}', requested_tokens=100)
+sys.exit(0 if allowed else 1)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 entitlement failed: {p2.stderr}"
+
+
+def test_openmeter_persists_across_python_restart():
+    """Verify OpenMeter events survive Python process restart (F-INT-04)."""
+    openmeter_url = os.getenv("OPENMETER_LIVE_URL")
+    if not openmeter_url:
+        pytest.skip("OPENMETER_LIVE_URL not set; skipping live persistence test")
+
+    api_token = os.getenv("OPENMETER_API_TOKEN", "")
+    user_id = f"e2e_usr_{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: record event
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os
+from control.billing.metering.openmeter_adapter import OpenMeterAdapter
+from control.billing.models import TokenUsageEvent
+adapter = OpenMeterAdapter(endpoint_url='{openmeter_url}', api_token='{api_token}')
+ev = TokenUsageEvent(user_id='{user_id}', tenant_id='default', app_id='chat', model='gpt-4o', prompt_tokens=100, completion_tokens=50, total_tokens=150)
+res = adapter.record_event(ev, dispatch_remote=True)
+assert res['remote_dispatched'] is True
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 record event failed: {p1.stderr}"
+
+    time.sleep(0.3)
+
+    # Subprocess 2: query usage from fresh process
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys
+from control.billing.metering.openmeter_adapter import OpenMeterAdapter
+adapter = OpenMeterAdapter(endpoint_url='{openmeter_url}', api_token='{api_token}')
+summary = adapter.query_usage(user_id='{user_id}')
+sys.exit(0 if summary.total_tokens >= 150 else 1)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 query usage failed: {p2.stderr}"
+
+
+def test_signoz_persists_across_python_restart():
+    """Verify SigNoz traces survive Python process restart (F-INT-05)."""
+    signoz_url = os.getenv("SIGNOZ_LIVE_URL")
+    if not signoz_url:
+        pytest.skip("SIGNOZ_LIVE_URL not set; skipping live persistence test")
+
+    otlp_url = os.getenv("SIGNOZ_OTLP_URL", "http://localhost:4318")
+    op_name = f"e2e_trace_{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: start trace and end
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, time
+from control.observability.signoz.signoz_adapter import SigNozAdapter
+adapter = SigNozAdapter(endpoint_url='{otlp_url}')
+span = adapter.start_trace('{op_name}', layer='L14')
+span.end()
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 start trace failed: {p1.stderr}"
+
+    time.sleep(1.0)
+
+    # Subprocess 2: query trace from SigNoz
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys, httpx
+resp = httpx.get('{signoz_url}/api/v1/traces', params={{'serviceName': 'central-intelligence'}}, timeout=5.0)
+sys.exit(0 if resp.status_code == 200 else 1)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 query traces failed: {p2.stderr}"
 
