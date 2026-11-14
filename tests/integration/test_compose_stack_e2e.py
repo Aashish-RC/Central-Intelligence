@@ -653,3 +653,196 @@ sys.exit(0 if resp.status_code == 200 else 1)
     )
     assert p2.returncode == 0, f"Process 2 query traces failed: {p2.stderr}"
 
+
+def test_temporal_workflow_survives_worker_restart():
+    """Verify Temporal workflows survive worker process death and replay from server history (F-INT-07)."""
+    temporal_url = os.getenv("TEMPORAL_LIVE_URL")
+    if not temporal_url:
+        pytest.skip("TEMPORAL_LIVE_URL not set; skipping live Temporal replay persistence test")
+
+    queue = f"e2e-wf-queue-{uuid4().hex[:8]}"
+    wf_id = f"e2e-wf-{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: Start Temporal worker in background
+    worker_code = f"""
+import asyncio
+from control.orchestration.workflow_builder.runtime.temporal_adapter import TemporalWorkflowAdapter
+adapter = TemporalWorkflowAdapter(target_host='{temporal_url}', task_queue='{queue}', _defer_prod_check=True)
+adapter.adapter_mode = 'live'
+asyncio.run(adapter.start_worker())
+"""
+    w1 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    time.sleep(2.0)
+
+    try:
+        # Start workflow via client in separate process
+        start_code = f"""
+import asyncio
+from control.orchestration.workflow_builder.runtime.temporal_adapter import TemporalWorkflowAdapter
+from control.orchestration.workflow_builder.runtime.temporal_workflow import CIDagWorkflow
+from control.orchestration.workflow_builder.core.models import WorkflowGraph, WorkflowNode, WorkflowNodeType, WorkflowEdge
+
+nodes = {{
+    f"step_{{i}}": WorkflowNode(
+        node_id=f"step_{{i}}",
+        node_type=WorkflowNodeType.AGENT_STEP if i > 0 else WorkflowNodeType.TRIGGER,
+        label=f"Step {{i}}",
+        action_name=f"action_{{i}}",
+        upstream_dependencies=[f"step_{{i-1}}"] if i > 0 else [],
+    )
+    for i in range(5)
+}}
+edges = [
+    WorkflowEdge(source_node_id=f"step_{{i}}", target_node_id=f"step_{{i+1}}")
+    for i in range(4)
+]
+graph = WorkflowGraph(workflow_id='{wf_id}', name='Replay Test', description='', nodes=nodes, edges=edges)
+
+adapter = TemporalWorkflowAdapter(target_host='{temporal_url}', task_queue='{queue}', _defer_prod_check=True)
+adapter.adapter_mode = 'live'
+
+async def main():
+    client = await adapter._get_client()
+    await client.start_workflow(CIDagWorkflow.run, graph.to_dict(), id='{wf_id}', task_queue='{queue}')
+
+asyncio.run(main())
+"""
+        p_start = subprocess.run([sys.executable, "-c", start_code], env=env, capture_output=True, text=True)
+        assert p_start.returncode == 0, f"Failed to start workflow: {p_start.stderr}"
+
+        # Kill worker 1 mid-execution
+        time.sleep(0.5)
+        w1.terminate()
+        w1.wait(timeout=5.0)
+
+        # Start worker 2 (simulating worker restart)
+        w2 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(1.0)
+        try:
+            # Query result from client
+            result_code = f"""
+import asyncio, sys
+from control.orchestration.workflow_builder.runtime.temporal_adapter import TemporalWorkflowAdapter
+
+adapter = TemporalWorkflowAdapter(target_host='{temporal_url}', task_queue='{queue}', _defer_prod_check=True)
+adapter.adapter_mode = 'live'
+
+async def main():
+    client = await adapter._get_client()
+    handle = client.get_workflow_handle('{wf_id}')
+    res = await handle.result()
+    sys.exit(0 if res.get('success') and len(res.get('nodes_executed', [])) == 5 else 1)
+
+asyncio.run(main())
+"""
+            p_res = subprocess.run([sys.executable, "-c", result_code], env=env, capture_output=True, text=True)
+            assert p_res.returncode == 0, f"Workflow failed to complete upon worker restart: {p_res.stderr}"
+        finally:
+            w2.terminate()
+            w2.wait(timeout=5.0)
+    finally:
+        if w1.poll() is None:
+            w1.terminate()
+
+
+def test_supabase_relational_and_vector_persist():
+    """Verify Supabase Postgres relational rows and pgvector embeddings survive Python restart (F-INT-06)."""
+    postgres_url = os.getenv("POSTGRES_LIVE_URL")
+    if not postgres_url:
+        pytest.skip("POSTGRES_LIVE_URL not set; skipping live Supabase persistence test")
+
+    table_name = f"e2e_rel_{uuid4().hex[:8]}"
+    collection = f"e2e_vec_{uuid4().hex[:8]}"
+    doc_id = f"doc_{uuid4().hex[:8]}"
+    user_id = f"user_{uuid4().hex[:8]}"
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    # Subprocess 1: insert row and store embedding
+    p1 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os
+from platform_infra.data.supabase.supabase_adapter import SupabaseAdapter
+adapter = SupabaseAdapter(connection_url='{postgres_url}', _defer_prod_check=True)
+adapter.adapter_mode = 'live'
+adapter.insert_row('{table_name}', {{'title': 'Durability Test'}}, '{user_id}')
+adapter.store_embedding('{collection}', '{doc_id}', [1.0, 0.0, 0.0], 'Embedded document content', '{user_id}')
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p1.returncode == 0, f"Process 1 write failed: {p1.stderr}"
+
+    # Subprocess 2: query row and search vector from fresh process
+    p2 = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import os, sys
+from platform_infra.data.supabase.supabase_adapter import SupabaseAdapter
+adapter = SupabaseAdapter(connection_url='{postgres_url}', _defer_prod_check=True)
+adapter.adapter_mode = 'live'
+rows = adapter.query_table('{table_name}', '{user_id}')
+assert len(rows) == 1 and rows[0]['title'] == 'Durability Test', f"Row missing: {{rows}}"
+
+results = adapter.search_embeddings('{collection}', [0.99, 0.01, 0.0], top_k=1, user_id='{user_id}')
+assert len(results) == 1 and results[0]['id'] == '{doc_id}', f"Embedding missing: {{results}}"
+sys.exit(0)
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p2.returncode == 0, f"Process 2 query failed: {p2.stderr}"
+
+
+def test_sandbox_executes_real_python():
+    """Verify Sandbox executes actual Python code in a container, returning real computed stdout (F-INT-08)."""
+    if os.getenv("SANDBOX_LIVE") != "1":
+        pytest.skip("SANDBOX_LIVE=1 not set; skipping live container execution test")
+
+    env = os.environ.copy()
+    env["ADAPTER_MODE"] = "live"
+    env.pop("CI_TEST_MODE", None)
+
+    p = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import asyncio, sys
+from agent.sandbox.e2b_adapter import E2BSandboxAdapter
+from agent.core.manifest import SandboxConfig
+
+async def main():
+    adapter = E2BSandboxAdapter()
+    config = SandboxConfig(timeout_seconds=15)
+    res = await adapter.execute_command("python3 -c 'print(2+2)'", config=config)
+    assert res['exit_code'] == 0, f"Non-zero exit: {res}"
+    assert res['stdout'].strip() == "4", f"Expected '4', got: {res['stdout']}"
+    assert "Simulated" not in res['stdout'], "Returned simulated mock string!"
+    sys.exit(0)
+
+asyncio.run(main())
+""",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert p.returncode == 0, f"Container execution failed: {p.stderr}"
+
+
