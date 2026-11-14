@@ -13,6 +13,7 @@ Features:
 from __future__ import annotations
 
 import logging
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -59,10 +60,13 @@ class OpenFGAAdapter:
         self,
         api_url: str = "http://localhost:8081",
         store_id: str = "central-intelligence-store",
+        api_key: Optional[str] = None,
         _defer_prod_check: bool = False,
     ):
-        self.api_url = api_url
+        self.api_url = api_url.rstrip("/")
         self.store_id = store_id
+        self.api_key = api_key or os.getenv("OPENFGA_API_KEY")
+        self._client: Optional[Any] = None
         self.adapter_mode = (
             "simulated" if _defer_prod_check else require_live_adapter("openfga")
         )
@@ -75,19 +79,31 @@ class OpenFGAAdapter:
         if not _defer_prod_check and self.adapter_mode == "live":
             self._ensure_live_backend()
 
+    def _http_client(self):
+        """Return a cached httpx.Client bound to self.api_url with 5-second timeout."""
+        if self._client is None or self._client.is_closed:
+            import httpx
+            headers = {}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
+            self._client = httpx.Client(
+                base_url=self.api_url,
+                headers=headers,
+                timeout=5.0,
+            )
+        return self._client
+
     def _ensure_live_backend(self) -> None:
         """Verify live OpenFGA connection in live mode."""
         if self.adapter_mode != "live":
             return
         try:
-            import httpx
-            with httpx.Client(timeout=2.0) as client:
-                resp = client.get(f"{self.api_url}/healthz")
-                if resp.status_code not in (200, 204):
-                    fail_closed_in_production(
-                        "openfga",
-                        f"OpenFGA server returned HTTP {resp.status_code}",
-                    )
+            resp = self._http_client().get("/healthz", timeout=2.0)
+            if resp.status_code not in (200, 204):
+                fail_closed_in_production(
+                    "openfga",
+                    f"OpenFGA server returned HTTP {resp.status_code}",
+                )
         except ProductionSafetyError:
             raise
         except Exception as exc:
@@ -122,12 +138,69 @@ class OpenFGAAdapter:
                 cond["_exp"] = time.time() + ttl_seconds
             self._tuple_conditions[key] = cond
 
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            payload = {
+                "writes": {
+                    "tuple_keys": [
+                        {"user": u, "relation": relation, "object": o}
+                    ]
+                }
+            }
+            try:
+                resp = self._http_client().post(
+                    f"/stores/{self.store_id}/write",
+                    json=payload,
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 204):
+                    fail_closed_in_production(
+                        "openfga",
+                        f"OpenFGA write returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production(
+                    "openfga",
+                    f"OpenFGA write to {self.api_url} failed: {exc}",
+                    cause=exc,
+                )
+
     def delete_tuple(self, user: str, relation: str, object: str) -> None:
+        self._ensure_live_backend()
         u = self._normalize_id(user, "user")
         o = self._normalize_id(object, "resource")
         key = (u, relation, o)
         self._tuples.discard(key)
         self._tuple_conditions.pop(key, None)
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            payload = {
+                "deletes": {
+                    "tuple_keys": [
+                        {"user": u, "relation": relation, "object": o}
+                    ]
+                }
+            }
+            try:
+                resp = self._http_client().post(
+                    f"/stores/{self.store_id}/write",
+                    json=payload,
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 204):
+                    fail_closed_in_production(
+                        "openfga",
+                        f"OpenFGA delete returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production(
+                    "openfga",
+                    f"OpenFGA delete to {self.api_url} failed: {exc}",
+                    cause=exc,
+                )
 
     def has_direct_relation(self, user: str, relation: str, object: str, context: Optional[Dict[str, Any]] = None) -> bool:
         key = (user, relation, object)
@@ -168,6 +241,33 @@ class OpenFGAAdapter:
         u = self._normalize_id(user, "user")
         r = self._normalize_id(resource, "resource")
         res_type = r.split(":")[0]
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            try:
+                check_body: Dict[str, Any] = {
+                    "tuple_key": {
+                        "user": u,
+                        "relation": action,
+                        "object": r,
+                    },
+                }
+                if context is not None:
+                    check_body["context"] = context
+                resp = self._http_client().post(
+                    f"/stores/{self.store_id}/check",
+                    json=check_body,
+                    timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    return bool(resp.json().get("allowed", False))
+                fail_closed_in_production(
+                    "openfga",
+                    f"OpenFGA check returned HTTP {resp.status_code}: {resp.text}",
+                )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("openfga", f"OpenFGA check failed: {exc}", cause=exc)
 
         # 1. Check for Active Delegations
         for grant in self._delegations.values():
@@ -238,6 +338,32 @@ class OpenFGAAdapter:
 
     def list_objects(self, user: str, relation: str, object_type: str) -> List[str]:
         """Returns all objects of object_type where user has relation/action."""
+        self._ensure_live_backend()
+        u = self._normalize_id(user, "user")
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            try:
+                resp = self._http_client().post(
+                    f"/stores/{self.store_id}/list-objects",
+                    json={
+                        "user": u,
+                        "relation": relation,
+                        "type": object_type,
+                    },
+                    timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    objs = resp.json().get("objects", [])
+                    return sorted(list(objs))
+                fail_closed_in_production(
+                    "openfga",
+                    f"OpenFGA list-objects returned HTTP {resp.status_code}: {resp.text}",
+                )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("openfga", f"OpenFGA list-objects failed: {exc}", cause=exc)
+
         results = set()
         prefix = f"{object_type}:"
         for _, _, obj in self._tuples:
