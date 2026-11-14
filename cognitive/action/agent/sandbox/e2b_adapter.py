@@ -11,6 +11,7 @@ from agent.core.exceptions import SandboxExecutionError
 from control.safety.production_guard import (
     ProductionSafetyError,
     fail_closed_in_production,
+    is_production,
     require_live_adapter,
 )
 
@@ -43,8 +44,8 @@ class E2BSandboxAdapter:
         )
         start_time = time.perf_counter()
 
-        # Path A: E2B cloud (when API key is set AND not in CI_TEST_MODE)
-        if self.api_key and os.getenv("CI_TEST_MODE") != "1":
+        # Path A: E2B cloud (when API key is set AND not in CI_TEST_MODE, OR when in production)
+        if self.api_key and (is_production() or os.getenv("CI_TEST_MODE") != "1"):
             try:
                 from e2b import Sandbox
                 sandbox = Sandbox(template=config.template or "python-3.11-data-science")
@@ -63,8 +64,8 @@ class E2BSandboxAdapter:
             except Exception as e:
                 raise SandboxExecutionError(f"E2B MicroVM execution failed: {str(e)}")
 
-        # Path B: Local Docker sandbox / Hermetic test mock (when CI_TEST_MODE=1)
-        if os.getenv("CI_TEST_MODE") == "1":
+        # Path B: Local Docker sandbox / Hermetic test mock (when CI_TEST_MODE=1 and NOT in production)
+        if os.getenv("CI_TEST_MODE") == "1" and not is_production():
             return {
                 "exit_code": 0,
                 "stdout": f"[E2B Simulated MicroVM ({config.template})]: executed `{command}` successfully",
