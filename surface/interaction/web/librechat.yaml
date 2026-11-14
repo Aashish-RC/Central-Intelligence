@@ -1,0 +1,16 @@
+version: 1.2.1
+cache: true
+endpoints:
+  custom:
+    - name: "Central Intelligence"
+      apiKey: "${REASONING_GATEWAY_API_KEY}"
+      baseURL: "http://reasoning:8787"
+      models:
+        default: ["gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"]
+        fetch: true
+      titleConvo: true
+      titleModel: "gpt-4o-mini"
+      summarize: false
+      speechToText: false
+      addParams:
+        stream: false
