@@ -86,8 +86,9 @@ central-intelligence/
 ## Setup
 
 ```bash
-# 1. Configure required secrets and environment variables
+# 1. Create and configure the required local environment file
 cp .env.example .env
+# Replace every `replace-with-...` value in .env with a suitable secret.
 
 # 2. Install SHA256-verified Python dependencies
 pip install --require-hashes -r requirements.lock
@@ -95,6 +96,10 @@ pip install --require-hashes -r requirements.lock
 # 3. Install Node/TypeScript workspace dependencies
 pnpm install --frozen-lockfile
 ```
+
+For optional Python extras, install with `pip install -e '.[observability,perception]'`.
+The PaddleOCR engine dependencies are only available on Python versions below 3.14;
+the perception extra still installs `faster-whisper` on Python 3.14 and newer.
 
 ### Default Graph & Infrastructure Stack
 

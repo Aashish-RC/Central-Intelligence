@@ -27,7 +27,8 @@ cd central-intelligence
 cp .env.example .env
 ```
 
-Ensure critical variables in `.env` are configured:
+Replace the `replace-with-...` placeholders in `.env` with suitable local secrets
+before starting Compose. The required variables are:
 ```env
 # Runtime Environment
 ENV=production
@@ -39,6 +40,13 @@ KEYCLOAK_ADMIN=admin
 KEYCLOAK_ADMIN_PASSWORD=change_this_in_production
 KEYCLOAK_BASE_URL=http://keycloak:8080
 
+# Required Compose secrets
+INFISICAL_ENCRYPTION_KEY=replace_with_32_byte_key
+LIVEKIT_KEYS=replace_with_livekit_key: replace_with_livekit_secret
+NANGO_SECRET_KEY=replace_with_strong_random_secret
+SVIX_JWT_SECRET=replace_with_signing_secret
+POSTHOG_SECRET=replace_with_posthog_secret
+
 # OpenFGA Authorization
 OPENFGA_HTTP_ADDR=openfga:8081
 OPENFGA_STORE_ID=01HQ28Z...
@@ -47,13 +55,13 @@ OPENFGA_STORE_ID=01HQ28Z...
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=secure_postgres_pass
 SUPABASE_URL=http://supabase-db:5432
-DRAGONFLY_URL=redis://dragonfly:6379
+DRAGONFLY_URL=redis://valkey:6379
 
 # Vector Databases
 QDRANT_HOST=qdrant
 QDRANT_PORT=6333
 MEILISEARCH_URL=http://meilisearch:7700
-MEILI_MASTER_KEY=secure_meilisearch_key
+MEILISEARCH_MASTER_KEY=secure_meilisearch_key
 
 # Billing (AGPL Quarantined)
 OPENMETER_URL=http://openmeter:8888
@@ -65,6 +73,8 @@ SIGNOZ_OTLP_ENDPOINT=http://signoz:4317
 POSTHOG_URL=http://posthog:8090
 UPTIME_KUMA_URL=http://uptime-kuma:3001
 ```
+
+Do not commit `.env` or use these local credentials in production.
 
 ### 2.2 Step 2: Launch Stack
 Start the core OSS services in detached mode:
