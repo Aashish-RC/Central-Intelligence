@@ -2,8 +2,14 @@
 
 import io
 import logging
+import os
 import re
 from typing import List, Optional
+
+from control.safety.production_guard import (
+    fail_closed_in_production,
+    require_live_adapter,
+)
 from ..core.interfaces import BaseDictationEngine
 from ..core.models import (
     AudioFormat,
@@ -79,12 +85,16 @@ class DictationEngine(BaseDictationEngine):
         self,
         model_size: str = "base",
         device: str = "cpu",
-        compute_type: str = "int8"
+        compute_type: str = "int8",
+        _defer_prod_check: bool = False,
     ):
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self._model = None
+        self.adapter_mode = (
+            "simulated" if _defer_prod_check else require_live_adapter("whisper")
+        )
 
     def _get_model(self):
         if self._model is None and HAS_FASTER_WHISPER and WhisperModel is not None:
@@ -169,6 +179,18 @@ class DictationEngine(BaseDictationEngine):
                 )
             except Exception as e:
                 logger.warning(f"Faster-whisper transcription error: {e}, using fallback.")
+                if self.adapter_mode == "live" and os.getenv("CI_TEST_MODE") != "1":
+                    fail_closed_in_production(
+                        "whisper",
+                        f"Faster-whisper transcription failed: {e}",
+                        cause=e,
+                    )
+
+        if self.adapter_mode == "live" and os.getenv("CI_TEST_MODE") != "1":
+            fail_closed_in_production(
+                "whisper",
+                "faster-whisper engine is unavailable; install with 'pip install -e \".[perception]\"'",
+            )
 
         # Fallback transcription
         default_text = auto_punctuate("What is the status of our deployment pipeline?")

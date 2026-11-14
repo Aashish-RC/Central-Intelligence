@@ -44,6 +44,11 @@ observability = [
     "opentelemetry-sdk>=1.24.0",
     "opentelemetry-exporter-otlp-proto-http>=1.24.0",
 ]
+perception = [
+    "paddleocr>=2.7.0",
+    "paddlepaddle>=2.6.0",
+    "faster-whisper>=1.0.0",
+]
 graph-non-osi = [
     "gqlalchemy>=1.10.0",
     "falkordb>=1.8.0",
