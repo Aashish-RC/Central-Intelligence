@@ -12,6 +12,7 @@ Features:
 from __future__ import annotations
 
 import logging
+import os
 import secrets
 import time
 from dataclasses import dataclass, field
@@ -74,7 +75,7 @@ class InfisicalAdapter:
         client_secret: Optional[str] = None,
         _defer_prod_check: bool = False,
     ):
-        self.server_url = server_url
+        self.server_url = server_url.rstrip("/")
         self.project_id = project_id
         self.client_id = client_id
         self.client_secret = client_secret
@@ -82,26 +83,77 @@ class InfisicalAdapter:
             "simulated" if _defer_prod_check else require_live_adapter("infisical")
         )
 
+        self._client: Optional[Any] = None
+        self._access_token: Optional[str] = None
+        self._token_expires_at: Optional[float] = None
+
         # Internal encrypted vault store for standalone / hermetic runtime execution
         self._vault: Dict[Tuple[str, Optional[str], str], ScopedSecret] = {}  # (tenant_id, app_id, key) -> secret
         self._audit_log: List[SecretAuditEntry] = []
 
         if not _defer_prod_check and self.adapter_mode == "live":
             self._ensure_live_backend()
+            if self.client_id or self.client_secret:
+                self._ensure_token()
+
+    def _http_client(self):
+        """Return a cached httpx.Client bound to self.server_url with 5-second timeout."""
+        if self._client is None or self._client.is_closed:
+            import httpx
+            self._client = httpx.Client(
+                base_url=self.server_url,
+                timeout=5.0,
+            )
+        return self._client
+
+    def _ensure_token(self) -> None:
+        """Acquire or refresh universal auth access token in live mode."""
+        if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
+            return
+        if not self.client_id or not self.client_secret:
+            fail_closed_in_production(
+                "infisical",
+                "Infisical universal-auth requires client_id and client_secret in live mode",
+            )
+        if self._access_token and self._token_expires_at and time.time() < self._token_expires_at:
+            return
+        try:
+            resp = self._http_client().post(
+                "/api/v1/auth/universal-auth/login",
+                data={"clientId": self.client_id, "clientSecret": self.client_secret},
+                timeout=5.0,
+            )
+            if resp.status_code != 200:
+                resp = self._http_client().post(
+                    "/api/v1/auth/universal-auth/login",
+                    json={"clientId": self.client_id, "clientSecret": self.client_secret},
+                    timeout=5.0,
+                )
+            if resp.status_code != 200:
+                fail_closed_in_production(
+                    "infisical",
+                    f"Infisical universal-auth login returned HTTP {resp.status_code}: {resp.text}",
+                )
+            data = resp.json()
+            self._access_token = data.get("accessToken")
+            expires_in = data.get("expiresIn", 3600)
+            self._token_expires_at = time.time() + float(expires_in) - 30
+        except ProductionSafetyError:
+            raise
+        except Exception as exc:
+            fail_closed_in_production("infisical", f"Infisical auth failed: {exc}", cause=exc)
 
     def _ensure_live_backend(self) -> None:
         """Verify live Infisical connection in live mode."""
         if self.adapter_mode != "live":
             return
         try:
-            import httpx
-            with httpx.Client(timeout=2.0) as client:
-                resp = client.get(f"{self.server_url}/api/v1/status")
-                if resp.status_code not in (200, 204):
-                    fail_closed_in_production(
-                        "infisical",
-                        f"Infisical server returned HTTP {resp.status_code}",
-                    )
+            resp = self._http_client().get("/api/v1/status", timeout=2.0)
+            if resp.status_code not in (200, 204):
+                fail_closed_in_production(
+                    "infisical",
+                    f"Infisical server returned HTTP {resp.status_code}",
+                )
         except ProductionSafetyError:
             raise
         except Exception as exc:
@@ -163,6 +215,45 @@ class InfisicalAdapter:
         )
         self._vault[s_key] = secret
         self._record_audit(actor_id, "STORE", key, tenant_id, app_id, version=1)
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            self._ensure_token()
+            # Infisical scopes secrets by project + environment (default 'dev') + secretName
+            payload = {
+                "secretName": key,
+                "secretValue": value,
+                "projectSlug": self.project_id,
+                "environment": app_id or "dev",
+                "type": "shared",
+                "metadata": metadata or {},
+            }
+            try:
+                headers = {"Authorization": f"Bearer {self._access_token}"}
+                resp = self._http_client().post(
+                    f"/api/v1/secrets/{key}",
+                    json=payload,
+                    headers=headers,
+                    timeout=5.0,
+                )
+                if resp.status_code in (400, 409):
+                    patch_resp = self._http_client().patch(
+                        f"/api/v1/secrets/{key}",
+                        json=payload,
+                        headers=headers,
+                        timeout=5.0,
+                    )
+                    if patch_resp.status_code in (200, 201):
+                        resp = patch_resp
+                if resp.status_code not in (200, 201):
+                    fail_closed_in_production(
+                        "infisical",
+                        f"Infisical store returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("infisical", f"Infisical store failed: {exc}", cause=exc)
+
         return secret
 
     def get_secret(
@@ -176,6 +267,57 @@ class InfisicalAdapter:
         """Retrieves current or specific version of secret and records audit event."""
         self._ensure_live_backend()
         s_key = self._scope_key(key, tenant_id, app_id)
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            self._ensure_token()
+            try:
+                params: Dict[str, Any] = {
+                    "environment": app_id or "dev",
+                    "projectSlug": self.project_id,
+                }
+                if version is not None:
+                    params["version"] = str(version)
+
+                headers = {"Authorization": f"Bearer {self._access_token}"}
+                resp = self._http_client().get(
+                    f"/api/v1/secrets/{key}",
+                    params=params,
+                    headers=headers,
+                    timeout=5.0,
+                )
+                if resp.status_code == 404:
+                    raise KeyError(f"Secret '{key}' not found in tenant '{tenant_id}' (app: '{app_id}')")
+                if resp.status_code != 200:
+                    fail_closed_in_production(
+                        "infisical",
+                        f"Infisical get returned HTTP {resp.status_code}: {resp.text}",
+                    )
+                data = resp.json()
+                sec_obj = data.get("secret", data)
+                retrieved_val = sec_obj.get("secretValue", "")
+                target_ver = int(sec_obj.get("version", version or 1))
+
+                if s_key not in self._vault:
+                    now_iso = datetime.now(timezone.utc).isoformat()
+                    self._vault[s_key] = ScopedSecret(
+                        key=key,
+                        current_value=retrieved_val,
+                        current_version=target_ver,
+                        tenant_id=tenant_id,
+                        app_id=app_id,
+                        versions=[SecretVersion(version=target_ver, value=retrieved_val, created_at=now_iso)],
+                        created_at=now_iso,
+                        updated_at=now_iso,
+                    )
+                self._record_audit(actor_id, "READ", key, tenant_id, app_id, version=target_ver)
+                return retrieved_val
+            except KeyError:
+                raise
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("infisical", f"Infisical get secret failed: {exc}", cause=exc)
+
         secret = self._vault.get(s_key)
         if not secret:
             raise KeyError(f"Secret '{key}' not found in tenant '{tenant_id}' (app: '{app_id}')")
@@ -227,6 +369,41 @@ class InfisicalAdapter:
         secret.updated_at = now_iso
 
         self._record_audit(actor_id, "ROTATE", key, tenant_id, app_id, version=new_v_num)
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            self._ensure_token()
+            payload = {
+                "secretName": key,
+                "secretValue": new_value,
+                "projectSlug": self.project_id,
+                "environment": app_id or "dev",
+                "type": "shared",
+            }
+            try:
+                headers = {"Authorization": f"Bearer {self._access_token}"}
+                resp = self._http_client().patch(
+                    f"/api/v1/secrets/{key}",
+                    json=payload,
+                    headers=headers,
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 201):
+                    resp = self._http_client().post(
+                        f"/api/v1/secrets/{key}",
+                        json=payload,
+                        headers=headers,
+                        timeout=5.0,
+                    )
+                if resp.status_code not in (200, 201):
+                    fail_closed_in_production(
+                        "infisical",
+                        f"Infisical rotate returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("infisical", f"Infisical rotate failed: {exc}", cause=exc)
+
         return secret
 
     def inject_secrets(
