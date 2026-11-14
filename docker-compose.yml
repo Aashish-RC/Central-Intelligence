@@ -409,7 +409,7 @@ services:
 
   # OpenMeter Real-Time Metering & Token Ingestion for L13 Billing (Apache-2.0)
   openmeter:
-    image: openmeter/openmeter:v1.0.0
+    image: ghcr.io/openmeterio/openmeter:main
     container_name: central-openmeter
     restart: unless-stopped
     ports:
