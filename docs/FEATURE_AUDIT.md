@@ -8,6 +8,7 @@
 
 | Symbol | Status | Definition |
 |---|---|---|
+| 🟢 | **VERIFIED-LIVE** | Real infrastructure adapter wiring verified with live HTTP/OTLP calls against containerized services and proven cross-restart state persistence. |
 | ✅ | **Built** | Concrete implementation verified on disk with domain logic and unit/integration coverage; external-service adapters include Task 2 `live`/`simulated` mode labeling and production guards where applicable. |
 | ⚠️ | **Partial or Stub** | Interface, heuristic, synthetic generator, subset implementation, or offline-fallback adapter exists, but lacks full capability depth or requires an external provider/hardware backend not implemented in-repo. |
 | ❌ | **Missing** | No dedicated implementation found across L1–L8 (or sibling layers) in `d:\central-intelligence`. |
@@ -120,7 +121,7 @@
 | 2.27 | User preferences | ✅ Built | `cognitive/memory/core/models.py`, `cognitive/memory/engine.py` | `FactCategory` user preference facts |
 | 2.28 | User history of work and decisions | ✅ Built | `cognitive/memory/engine.py`, `cognitive/memory/tiers/facts/sqlite_adapter.py` | Persistent user history & decisions in Tier 2 |
 | 2.29 | User expertise level | ⚠️ Partial | `cognitive/memory/core/models.py`, `cognitive/memory/stitches/extractor.py` | Can be stored as user fact; no dedicated expertise classifier |
-| 2.30 | User context: role, organization, permissions | ✅ Built | `cognitive/memory/access_control/openfga_bridge.py`, `cognitive/memory/core/models.py` | Org/user scoping + OpenFGA permission checks (DEF-01) |
+| 2.30 | User context: role, organization, permissions | 🟢 VERIFIED-LIVE | `cognitive/memory/access_control/openfga_bridge.py`, `cognitive/memory/core/models.py` | Org/user scoping + live OpenFGA ReBAC check & write (DEF-01, Task 2.1) |
 | 2.31 | User feedback memory | ✅ Built | `cognitive/memory/lessons/extractor.py`, `cognitive/memory/lessons/store.py` | Stores corrections & feedback as `LessonRecord` |
 | 2.32 | User relationship memory | ✅ Built | `cognitive/memory/tiers/graph/age_adapter.py`, `cognitive/memory/engine.py` | Graph relationships & people facts |
 | 2.33 | User goal tracking | ✅ Built | `cognitive/memory/core/models.py`, `cognitive/reasoning/src/goals/goalStore.ts` | Goal facts in L2 + dedicated persistent `GoalStore` |
@@ -128,7 +129,7 @@
 | 2.35 | Separate memory partitions for user, organization, app, agent and session | ✅ Built | `cognitive/memory/core/models.py`, `cognitive/action/sandboxes/memory_partition.py`, `surface/federation/memory/cross_app_sharing.py` | Explicit tenant/user/app/agent/session partition IDs & isolation |
 | 2.36 | App state and in-app context memory | ✅ Built | `cognitive/action/sandboxes/memory_partition.py`, `surface/federation/memory/cross_app_sharing.py` | App-scoped partitions & cross-app sharing bridge |
 | 2.37 | Organization memory: SOPs, brand voice, policies | ✅ Built | `cognitive/memory/engine.py`, `cognitive/learning/adaptation/scope_applier.py` | Org-scoped facts and adaptation scope (`ORG`) |
-| 2.38 | Memory access control: who can see which memory | ✅ Built | `cognitive/memory/access_control/openfga_bridge.py` | OpenFGA bridge (`check_memory_access`, `AccessDeniedError`) — DEF-01 unblocked |
+| 2.38 | Memory access control: who can see which memory | 🟢 VERIFIED-LIVE | `cognitive/memory/access_control/openfga_bridge.py` | Live OpenFGA REST bridge (`check_memory_access`, `AccessDeniedError`) — DEF-01 unblocked (Task 2.1) |
 | 2.39 | Background synthesis: working to episodic | ✅ Built | `cognitive/memory/stitches/consolidation.py` | `ConsolidationEngine.consolidate_session` |
 | 2.40 | Pattern extraction: episodic to semantic | ✅ Built | `cognitive/memory/stitches/extractor.py`, `cognitive/memory/stitches/consolidation.py` | Extracts semantic `FactItem`s & graph triples from turns |
 | 2.41 | Workflow induction from repeated patterns | ✅ Built | `cognitive/learning/demonstration/capability_expander.py`, `cognitive/memory/stitches/consolidation.py` | Repeated pattern induction wired between L2 & L7 |
@@ -173,7 +174,7 @@
 | 3.20 | Structured reference data (standards, code sets) | ⚠️ Partial | `cognitive/knowledge/notes/store.py` | Stores markdown/JSON notes; no dedicated schema-validated reference taxonomy table |
 | 3.21 | Keyword index | ✅ Built | `cognitive/knowledge/search/engines/local_hybrid.py`, `cognitive/knowledge/rag_api/app/services/hybrid_search.py`, `cognitive/knowledge/search/core/index.py` | SQLite FTS5 + `BM25Okapi` + Meilisearch client |
 | 3.22 | Original-document store | ✅ Built | `cognitive/knowledge/notes/store.py`, `cognitive/knowledge/rag_api/app/routes/document_routes.py` | Retains source text & file references |
-| 3.23 | Provenance and permission metadata | ✅ Built | `cognitive/knowledge/access_control/openfga_bridge.py`, `cognitive/knowledge/provenance/models.py`, `cognitive/knowledge/rag_api/app/scope.py` | `ScopeFilter` + license provenance + OpenFGA tuples |
+| 3.23 | Provenance and permission metadata | 🟢 VERIFIED-LIVE | `cognitive/knowledge/access_control/openfga_bridge.py`, `cognitive/knowledge/provenance/models.py`, `cognitive/knowledge/rag_api/app/scope.py` | `ScopeFilter` + license provenance + live OpenFGA tuples (Task 2.1) |
 | 3.24 | Point-in-time snapshots ("what did the brain know on date T") | ✅ Built | `cognitive/knowledge/snapshots/manager.py`, `cognitive/knowledge/snapshots/models.py` | `KnowledgeSnapshotManager` & `SnapshotDiffResult` |
 | 3.25 | Per-domain corpus isolation | ✅ Built | `cognitive/knowledge/notes/store.py`, `cognitive/knowledge/rag_api/app/scope.py`, `cognitive/knowledge/rag_api/app/services/vector_store/factory.py` | Project isolation, `ScopeFilter`, and schema-path separation |
 | 3.26 | Semantic search | ✅ Built | `cognitive/knowledge/rag/retriever.ts`, `cognitive/knowledge/search/engines/local_hybrid.py` | Cosine-similarity vector retrieval |
@@ -186,13 +187,13 @@
 | 3.33 | Citation generation | ✅ Built | `cognitive/knowledge/notebooks/engine.py`, `cognitive/knowledge/web_search/verifier/claim_checker.py`, `cognitive/output/citations/formatter.py` | `CitationAnchor`, `WebCitation`, and multi-style formatter |
 | 3.34 | Live web augmentation | ✅ Built | `cognitive/knowledge/web_search/core/provider.py`, `cognitive/knowledge/web_search/providers/duckduckgo.py` | Firecrawl, Crawl4AI, and DuckDuckGo providers (Task 2 `live`/`simulated` guarded) |
 | 3.35 | Abstain when evidence is insufficient *(new)* | ✅ Built | `cognitive/knowledge/abstention/engine.py`, `cognitive/knowledge/abstention/evaluator.py`, `cognitive/knowledge/abstention/models.py` | `AbstentionEngine` + `GroundingEvidenceEvaluator` + `AbstentionVerdict` |
-| 3.36 | Permission-filtered retrieval across private and shared corpora *(new)* | ✅ Built | `cognitive/knowledge/access_control/openfga_bridge.py`, `cognitive/knowledge/search/core/index.py`, `cognitive/knowledge/search/engines/local_hybrid.py` | `filter_results_by_permission` enforced at search time (DEF-02 unblocked) |
+| 3.36 | Permission-filtered retrieval across private and shared corpora *(new)* | 🟢 VERIFIED-LIVE | `cognitive/knowledge/access_control/openfga_bridge.py`, `cognitive/knowledge/search/core/index.py`, `cognitive/knowledge/search/engines/local_hybrid.py` | `filter_results_by_permission` enforced at search time with live OpenFGA (DEF-02 unblocked, Task 2.1) |
 | 3.37 | Scheduled source refresh | ❌ Missing | — | No cron/periodic refresh job inside `cognitive/knowledge/` |
 | 3.38 | Change detection, re-ingest only what changed | ✅ Built | `cognitive/knowledge/ingest/version_tracker.py`, `cognitive/knowledge/search/core/ingestion.py` | Block-level SHA-256 diff detection & selective re-ingestion |
 | 3.39 | Auto-discovery of new relevant sources | ❌ Missing | — | No autonomous source-discovery crawler |
 | 3.40 | Freshness tracking and stale-knowledge flags | ✅ Built | `cognitive/knowledge/quality/scorer.py` | `FreshnessTracker` TTL sweep flags stale knowledge sources |
 | 3.41 | Corpus scopes per domain or profession | ✅ Built | `cognitive/knowledge/notes/store.py`, `cognitive/knowledge/rag_api/app/scope.py` | Scoped corpora and tenant/project namespaces |
-| 3.42 | Knowledge permissions | ✅ Built | `cognitive/knowledge/access_control/openfga_bridge.py` | Fine-grained OpenFGA read/write checks |
+| 3.42 | Knowledge permissions | 🟢 VERIFIED-LIVE | `cognitive/knowledge/access_control/openfga_bridge.py` | Fine-grained OpenFGA live read/write checks (Task 2.1) |
 | 3.43 | Source quality and authority scoring | ✅ Built | `cognitive/knowledge/quality/scorer.py`, `cognitive/knowledge/quality/models.py` | `SourceQualityAuthorityScorer` (heuristics + LLM-as-Judge) |
 | 3.44 | Presenting options when sources disagree | ✅ Built | `cognitive/knowledge/notebooks/engine.py`, `cognitive/reasoning/src/synthesis/claimDecomposer.ts` | Contradiction/disagreement surfaced across claims & sources |
 | 3.45 | Licence-aware retrieval: filter or flag results based on usage rights *(new)* | ✅ Built | `cognitive/knowledge/provenance/tagger.py`, `cognitive/knowledge/provenance/models.py` | `LicenseProvenanceTagger` + `LicenseCategory` filtering |
@@ -436,3 +437,16 @@
 | 8.48 | Budget alerts and graceful degradation *(new)* | ✅ Built | `control/orchestration/engine/governance/budgetTracker.ts`, `engine/fleet/paperclipAdapter.ts` | `BudgetAlert`, threshold warnings, and model downgrade (`tests/budgetAlerts.test.ts`) |
 | 8.49 | Shared workspace for parallel agents with locking & conflict checks *(new)* | ✅ Built | `control/orchestration/engine/sharedState/workspace.ts`, `cognitive/action/shared_state/lock_manager.py`, `scratchpad.py` | `SharedWorkspace` + `DistributedLockManager` (`tests/workspace.test.ts`) |
 | 8.50 | Collaboration controls: steer/redirect, autonomy level, human handover *(new)* | ✅ Built | `control/orchestration/engine/escalation/humanProtocol.ts`, `engine/fleet/collaborationBridge.ts`, `cognitive/reasoning/src/collaboration/controls.ts` | Tested in `tests/humanProtocol.test.ts` & `tests/collaborationBridge.test.ts` |
+
+---
+
+## Milestone 2: Live Infrastructure & Adapter Wiring (L12, L13, L14)
+
+| Feature / Adapter | Description | Status | Implementation File(s) | Live Test Suite | Notes |
+|---|---|---|---|---|---|
+| OpenFGA ReBAC Adapter (L12) | Google Zanzibar authorization (write, delete, check, list-objects) | 🟢 VERIFIED-LIVE | `control/identity/openfga_adapter.py` | `control/identity/tests/test_openfga_live.py`, `tests/integration/test_compose_stack_e2e.py` | Live HTTP REST calls to `:8081`, fail-closed, persists across restarts (F-INT-01) |
+| Infisical KMS Vault (L12) | Universal auth token acquisition, secret store, get, rotation | 🟢 VERIFIED-LIVE | `control/identity/secrets/infisical_adapter.py` | `control/identity/secrets/tests/test_infisical_live.py`, `tests/integration/test_compose_stack_e2e.py` | Authenticated REST calls to `:8083`, fail-closed, persists across restarts (F-INT-02) |
+| OpenMeter Adapter (L13) | Real-time token consumption metering & aggregation query | 🟢 VERIFIED-LIVE | `control/billing/metering/openmeter_adapter.py` | `control/billing/metering/tests/test_openmeter_live.py`, `tests/integration/test_compose_stack_e2e.py` | Ingests CloudEvents & queries `/api/v1/meters/{id}/query` on `:8888` (F-INT-04) |
+| Lago Billing Adapter (L13) | AGPL-quarantined customer subscriptions, entitlements, invoices | 🟢 VERIFIED-LIVE | `control/billing/engine/lago_adapter.py` | `control/billing/engine/tests/test_lago_live.py`, `tests/integration/test_compose_stack_e2e.py` | REST API on `:3000`, customer & sub persistence across restarts (F-INT-03) |
+| SigNoz OTLP Adapter (L14) | Distributed tracing across layers exported to OTLP collector | 🟢 VERIFIED-LIVE | `control/observability/signoz/signoz_adapter.py` | `control/observability/signoz/tests/test_signoz_live.py`, `tests/integration/test_compose_stack_e2e.py` | OpenTelemetry SDK traces exported to `:4318`, queryable at `:8080` (F-INT-05) |
+
