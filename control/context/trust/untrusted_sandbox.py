@@ -1,4 +1,19 @@
-"""Untrusted Content Sandbox (Layer 9: Context Engineering, Feature 9.12)."""
+"""
+Untrusted Content Sandbox — Dual-Boundary Injection Defense (Layer 9).
+
+Wraps untrusted content in XML boundary tags so the LLM parser treats it as data,
+not instructions. Canonical tag form:
+
+    <untrusted_content source="retrieval" trust="low" flagged="true" threats="prompt_injection">
+      {escaped content with </untrusted_content> replaced by &lt;/untrusted_content&gt;}
+    </untrusted_content>
+
+Attributes:
+  - source: origin of the content (retrieval, tool_output, user_input)
+  - trust: trust level (low, medium, high)
+  - flagged: True if the injection detector flagged the content
+  - threats: comma-separated list of detected threat signatures
+"""
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -26,3 +41,10 @@ class UntrustedBlock:
             f"{safe_content.strip()}\n"
             "</untrusted_content>"
         )
+
+    def __str__(self) -> str:
+        return self.render()
+
+
+# Alias for canonical usage
+UntrustedSandbox = UntrustedBlock

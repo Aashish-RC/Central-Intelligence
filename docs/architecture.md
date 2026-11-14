@@ -89,7 +89,7 @@ flowchart TD
 - **Agent Blueprints:** Pre-compiled declarative manifests for specialised personas (Coder, Researcher, Auditor).
 
 ### 2.6 Layer 9–10: Context Engineering & Safety Guardrails
-- **Dual Boundary Assembler:** Encapsulates untrusted user instructions and external retrieved content within cryptographic `<untrusted_user_input>` XML tags, neutralizing jailbreaks and prompt injection.
+- **Dual Boundary Assembler:** Encapsulates untrusted user instructions and external retrieved content within cryptographic `<untrusted_content source="..." trust="...">` XML tags, neutralizing jailbreaks and prompt injection.
 - **NeMo Guardrails:** Policy enforcement evaluating input/output tokens against safety rubrics.
 - **4-Tier PII Scrubber:** Regex, Named Entity Recognition, and tokenized masking of sensitive identifiers.
 - **Unified Merkle Audit Ledger:** Cryptographic append-only ledger computing SHA-256 Merkle root hashes for every critical action.
