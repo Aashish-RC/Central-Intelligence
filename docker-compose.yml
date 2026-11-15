@@ -232,8 +232,8 @@ services:
     restart: unless-stopped
     command: run
     ports:
-      - "8081:8081"
-      - "8082:8082"
+      - "8081:8080"
+      - "8082:8081"
     environment:
       - OPENFGA_DATA_STORE_ENGINE=memory
     volumes:
