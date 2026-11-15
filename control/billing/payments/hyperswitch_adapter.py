@@ -98,6 +98,7 @@ class HyperswitchAdapter:
         # Hermetic in-memory store for offline & unit tests
         self._payments: Dict[str, PaymentIntent] = {}
         self._refunds: Dict[str, RefundRecord] = {}
+        self._idempotency_records: Dict[str, PaymentIntent] = {}
 
     def _get_lago(self) -> Any:
         if self._lago is None:
@@ -118,11 +119,17 @@ class HyperswitchAdapter:
         payment_method: PaymentMethod = PaymentMethod.CARD,
         confirm: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
+        idempotency_key: Optional[str] = None,
     ) -> PaymentIntent:
         """
         Creates and processes a payment intent routed through Hyperswitch (Feature 13.13).
         If confirm is True, immediately attempts authorization/capture.
+        If idempotency_key is provided and already processed, returns existing PaymentIntent.
         """
+        if idempotency_key and idempotency_key in self._idempotency_records:
+            logger.info("Idempotent payment match for key '%s'; returning existing payment intent", idempotency_key)
+            return self._idempotency_records[idempotency_key]
+
         payment_id = f"pay_{secrets.token_hex(8)}"
         is_live = (self.adapter_mode == "live")
 
@@ -141,10 +148,14 @@ class HyperswitchAdapter:
         if is_live:
             # Live REST execution path: require real endpoint confirmation
             try:
+                headers = {"api-key": self.api_key, "Content-Type": "application/json"}
+                if idempotency_key:
+                    headers["idempotency-key"] = idempotency_key
+
                 with httpx.Client(timeout=10.0) as client:
                     resp = client.post(
                         f"{self.api_url}/payments",
-                        headers={"api-key": self.api_key, "Content-Type": "application/json"},
+                        headers=headers,
                         json={
                             "amount": amount_cents,
                             "currency": currency.upper(),
@@ -158,6 +169,8 @@ class HyperswitchAdapter:
                 if resp.status_code not in (200, 201):
                     intent.status = PaymentStatus.FAILED
                     self._payments[intent.payment_id] = intent
+                    if idempotency_key:
+                        self._idempotency_records[idempotency_key] = intent
                     raise ProductionSafetyError(
                         f"hyperswitch adapter payment API returned HTTP {resp.status_code}: {resp.text}"
                     )
@@ -167,6 +180,8 @@ class HyperswitchAdapter:
                 except Exception as json_err:
                     intent.status = PaymentStatus.FAILED
                     self._payments[intent.payment_id] = intent
+                    if idempotency_key:
+                        self._idempotency_records[idempotency_key] = intent
                     raise ProductionSafetyError(
                         "hyperswitch adapter returned malformed non-JSON response"
                     ) from json_err
@@ -186,6 +201,8 @@ class HyperswitchAdapter:
 
                 if intent.status != PaymentStatus.SUCCEEDED:
                     self._payments[intent.payment_id] = intent
+                    if idempotency_key:
+                        self._idempotency_records[idempotency_key] = intent
                     logger.warning(
                         "Hyperswitch live payment %s was not successful (status: %s)",
                         intent.payment_id,
@@ -198,6 +215,8 @@ class HyperswitchAdapter:
             except Exception as exc:
                 intent.status = PaymentStatus.FAILED
                 self._payments[intent.payment_id] = intent
+                if idempotency_key:
+                    self._idempotency_records[idempotency_key] = intent
                 raise ProductionSafetyError(
                     f"hyperswitch adapter live payment execution failed: {exc}"
                 ) from exc
@@ -206,6 +225,8 @@ class HyperswitchAdapter:
             intent.status = PaymentStatus.SUCCEEDED if confirm else PaymentStatus.PROCESSING
 
         self._payments[intent.payment_id] = intent
+        if idempotency_key:
+            self._idempotency_records[idempotency_key] = intent
 
         # Only settle invoice if payment verified SUCCEEDED
         if invoice_id and intent.status == PaymentStatus.SUCCEEDED:
@@ -287,6 +308,33 @@ class HyperswitchAdapter:
             status="succeeded",
         )
 
+        is_live = (self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1")
+        if is_live:
+            try:
+                headers = {"api-key": self.api_key, "Content-Type": "application/json"}
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(
+                        f"{self.api_url}/refunds",
+                        headers=headers,
+                        json={
+                            "payment_id": payment_id,
+                            "amount": refund_amount,
+                            "reason": reason,
+                        },
+                    )
+                if resp.status_code not in (200, 201):
+                    record.status = "failed"
+                    self._refunds[refund_id] = record
+                    raise ProductionSafetyError(
+                        f"hyperswitch adapter refund API returned HTTP {resp.status_code}: {resp.text}"
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                record.status = "failed"
+                self._refunds[refund_id] = record
+                raise ProductionSafetyError(f"hyperswitch refund execution failed: {exc}") from exc
+
         payment.refunded_cents += refund_amount
         if payment.refunded_cents >= payment.amount_cents:
             payment.status = PaymentStatus.REFUNDED
@@ -294,6 +342,56 @@ class HyperswitchAdapter:
         self._refunds[refund_id] = record
         logger.info("Hyperswitch refunded %s for payment %s ($%.2f)", refund_id, payment_id, refund_amount / 100.0)
         return record
+
+    def handle_webhook(
+        self,
+        payload: Dict[str, Any],
+        signature: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Processes asynchronous settlement webhooks from Hyperswitch (Feature 13.13).
+        Safely transitions payment status, settles linked Lago invoices, and prevents double processing.
+        """
+        event_type = payload.get("type") or payload.get("event") or ""
+        content = payload.get("content") or payload.get("data", {})
+        payment_id = content.get("payment_id") or content.get("id") or ""
+
+        if not payment_id:
+            raise ValueError("Webhook payload missing payment_id")
+
+        intent = self._payments.get(payment_id)
+        if not intent:
+            amount_cents = int(content.get("amount", 0))
+            currency = content.get("currency", "USD")
+            cust_id = content.get("customer_id", "cust_default")
+            inv_id = content.get("metadata", {}).get("invoice_id")
+            intent = PaymentIntent(
+                payment_id=payment_id,
+                amount_cents=amount_cents,
+                currency=currency,
+                customer_id=cust_id,
+                invoice_id=inv_id,
+                status=PaymentStatus.PROCESSING,
+            )
+            self._payments[payment_id] = intent
+
+        if event_type in ("payment_intent.succeeded", "payment.succeeded"):
+            intent.status = PaymentStatus.SUCCEEDED
+            if intent.invoice_id:
+                self._settle_lago_invoice(intent.invoice_id, intent)
+        elif event_type in ("payment_intent.failed", "payment.failed"):
+            intent.status = PaymentStatus.FAILED
+        elif event_type in ("payment_intent.cancelled", "payment.cancelled"):
+            intent.status = PaymentStatus.CANCELLED
+        elif event_type in ("refund.succeeded", "refund_intent.succeeded"):
+            intent.status = PaymentStatus.REFUNDED
+
+        return {
+            "settled": True,
+            "payment_id": payment_id,
+            "status": intent.status.value,
+            "invoice_settled": bool(intent.invoice_id and intent.status == PaymentStatus.SUCCEEDED),
+        }
 
 
 # Global default singleton

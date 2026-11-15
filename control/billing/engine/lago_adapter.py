@@ -298,6 +298,56 @@ class LagoAdapter:
                 charge_cents = int((overage / 1000) * 1)
                 sub.wallet_balance_cents = max(0, sub.wallet_balance_cents - charge_cents)
 
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            payload = {
+                "event": {
+                    "transaction_id": f"evt_{int(time.time()*1000)}_{str(uuid4())[:8]}",
+                    "external_customer_id": customer_id,
+                    "code": "token_consumption",
+                    "timestamp": int(time.time()),
+                    "properties": {"tokens": tokens},
+                }
+            }
+            try:
+                resp = self._http_client().post(
+                    "/api/v1/events",
+                    json=payload,
+                    headers=self._auth_headers(),
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 201, 202):
+                    fail_closed_in_production(
+                        "lago", f"Lago record usage HTTP {resp.status_code}: {resp.text}"
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("lago", f"Lago record usage failed: {exc}", cause=exc)
+
+        return sub
+
+    def cancel_subscription(self, customer_id: str) -> CustomerSubscription:
+        """Cancels an active customer subscription (13.14)."""
+        sub = self._subscriptions.get(customer_id)
+        if not sub:
+            raise ValueError(f"No active subscription found for customer '{customer_id}'.")
+        sub.status = "canceled"
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            try:
+                resp = self._http_client().post(
+                    f"/api/v1/subscriptions/{sub.subscription_id}",
+                    json={"status": "canceled"},
+                    headers=self._auth_headers(),
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 204, 404):
+                    fail_closed_in_production(
+                        "lago", f"Lago cancel subscription HTTP {resp.status_code}: {resp.text}"
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("lago", f"Lago cancel subscription failed: {exc}", cause=exc)
         return sub
 
     def add_credits(self, customer_id: str, amount_cents: int) -> int:

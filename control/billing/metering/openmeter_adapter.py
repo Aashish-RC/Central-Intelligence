@@ -106,9 +106,18 @@ class OpenMeterAdapter:
                     timeout=1.0,
                 )
                 remote_success = resp.status_code in (200, 201, 202)
+                if not remote_success and self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+                    fail_closed_in_production(
+                        "openmeter",
+                        f"OpenMeter event dispatch returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
             except Exception as e:
                 logger.debug("OpenMeter remote dispatch failed, retained in local buffer: %s", e)
                 remote_success = False
+                if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+                    fail_closed_in_production("openmeter", f"OpenMeter event dispatch failed: {e}", cause=e)
 
         return {
             "event_id": event.event_id,
