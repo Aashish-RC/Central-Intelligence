@@ -113,7 +113,7 @@ Central-Intelligence (Root)
 
 ```mermaid
 graph LR
-    subgraph OSS_Default["OSI-Approved Default Stack"]
+    subgraph OSS_Default["OSI-Licensed Compose Services (core/optional)"]
         QDR[qdrant:6333]
         MEI[meilisearch:7700]
         VAL[valkey:6379]
@@ -139,11 +139,14 @@ graph LR
         OTEL[otel-collector:4317]
     end
 
-    subgraph Non_OSI["Opt-In Non-OSI Stack (profiles: self-hosted-non-osi)"]
+    subgraph Non_OSI["Optional Non-OSI Services (profile: optional)"]
         FAL[falkordb:6379]
         MEMG[memgraph:7687]
         NAN[nango:3003]
         PHX[phoenix:6006]
+    end
+
+    subgraph Core_Non_OSI["Core Non-OSI Services (profile: core)"]
         DF[dragonfly:6379]
     end
 

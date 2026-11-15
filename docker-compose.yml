@@ -1,6 +1,7 @@
 services:
   # Vector Store for Memory Engine & Embeddings
   qdrant:
+    profiles: ["core"]
     image: qdrant/qdrant:v1.20.0
     container_name: central-qdrant
     restart: unless-stopped
@@ -20,6 +21,7 @@ services:
 
   # Local Model Serving for Offline / Dev Execution (MIT)
   ollama:
+    profiles: ["optional"]
     image: ollama/ollama:0.40.16
     container_name: central-ollama
     restart: unless-stopped
@@ -36,6 +38,7 @@ services:
 
   # Global Fast Search Engine (MIT)
   meilisearch:
+    profiles: ["optional"]
     image: getmeili/meilisearch:v1.7.3
     container_name: central-meilisearch
     restart: unless-stopped
@@ -54,8 +57,9 @@ services:
       retries: 20
       start_period: 10s
 
-  # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause, replaces Dragonfly)
+  # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause, optional Dragonfly alternative)
   valkey:
+    profiles: ["optional"]
     image: valkey/valkey:8.0.2-alpine
     container_name: central-valkey
     restart: unless-stopped
@@ -72,6 +76,7 @@ services:
 
   # Alternative Vector Store for Offline Mode (Apache-2.0)
   chroma:
+    profiles: ["optional"]
     image: chromadb/chroma:0.4.22
     container_name: central-chroma
     restart: unless-stopped
@@ -86,11 +91,11 @@ services:
       retries: 20
       start_period: 10s
 
-  # Graph Memory Tier (Tier 4) (BSL-1.1; self-hosted opt-in profile — OSI default uses supabase-db with Apache AGE)
+  # Graph Memory Tier (Tier 4) (BSL-1.1; optional profile — OSI default uses supabase-db with Apache AGE)
   memgraph:
     image: memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1
     container_name: central-memgraph
-    profiles: ["self-hosted-non-osi"]
+    profiles: ["optional"]
     restart: unless-stopped
     ports:
       - "7687:7687"
@@ -107,11 +112,11 @@ services:
       start_period: 10s
 
   # GraphRAG Engine for L3 Knowledge
-  # LICENSE NOTICE: SSPL-v1 (non-OSI; quarantined to opt-in profile — OSI default uses supabase-db Apache AGE)
+  # LICENSE NOTICE: SSPL-v1 (non-OSI; optional profile — OSI default uses supabase-db Apache AGE)
   falkordb:
     image: falkordb/falkordb:v4.22.3
     container_name: central-falkordb
-    profiles: ["self-hosted-non-osi"]
+    profiles: ["optional"]
     restart: unless-stopped
     ports:
       - "6380:6379"
@@ -125,11 +130,11 @@ services:
       start_period: 5s
 
   # Nango Federated OAuth Gateway for L5 Action
-  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only)
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; optional profile only)
   nango:
     image: nangohq/nango-server:hosted-0.72.4
     container_name: central-nango
-    profiles: ["self-hosted-non-osi"]
+    profiles: ["optional"]
     restart: unless-stopped
     ports:
       - "3003:3003"
@@ -147,6 +152,7 @@ services:
 
   # Temporal Server for L8 Durable Workflow Execution (MIT)
   temporal:
+    profiles: ["core"]
     image: temporalio/temporal:1.10.0
     container_name: central-temporal
     restart: unless-stopped
@@ -165,6 +171,7 @@ services:
 
   # OpenTelemetry Collector for L14 Observability (Apache-2.0, OSI default telemetry backend)
   otel-collector:
+    profiles: ["core"]
     image: otel/opentelemetry-collector:0.120.0
     container_name: central-otel-collector
     restart: unless-stopped
@@ -179,11 +186,11 @@ services:
       start_period: 10s
 
   # Arize Phoenix for L11 Evaluation, Hallucination Detection & Tracing
-  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; self-hosted opt-in profile only — OSI default uses otel-collector)
+  # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; optional profile only — OSI default uses otel-collector)
   phoenix:
     image: arizephoenix/phoenix:version-21.0.0
     container_name: central-phoenix
-    profiles: ["self-hosted-non-osi"]
+    profiles: ["optional"]
     restart: unless-stopped
     ports:
       - "6006:6006"
@@ -198,6 +205,7 @@ services:
 
   # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys) (Apache-2.0)
   keycloak:
+    profiles: ["core"]
     image: quay.io/keycloak/keycloak:26.8.2
     container_name: central-keycloak
     restart: unless-stopped
@@ -218,6 +226,7 @@ services:
 
   # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
   openfga:
+    profiles: ["core"]
     image: openfga/openfga:v1.22.1
     container_name: central-openfga
     restart: unless-stopped
@@ -238,6 +247,7 @@ services:
 
   # Infisical Vault for L12 Secret Management & Key Rotation (MIT)
   infisical:
+    profiles: ["core"]
     image: infisical/infisical:v0.167.8
     container_name: central-infisical
     restart: unless-stopped
@@ -256,6 +266,7 @@ services:
 
   # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13) (Apache-2.0)
   hyperswitch:
+    profiles: ["optional"]
     image: juspaydotin/hyperswitch-router:2026.11.13.1-standalone
     container_name: central-hyperswitch
     restart: unless-stopped
@@ -273,6 +284,7 @@ services:
 
   # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1) (Apache-2.0)
   livekit:
+    profiles: ["optional"]
     image: livekit/livekit-server:v1.13.11
     container_name: central-livekit
     restart: unless-stopped
@@ -291,6 +303,7 @@ services:
 
   # Supabase Postgres + pgvector + RLS for L15 Data (Task 15.1) (Apache-2.0 / PostgreSQL)
   supabase-db:
+    profiles: ["core"]
     image: supabase/postgres:15.1.1.78
     container_name: central-supabase-db
     restart: unless-stopped
@@ -310,6 +323,7 @@ services:
 
   # Apache AGE (PostgreSQL + OpenCypher) for L2/L3 Default Open Graph Store (Apache-2.0)
   apache-age:
+    profiles: ["core"]
     image: apache/age:release_PG16_1.6.0
     container_name: central-apache-age
     restart: unless-stopped
@@ -330,6 +344,7 @@ services:
 
   # Unified Project Management & Docs Workspace (Huly - Task 19.1) (EPL-2.0)
   huly:
+    profiles: ["optional"]
     image: hardcoreeng/front:v0.7.432
     container_name: central-huly
     restart: unless-stopped
@@ -348,6 +363,7 @@ services:
 
   # Kafka Event Streaming Broker for L15 Messaging Dev/AutoMQ-compatible bus (Apache-2.0)
   kafka:
+    profiles: ["core"]
     image: apache/kafka:3.9.0
     container_name: central-kafka
     restart: unless-stopped
@@ -373,6 +389,7 @@ services:
 
   # Svix Webhook Delivery Service for L15 Data & Event Webhooks (MIT)
   svix:
+    profiles: ["optional"]
     image: svix/svix-server:v1.105.0
     container_name: central-svix
     restart: unless-stopped
@@ -390,11 +407,11 @@ services:
       retries: 20
       start_period: 10s
 
-  # Dragonfly High-Throughput Redis-Compatible Cache (BSL-1.1; opt-in non-OSI profile; default uses valkey)
+  # Dragonfly High-Throughput Redis-Compatible Cache (BSL-1.1)
   dragonfly:
     image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.26.1
     container_name: central-dragonfly
-    profiles: ["self-hosted-non-osi"]
+    profiles: ["core"]
     restart: unless-stopped
     ports:
       - "6381:6379"
@@ -409,6 +426,7 @@ services:
 
   # OpenMeter Real-Time Metering & Token Ingestion for L13 Billing (Apache-2.0)
   openmeter:
+    profiles: ["core"]
     image: ghcr.io/openmeterio/openmeter:main
     container_name: central-openmeter
     restart: unless-stopped
@@ -431,18 +449,18 @@ services:
   lago:
     image: getlago/api:v1.16.0
     container_name: central-lago
-    profiles: ["agpl-quarantine", "self-hosted-non-osi"]
+    profiles: ["core"]
     restart: unless-stopped
     ports:
       - "3002:3000"
     environment:
-      - LAGO_REDIS_URL=redis://valkey:6379
+      - LAGO_REDIS_URL=redis://dragonfly:6379
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@supabase-db:5432/postgres
     networks:
       - default
       - agpl_quarantine_net
     depends_on:
-      valkey:
+      dragonfly:
         condition: service_healthy
       supabase-db:
         condition: service_healthy
@@ -455,7 +473,8 @@ services:
 
   # SigNoz APM, Distributed Tracing & Metrics for L14 Observability (MIT / Apache-2.0)
   signoz:
-    image: signoz/signoz:v0.66.0
+    profiles: ["core"]
+    image: signoz/signoz:v0.150.0
     container_name: central-signoz
     restart: unless-stopped
     ports:
@@ -474,6 +493,7 @@ services:
 
   # Uptime Kuma Self-Hosted Status & Service Monitoring for L14 Observability (MIT)
   uptime-kuma:
+    profiles: ["optional"]
     image: louislam/uptime-kuma:1.23.13
     container_name: central-uptime-kuma
     restart: unless-stopped
@@ -490,7 +510,8 @@ services:
 
   # PostHog Product Analytics & Event Funnels for L14 Observability (MIT)
   posthog:
-    image: posthog/posthog:v1.50.0
+    profiles: ["optional"]
+    image: posthog/posthog:latest-release
     container_name: central-posthog
     restart: unless-stopped
     ports:
@@ -508,6 +529,7 @@ services:
 
   # Bytebase Database Schema Migration & Version Control for L17 Release (Apache-2.0)
   bytebase:
+    profiles: ["core"]
     image: bytebase/bytebase:3.24.1
     container_name: central-bytebase
     restart: unless-stopped
@@ -524,6 +546,7 @@ services:
 
   # LibreChat Multi-Provider Web Interface for L18 Interaction (MIT)
   librechat:
+    profiles: ["core"]
     image: ghcr.io/danny-avila/librechat:v0.7.7
     container_name: central-librechat
     restart: unless-stopped

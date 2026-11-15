@@ -4,6 +4,8 @@
 **CI Baseline:** GitHub Actions Run `43480953326`  
 **Scope:** Docker Compose stack (29 services), AGPL network quarantine, deployment lifecycle (Kamal / Bytebase), hardware specifications, and disaster recovery runbooks.
 
+Start the live-test stack with `docker compose --profile core up -d`; start opt-in services with `docker compose --profile optional up -d <service>`. All services are profile-gated.
+
 ---
 
 ## 1. Docker Compose Service Topology & Port Inventory
@@ -12,35 +14,35 @@ The platform declares 29 services in `docker-compose.yml`:
 
 | Service Name | Pinned Image | Host Port | Network | Volume Mount | License | Profile Guard |
 | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| `qdrant` | `qdrant/qdrant:v1.20.0` | 6333 | default | `qdrant_data:/qdrant/storage` | Apache-2.0 | (Default) |
-| `ollama` | `ollama/ollama:0.40.16` | 11434 | default | `ollama_models:/root/.ollama` | MIT | (Default) |
-| `meilisearch` | `getmeili/meilisearch:v1.7.3` | 7700 | default | `meili_data:/meili_data` | MIT | (Default) |
-| `valkey` | `valkey/valkey:8.0.2-alpine` | 6379 | default | `valkey_data:/data` | BSD-3-Clause | (Default) |
-| `chroma` | `chromadb/chroma:0.4.22` | 8000 | default | `chroma_data:/chroma/chroma` | Apache-2.0 | (Default) |
-| `temporal` | `temporalio/temporal:1.10.0` | 7233, 8088 | default | `temporal_data:/etc/temporal` | MIT | (Default) |
-| `otel-collector` | `otel/opentelemetry-collector:0.120.0` | 4317, 4318 | default | — | Apache-2.0 | (Default) |
-| `keycloak` | `quay.io/keycloak/keycloak:26.8.2` | 8085 | default | `keycloak_data:/opt/keycloak/data` | Apache-2.0 | (Default) |
-| `openfga` | `openfga/openfga:v1.22.1` | 8081, 8082 | default | `openfga_data:/data` | Apache-2.0 | (Default) |
-| `infisical` | `infisical/infisical:v0.167.8` | 8083 | default | `infisical_data:/data` | MIT | (Default) |
-| `hyperswitch` | `juspaydotin/hyperswitch-router:v1.129.0-standalone` | 8080 | default | — | Apache-2.0 | (Default) |
-| `livekit` | `livekit/livekit-server:v1.13.11` | 7880 | default | — | Apache-2.0 | (Default) |
-| `supabase-db` | `supabase/postgres:15.1.1.78` | 5432 | default | `supabase_data:/var/lib/postgresql/data` | Apache-2.0 / PG | (Default) |
-| `apache-age` | `apache/age:release_PG16_1.6.0` | 5433 | default | `age_data:/var/lib/postgresql/data` | Apache-2.0 | (Default) |
-| `huly` | `hardcoreeng/front:v0.7.432` | 80 | default | `huly_data:/data` | EPL-2.0 | (Default) |
-| `kafka` | `apache/kafka:3.8.0` | 9092 | default | `kafka_data:/tmp/kraft-combined-logs` | Apache-2.0 | (Default) |
-| `svix` | `svix/svix-server:v1.57.0` | 8071 | default | `svix_data:/data` | MIT | (Default) |
-| `openmeter` | `openmeter/openmeter:v1.0.0` | 8888 | default | — | Apache-2.0 | (Default) |
-| `signoz` | `signoz/signoz:v0.66.0` | 3301 | default | `signoz_data:/var/lib/signoz` | MIT / Apache-2.0 | (Default) |
-| `uptime-kuma` | `louislam/uptime-kuma:1.23.13` | 3001 | default | `uptime_kuma_data:/app/data` | MIT | (Default) |
-| `posthog` | `posthog/posthog:v1.50.0` | 8090 | default | `posthog_data:/data` | MIT | (Default) |
-| `bytebase` | `bytebase/bytebase:3.2.0` | 8084 | default | `bytebase_data:/var/opt/bytebase` | Apache-2.0 | (Default) |
-| `librechat` | `ghcr.io/danny-avila/librechat:v0.7.7` | 3080 | default | `librechat_data:/app/data` | MIT | (Default) |
-| `memgraph` | `memgraph/memgraph-platform:...` | 7687 | default | `memgraph_data:/var/lib/memgraph` | BSL-1.1 | `self-hosted-non-osi` |
-| `falkordb` | `falkordb/falkordb:v4.22.3` | 6380 | default | `falkordb_data:/data` | SSPL-v1 | `self-hosted-non-osi` |
-| `nango` | `nangohq/nango-server:hosted-0.72.4` | 3003 | default | `nango_data:/data` | Elastic-2.0 | `self-hosted-non-osi` |
-| `phoenix` | `arizephoenix/phoenix:version-21.0.0` | 6006 | default | `phoenix_data:/data` | Elastic-2.0 | `self-hosted-non-osi` |
-| `dragonfly` | `docker.dragonflydb.io/...:v1.26.1` | 6381 | default | `dragonfly_data:/data` | BSL-1.1 | `self-hosted-non-osi` |
-| `lago` | `getlago/api:v1.16.0` | 3000 | `agpl_quarantine_net` | — | AGPL-3.0 | `agpl-quarantine` |
+| `qdrant` | `qdrant/qdrant:v1.20.0` | 6333 | default | `qdrant_data:/qdrant/storage` | Apache-2.0 | `core` |
+| `ollama` | `ollama/ollama:0.40.16` | 11434 | default | `ollama_models:/root/.ollama` | MIT | `optional` |
+| `meilisearch` | `getmeili/meilisearch:v1.7.3` | 7700 | default | `meili_data:/meili_data` | MIT | `optional` |
+| `valkey` | `valkey/valkey:8.0.2-alpine` | 6379 | default | `valkey_data:/data` | BSD-3-Clause | `optional` |
+| `chroma` | `chromadb/chroma:0.4.22` | 8000 | default | `chroma_data:/chroma/chroma` | Apache-2.0 | `optional` |
+| `temporal` | `temporalio/temporal:1.10.0` | 7233, 8088 | default | `temporal_data:/etc/temporal` | MIT | `core` |
+| `otel-collector` | `otel/opentelemetry-collector:0.120.0` | 4317, 4318 | default | — | Apache-2.0 | `core` |
+| `keycloak` | `quay.io/keycloak/keycloak:26.8.2` | 8085 | default | `keycloak_data:/opt/keycloak/data` | Apache-2.0 | `core` |
+| `openfga` | `openfga/openfga:v1.22.1` | 8081, 8082 | default | `openfga_data:/data` | Apache-2.0 | `core` |
+| `infisical` | `infisical/infisical:v0.167.8` | 8083 | default | `infisical_data:/data` | MIT | `core` |
+| `hyperswitch` | `juspaydotin/hyperswitch-router:v1.129.0-standalone` | 8080 | default | — | Apache-2.0 | `optional` |
+| `livekit` | `livekit/livekit-server:v1.13.11` | 7880 | default | — | Apache-2.0 | `optional` |
+| `supabase-db` | `supabase/postgres:15.1.1.78` | 5432 | default | `supabase_data:/var/lib/postgresql/data` | Apache-2.0 / PG | `core` |
+| `apache-age` | `apache/age:release_PG16_1.6.0` | 5433 | default | `age_data:/var/lib/postgresql/data` | Apache-2.0 | `core` |
+| `huly` | `hardcoreeng/front:v0.7.432` | 80 | default | `huly_data:/data` | EPL-2.0 | `optional` |
+| `kafka` | `apache/kafka:3.8.0` | 9092 | default | `kafka_data:/tmp/kraft-combined-logs` | Apache-2.0 | `core` |
+| `svix` | `svix/svix-server:v1.57.0` | 8071 | default | `svix_data:/data` | MIT | `optional` |
+| `openmeter` | `openmeter/openmeter:v1.0.0` | 8888 | default | — | Apache-2.0 | `core` |
+| `signoz` | `signoz/signoz:v0.66.0` | 3301 | default | `signoz_data:/var/lib/signoz` | MIT / Apache-2.0 | `core` |
+| `uptime-kuma` | `louislam/uptime-kuma:1.23.13` | 3001 | default | `uptime_kuma_data:/app/data` | MIT | `optional` |
+| `posthog` | `posthog/posthog:v1.50.0` | 8090 | default | `posthog_data:/data` | MIT | `optional` |
+| `bytebase` | `bytebase/bytebase:3.2.0` | 8084 | default | `bytebase_data:/var/opt/bytebase` | Apache-2.0 | `core` |
+| `librechat` | `ghcr.io/danny-avila/librechat:v0.7.7` | 3080 | default | `librechat_data:/app/data` | MIT | `core` |
+| `memgraph` | `memgraph/memgraph-platform:...` | 7687 | default | `memgraph_data:/var/lib/memgraph` | BSL-1.1 | `optional` |
+| `falkordb` | `falkordb/falkordb:v4.22.3` | 6380 | default | `falkordb_data:/data` | SSPL-v1 | `optional` |
+| `nango` | `nangohq/nango-server:hosted-0.72.4` | 3003 | default | `nango_data:/data` | Elastic-2.0 | `optional` |
+| `phoenix` | `arizephoenix/phoenix:version-21.0.0` | 6006 | default | `phoenix_data:/data` | Elastic-2.0 | `optional` |
+| `dragonfly` | `docker.dragonflydb.io/...:v1.26.1` | 6381 | default | `dragonfly_data:/data` | BSL-1.1 | `core` |
+| `lago` | `getlago/api:v1.16.0` | 3000 | `agpl_quarantine_net` | — | AGPL-3.0 | `core` |
 
 ---
 

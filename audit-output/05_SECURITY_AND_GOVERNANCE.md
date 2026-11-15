@@ -125,4 +125,4 @@ def is_production() -> bool:
 - **Zero Live Secrets:** Scans pass cleanly; no hardcoded API keys exist in git history.
 - **Docker Compose Pinning:** All 29 images use explicit semantic tags (no `:latest`).
 - **AGPL-3.0 Quarantine:** Lago (`getlago/api:v1.16.0`) is isolated on `agpl_quarantine_net`. Codebase AST scan confirms zero `import lago` statements exist.
-- **Non-OSI Service Isolation:** Memgraph (BSL-1.1), FalkorDB (SSPL-v1), Nango (Elastic-2.0), Phoenix (Elastic-2.0), and Dragonfly (BSL-1.1) are quarantined behind Docker Compose profiles (`profiles: ["self-hosted-non-osi"]`). Default stack is 100% OSI-approved.
+- **Non-OSI Service Isolation:** Memgraph (BSL-1.1), FalkorDB (SSPL-v1), Nango (Elastic-2.0), and Phoenix (Elastic-2.0) use the `optional` profile. Dragonfly (BSL-1.1) and Lago (AGPL-3.0) are in the `core` profile; Lago remains isolated on `agpl_quarantine_net`. The core stack is not 100% OSI-approved.

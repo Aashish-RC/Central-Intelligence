@@ -104,7 +104,7 @@ the perception extra still installs `faster-whisper` on Python 3.14 and newer.
 ### Default Graph & Infrastructure Stack
 
 - **Default graph backend (L2 Memory & L3 Knowledge):** **PostgreSQL + Apache AGE (`apache-age`, Apache-2.0)** on port `5433` (`MEMORY_GRAPH_BACKEND=postgres_age`, powered by `ApacheAGEAdapter` / `ApacheAGEGraphAdapter`), falling back to in-memory NetworkX when offline or configured with `:memory:`.
-- **Opt-in non-OSI self-hosted graph engines:** FalkorDB (`SSPL-v1`) and Memgraph (`BSL-1.1`) are disabled by default behind `profiles: ["self-hosted-non-osi"]` and require installing the optional `.[graph-non-osi]` extra (`docker compose --profile self-hosted-non-osi up -d`). See [docs/LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md).
+- **Optional non-OSI self-hosted graph engines:** FalkorDB (`SSPL-v1`) and Memgraph (`BSL-1.1`) use the `optional` Compose profile and require installing the optional `.[graph-non-osi]` extra (`docker compose --profile optional up -d falkordb memgraph`). The `core` profile includes Dragonfly (`BSL-1.1`) and Lago (`AGPL-3.0`); see [docs/LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md).
 
 ---
 

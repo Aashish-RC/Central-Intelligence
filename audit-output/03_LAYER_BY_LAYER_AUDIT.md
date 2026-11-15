@@ -496,7 +496,7 @@ Findings are tagged as:
 - Hallucination scoring is a basic string overlap heuristic, not a true semantic cross-encoder or LLM-as-a-judge model.
 
 ### 6. Dependencies & Blockers
-- Live Phoenix server in `docker-compose.yml` is Elastic-2.0 licensed (`profiles: ["self-hosted-non-osi"]`).
+- Live Phoenix server in `docker-compose.yml` is Elastic-2.0 licensed (`profiles: ["optional"]`).
 
 ### 7. Completion Score & Confidence
 - **Score: 60%** (Domain: 70%, Integration: 40%, Security: 70%, Testing: 65%)

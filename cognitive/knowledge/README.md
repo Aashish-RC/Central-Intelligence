@@ -37,7 +37,7 @@ print(acquisitions)  # ['StartupAI']
 ```
 
 ### Opt-In Non-OSI Backend: FalkorDB (`FalkorDBAdapter`)
-- **License:** SSPL-v1 (`profiles: ["self-hosted-non-osi"]` in `docker-compose.yml`, image `falkordb/falkordb:v4.22.3`, requires `pip install .[graph-non-osi]`).
+- **License:** SSPL-v1 (`profiles: ["optional"]` in `docker-compose.yml`, image `falkordb/falkordb:v4.22.3`, requires `pip install .[graph-non-osi]`).
 - **Configuration:** `FALKORDB_HOST` (default `localhost`, `:memory:` offline), `FALKORDB_PORT` (default `6380`).
 
 ---

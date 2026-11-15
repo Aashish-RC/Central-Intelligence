@@ -19,15 +19,15 @@
 
 ## 2. Infrastructure (`docker-compose.yml`) License & Swap Status
 
-The default `docker compose up` stack now runs **OSI-approved services only**. Remaining non-OSI services are quarantined behind `profiles: ["self-hosted-non-osi"]` so they never launch accidentally in hosted/SaaS environments while remaining available for explicit self-hosted opt-in.
+Every Compose service is assigned to either the `core` or `optional` profile. Start the live-test stack with `docker compose --profile core up -d`; the unselected profile does not start implicitly. The core stack is not OSI-only: it includes Dragonfly (BSL-1.1) and Lago (AGPL-3.0). Lago remains attached to `agpl_quarantine_net`; review the applicable licenses before deploying the core stack in hosted/SaaS environments.
 
-### OSI-Open Default Stack
+### OSI-Licensed Services in Compose
 | Service | Image (Pinned) | License | Swap Decision & Role |
 |---|---|---|---|
 | `qdrant` | `qdrant/qdrant:v1.20.0` | Apache-2.0 | Default vector store |
 | `ollama` | `ollama/ollama:0.40.16` | MIT | Local model serving |
 | `meilisearch` | `getmeili/meilisearch:v1.7.3` | MIT | Full-text search |
-| `valkey` | `valkey/valkey:8.0.2-alpine` | BSD-3-Clause | **Swapped in for Dragonfly (`BSL-1.1`)** as wire-compatible Redis/cache engine |
+| `valkey` | `valkey/valkey:8.0.2-alpine` | BSD-3-Clause | Optional Redis-compatible alternative; core uses Dragonfly |
 | `chroma` | `chromadb/chroma:0.4.22` | Apache-2.0 | Embedded/offline vector store |
 | `temporal` | `temporalio/temporal:1.10.0` | MIT | Durable L8 workflow engine |
 | `otel-collector` | `otel/opentelemetry-collector:0.120.0` | Apache-2.0 | **Added as OSI default replacement for Phoenix (`Elastic-2.0`)** telemetry ingestion |
@@ -48,15 +48,19 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 | `bytebase` | `bytebase/bytebase:3.2.0` | Apache-2.0 | L17 Database schema migration & version control |
 | `librechat` | `ghcr.io/danny-avila/librechat:v0.7.7` | MIT | L18 Multi-provider web chat interface |
 
-### Opt-In Non-OSI Self-Hosted Services (`profiles: ["self-hosted-non-osi"]`)
+### Optional Non-OSI Services (`profiles: ["optional"]`)
 | Service | Image (Pinned) | License | OSI Alternative & Hosted-SaaS Rule |
 |---|---|---|---|
-| `falkordb` | `falkordb/falkordb:v4.22.3` | **SSPL-v1** | Excluded from default stack. Hosted deployments must use `supabase-db` (Postgres + Apache AGE). |
-| `memgraph` | `memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1` | **BSL-1.1** | Excluded from default stack. Hosted deployments use `supabase-db` (Postgres + Apache AGE) or in-memory NetworkX. |
-| `phoenix` | `arizephoenix/phoenix:version-21.0.0` | **Elastic-2.0** | Excluded from default stack. Hosted deployments route OTLP to `otel-collector` (or SigNoz MIT/Apache-2.0 core). |
-| `nango` | `nangohq/nango-server:hosted-0.72.4` | **Elastic-2.0** | Excluded from default stack. Self-hosting only; replace with native OAuth broker before offering managed OAuth-as-a-service. |
-| `dragonfly` | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.26.1` | **BSL-1.1** | Excluded from default stack. Default stack uses `valkey` (BSD-3-Clause). |
-| `lago` | `getlago/api:v1.16.0` | **AGPL-3.0** | Quarantined (`agpl-quarantine`, `self-hosted-non-osi`). Zero Python imports/vendoring; REST HTTP/JSON process boundary only. |
+| `falkordb` | `falkordb/falkordb:v4.22.3` | **SSPL-v1** | Hosted deployments should use `supabase-db` (Postgres + Apache AGE). |
+| `memgraph` | `memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1` | **BSL-1.1** | Hosted deployments should use `supabase-db` (Postgres + Apache AGE) or in-memory NetworkX. |
+| `phoenix` | `arizephoenix/phoenix:version-21.0.0` | **Elastic-2.0** | Hosted deployments should route OTLP to `otel-collector` (or SigNoz MIT/Apache-2.0 core). |
+| `nango` | `nangohq/nango-server:hosted-0.72.4` | **Elastic-2.0** | Self-hosting only; replace with native OAuth broker before offering managed OAuth-as-a-service. |
+
+### Non-OSI/AGPL Services in Core (`profiles: ["core"]`)
+| Service | Image (Pinned) | License | Isolation / Hosted-SaaS Note |
+|---|---|---|---|
+| `dragonfly` | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.26.1` | **BSL-1.1** | Included in the live-test core profile. |
+| `lago` | `getlago/api:v1.16.0` | **AGPL-3.0** | Included in core and remains on `agpl_quarantine_net`; zero Python imports/vendoring, REST HTTP/JSON process boundary only. |
 
 ---
 
@@ -68,5 +72,5 @@ The default `docker compose up` stack now runs **OSI-approved services only**. R
 3. Zero Python files vendor or import `lago` / `lago_python_client` (preserving the strict AGPL-3.0 REST boundary).
 4. Every image in `docker-compose.yml` is explicitly version-pinned (no `:latest`).
 5. No committed default secret fallbacks exist in `docker-compose.yml`.
-6. Every non-OSI service in `docker-compose.yml` declares a `profiles:` opt-in guard so default `docker compose up` remains 100% OSI-approved.
+6. Every service in `docker-compose.yml` is assigned to `core` or `optional`; plain `docker compose up` starts no profile-gated services. The `core` profile includes Dragonfly (BSL-1.1) and Lago (AGPL-3.0).
 7. Installed Python packages are checked for unexpected strong-copyleft licenses.

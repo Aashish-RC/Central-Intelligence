@@ -38,7 +38,8 @@ data/
 wal/
 
 # IDE & OS
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 .DS_Store
 Thumbs.db
