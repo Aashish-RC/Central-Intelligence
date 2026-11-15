@@ -30,6 +30,10 @@ pytestmark = pytest.mark.live
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_SERVICES = ["valkey", "qdrant", "apache-age", "temporal", "keycloak"]
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
+qdrant_url = QDRANT_URL
+keycloak_url = KEYCLOAK_URL
 
 
 @workflow.defn
@@ -71,11 +75,15 @@ def _wait_for_http(url: str, timeout_s: float = 120.0) -> None:
 
 @pytest.fixture(scope="module", autouse=True)
 def compose_stack_lifecycle():
-    """Optionally bring up Qdrant, Temporal, Keycloak, and Valkey via Docker Compose."""
+    """Optionally bring up Qdrant, Temporal, Keycloak, Apache AGE, and Valkey via Docker Compose."""
     auto_start = os.getenv("COMPOSE_E2E_AUTO_START", "").lower() in ("1", "true", "yes")
     env = _default_compose_env()
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    keycloak_url = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
 
     if auto_start:
+        os.environ.setdefault("QDRANT_URL", qdrant_url)
+        os.environ.setdefault("KEYCLOAK_URL", keycloak_url)
         subprocess.run(
             ["docker", "compose", "up", "-d", *COMPOSE_SERVICES],
             cwd=REPO_ROOT,
@@ -85,8 +93,10 @@ def compose_stack_lifecycle():
         _wait_for_http(f"{qdrant_url}/readyz", timeout_s=90.0)
         _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=120.0)
     elif os.getenv("QDRANT_URL") or os.getenv("KEYCLOAK_URL"):
-        _wait_for_http(f"{qdrant_url}/readyz", timeout_s=10.0)
-        _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=10.0)
+        if os.getenv("QDRANT_URL"):
+            _wait_for_http(f"{qdrant_url}/readyz", timeout_s=10.0)
+        if os.getenv("KEYCLOAK_URL"):
+            _wait_for_http(f"{keycloak_url}/realms/master/.well-known/openid-configuration", timeout_s=10.0)
 
     yield env
 

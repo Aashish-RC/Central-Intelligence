@@ -74,7 +74,7 @@ DISALLOWED_LOCK_PACKAGES = (
 )
 
 LAGO_IMPORT_RE = re.compile(r"(?m)^\s*(?:from|import)\s+lago(?:_python_client)?\b")
-VENV_SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__"}
+VENV_SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "Python"}
 
 
 def check_repo_license_files() -> list[str]:
