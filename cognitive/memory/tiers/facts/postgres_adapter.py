@@ -1,6 +1,9 @@
-"""Tier 2: Production PostgreSQL Structured Fact Store."""
+"""Tier 2: Production PostgreSQL Structured Fact Store with Connection Pooling & Concurrency Control."""
 
+from contextlib import contextmanager
 from datetime import datetime
+import queue
+import threading
 from typing import Any, Dict, List, Optional
 import urllib.parse
 from uuid import UUID
@@ -69,23 +72,19 @@ class _Pg8000ConnectionWrapper:
         self._conn.close()
 
 
-class PostgreSQLFactStore(BaseFactStore):
-    """PostgreSQL structured fact store with schema auto-initialization,
-    versioning, and soft decay.
-    Supports pure-Python pg8000 driver (preferred) and psycopg2 fallback.
-    """
+class _PostgreSQLConnectionPool:
+    """Thread-safe connection pool for PostgreSQL connections (pg8000 / psycopg2)."""
 
-    def __init__(self, connection_url: Optional[str] = None):
+    def __init__(self, connection_url: str, max_connections: int = 5, timeout: float = 30.0) -> None:
         self._url = connection_url
-        self._pool = None
-        if self._url:
-            self._init_db()
+        self._max_connections = max_connections
+        self._timeout = timeout
+        self._pool: queue.Queue = queue.Queue(maxsize=max_connections)
+        self._current_size = 0
+        self._lock = threading.Lock()
+        self._closed = False
 
-    def _get_connection(self):
-        if not self._url:
-            raise AdapterConnectionError("PostgreSQL connection URL is not configured.")
-
-        # 1. Prefer pg8000 (locked in requirements.lock, pure-Python)
+    def _create_raw_connection(self) -> Any:
         pg8000_err = None
         try:
             import pg8000.dbapi
@@ -104,7 +103,6 @@ class PostgreSQLFactStore(BaseFactStore):
         except Exception as exc:
             pg8000_err = exc
 
-        # 2. Fall back to psycopg2 if available
         try:
             import psycopg2
             from psycopg2.extras import RealDictCursor
@@ -123,11 +121,104 @@ class PostgreSQLFactStore(BaseFactStore):
             "Please ensure pg8000 (specified in pyproject.toml) is installed."
         )
 
+    def acquire(self) -> Any:
+        if self._closed:
+            raise AdapterConnectionError("Connection pool is closed.")
+
+        try:
+            return self._pool.get_nowait()
+        except queue.Empty:
+            pass
+
+        with self._lock:
+            if self._current_size < self._max_connections:
+                conn = self._create_raw_connection()
+                self._current_size += 1
+                return conn
+
+        try:
+            return self._pool.get(timeout=self._timeout)
+        except queue.Empty:
+            raise AdapterConnectionError(
+                f"Connection pool exhausted (timed out after {self._timeout}s)."
+            )
+
+    def release(self, conn: Any) -> None:
+        if self._closed:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            return
+
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+
+        try:
+            self._pool.put_nowait(conn)
+        except queue.Full:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            with self._lock:
+                self._current_size = max(0, self._current_size - 1)
+
+    def close(self) -> None:
+        self._closed = True
+        while not self._pool.empty():
+            try:
+                conn = self._pool.get_nowait()
+                conn.close()
+            except Exception:
+                pass
+        with self._lock:
+            self._current_size = 0
+
+
+class PostgreSQLFactStore(BaseFactStore):
+    """PostgreSQL structured fact store with connection pooling, schema auto-initialization,
+    row-level concurrency locking (FOR UPDATE), versioning, and soft decay.
+    Supports pure-Python pg8000 driver (preferred) and psycopg2 fallback.
+    """
+
+    def __init__(self, connection_url: Optional[str] = None, max_pool_size: int = 5):
+        self._url = connection_url
+        self._max_pool_size = max_pool_size
+        self._pool = (
+            _PostgreSQLConnectionPool(self._url, max_connections=max_pool_size)
+            if self._url
+            else None
+        )
+        if self._url:
+            self._init_db()
+
+    @contextmanager
+    def _connection(self):
+        if not self._pool:
+            raise AdapterConnectionError("PostgreSQL connection URL is not configured.")
+        conn = self._pool.acquire()
+        try:
+            yield conn
+        finally:
+            self._pool.release(conn)
+
+    def _get_connection(self):
+        if not self._pool:
+            raise AdapterConnectionError("PostgreSQL connection URL is not configured.")
+        return self._pool.acquire()
+
+    def close(self) -> None:
+        """Close connection pool and release resources."""
+        if self._pool:
+            self._pool.close()
+
     def _init_db(self) -> None:
         if not self._url:
             return
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS facts (
@@ -152,8 +243,6 @@ class PostgreSQLFactStore(BaseFactStore):
                     ON facts(user_id, key, is_active);
                 """)
                 conn.commit()
-        finally:
-            conn.close()
 
     def _dict_to_fact(self, row: dict) -> FactItem:
         raw_source = row.get("source_event_id")
@@ -184,12 +273,12 @@ class PostgreSQLFactStore(BaseFactStore):
         )
 
     def put_fact(self, fact: FactItem) -> FactItem:
-        conn = self._get_connection()
-        now = utc_now()
-        try:
+        with self._connection() as conn:
+            now = utc_now()
             with conn.cursor() as cur:
+                # Concurrency control: Lock active fact row for update during mutation
                 cur.execute(
-                    "SELECT id, version FROM facts WHERE user_id = %s AND key = %s AND is_active = TRUE",
+                    "SELECT id, version FROM facts WHERE user_id = %s AND key = %s AND is_active = TRUE FOR UPDATE",
                     (fact.user_id, fact.key),
                 )
                 existing = cur.fetchone()
@@ -235,12 +324,9 @@ class PostgreSQLFactStore(BaseFactStore):
                 )
                 conn.commit()
             return fact
-        finally:
-            conn.close()
 
     def get_facts(self, user_id: str, active_only: bool = True) -> List[FactItem]:
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             with conn.cursor() as cur:
                 q = "SELECT * FROM facts WHERE user_id = %s"
                 params = [user_id]
@@ -249,12 +335,9 @@ class PostgreSQLFactStore(BaseFactStore):
                 q += " ORDER BY updated_at DESC"
                 cur.execute(q, params)
                 return [self._dict_to_fact(r) for r in cur.fetchall()]
-        finally:
-            conn.close()
 
     def get_fact_by_key(self, user_id: str, key: str, active_only: bool = True) -> Optional[FactItem]:
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             with conn.cursor() as cur:
                 q = "SELECT * FROM facts WHERE user_id = %s AND key = %s"
                 params = [user_id, key]
@@ -264,13 +347,10 @@ class PostgreSQLFactStore(BaseFactStore):
                 cur.execute(q, params)
                 r = cur.fetchone()
                 return self._dict_to_fact(r) if r else None
-        finally:
-            conn.close()
 
     def invalidate_fact(self, fact_id: UUID, superseded_by: Optional[UUID] = None) -> bool:
-        conn = self._get_connection()
-        now = utc_now()
-        try:
+        with self._connection() as conn:
+            now = utc_now()
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -282,13 +362,10 @@ class PostgreSQLFactStore(BaseFactStore):
                 )
                 conn.commit()
                 return cur.rowcount > 0
-        finally:
-            conn.close()
 
     def invalidate_by_key(self, user_id: str, key: str, superseded_by: Optional[UUID] = None) -> int:
-        conn = self._get_connection()
-        now = utc_now()
-        try:
+        with self._connection() as conn:
+            now = utc_now()
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -300,23 +377,17 @@ class PostgreSQLFactStore(BaseFactStore):
                 )
                 conn.commit()
                 return cur.rowcount
-        finally:
-            conn.close()
 
     def delete_fact(self, fact_id: UUID) -> bool:
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM facts WHERE id = %s", (fact_id,))
                 conn.commit()
                 return cur.rowcount > 0
-        finally:
-            conn.close()
 
     def update_fact(self, fact_id: UUID, new_value: str) -> Optional[FactItem]:
-        conn = self._get_connection()
-        now = utc_now()
-        try:
+        with self._connection() as conn:
+            now = utc_now()
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -332,13 +403,10 @@ class PostgreSQLFactStore(BaseFactStore):
                 cur.execute("SELECT * FROM facts WHERE id = %s", (fact_id,))
                 r = cur.fetchone()
                 return self._dict_to_fact(r) if r else None
-        finally:
-            conn.close()
 
     def touch_fact(self, fact_id: UUID) -> None:
-        conn = self._get_connection()
-        now = utc_now()
-        try:
+        with self._connection() as conn:
+            now = utc_now()
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -349,5 +417,3 @@ class PostgreSQLFactStore(BaseFactStore):
                     (now, fact_id),
                 )
                 conn.commit()
-        finally:
-            conn.close()
