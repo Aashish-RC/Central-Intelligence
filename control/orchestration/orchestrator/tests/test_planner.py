@@ -63,3 +63,41 @@ def test_missing_dependency(planner):
     ]
     with pytest.raises(ValueError, match="non-existent node"):
         planner.create_plan("Invalid Plan", specs)
+
+
+def test_adaptive_replanning_and_remediation(planner):
+    specs = [
+        {"id": "step1", "title": "Fetch", "action": "fetch", "depends_on": []},
+        {"id": "step2", "title": "Process", "action": "process", "depends_on": ["step1"]},
+    ]
+    plan = planner.create_plan("Linear Workflow", specs)
+    assert plan.replan_count == 0
+
+    # Replan step1 with remediation
+    replanned = planner.replan(
+        plan=plan,
+        failed_node_id="step1",
+        feedback="Network timeout on remote fetch",
+        remediation_action="fetch_with_backoff",
+    )
+    assert replanned.replan_count == 1
+    assert "step1_remedy_1" in replanned.nodes
+    # Downstream step2 now depends on the remedy node
+    assert replanned.nodes["step2"].depends_on == ["step1_remedy_1"]
+
+
+def test_bounded_replanning_loop_prevention(planner):
+    specs = [
+        {"id": "step1", "title": "Step 1", "action": "step1", "depends_on": []},
+    ]
+    plan = planner.create_plan("Looping Plan", specs)
+    plan.max_replans = 2
+
+    planner.replan(plan, "step1", "Error 1")
+    planner.replan(plan, "step1", "Error 2")
+    assert plan.replan_count == 2
+
+    # 3rd replan must fail bounded check
+    with pytest.raises(RuntimeError, match="Maximum replanning threshold"):
+        planner.replan(plan, "step1", "Error 3")
+

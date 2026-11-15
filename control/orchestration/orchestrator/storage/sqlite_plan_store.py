@@ -38,7 +38,7 @@ class SQLitePlanStore(BasePlanStore):
         return conn
 
     def _init_db(self) -> None:
-        from storage.migrations import SchemaMigrator, Migration, add_column_if_missing
+        from cognitive.memory.storage.migrations import SchemaMigrator, Migration, add_column_if_missing
         with self._lock:
             conn = self._get_connection()
             conn.execute("""

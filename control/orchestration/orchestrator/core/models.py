@@ -50,6 +50,8 @@ class PlanDAG(BaseModel):
     status: TaskStatus = TaskStatus.PENDING
     budget_limit: float = 1.0  # Max USD budget for this plan
     max_concurrency: int = 4   # Max parallel branches
+    replan_count: int = 0
+    max_replans: int = 3
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

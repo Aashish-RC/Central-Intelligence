@@ -1,7 +1,7 @@
 """Multi-Step Task Planner: Graph DAG construction, cycle detection, and parallel layer resolution."""
 
 from collections import defaultdict, deque
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 from ..core.interfaces import BasePlanner
 from ..core.models import PlanDAG, PlanNode, TaskStatus, utc_now
 
@@ -84,3 +84,53 @@ class MultiStepPlanner(BasePlanner):
             raise ValueError("Cyclic dependency detected in task plan graph")
 
         return layers
+
+    def replan(
+        self,
+        plan: PlanDAG,
+        failed_node_id: str,
+        feedback: str,
+        remediation_action: Optional[str] = None,
+        max_replans: Optional[int] = None,
+    ) -> PlanDAG:
+        """
+        Bounded adaptive replanning (Feature 8.03).
+        Enforces maximum replan threshold to prevent infinite replanning cycles.
+        """
+        limit = max_replans if max_replans is not None else plan.max_replans
+        if plan.replan_count >= limit:
+            raise RuntimeError(
+                f"Maximum replanning threshold ({limit}) reached for plan '{plan.id}'; aborting to prevent infinite cycle."
+            )
+        if failed_node_id not in plan.nodes:
+            raise ValueError(f"Failed node '{failed_node_id}' does not exist in plan '{plan.id}'.")
+
+        plan.replan_count += 1
+        failed_node = plan.nodes[failed_node_id]
+        failed_node.status = TaskStatus.FAILED
+        failed_node.error = feedback
+
+        # If remediation action specified, inject recovery node
+        if remediation_action:
+            recovery_node_id = f"{failed_node_id}_remedy_{plan.replan_count}"
+            recovery_node = PlanNode(
+                id=recovery_node_id,
+                title=f"Remediate: {failed_node.title}",
+                action=remediation_action,
+                params={"reason": feedback, "original_params": failed_node.params},
+                depends_on=[failed_node_id],
+                status=TaskStatus.PENDING,
+            )
+            plan.add_node(recovery_node)
+            # Re-point downstream dependencies that relied on failed_node to recovery_node
+            for nid, node in plan.nodes.items():
+                if nid != recovery_node_id and failed_node_id in node.depends_on:
+                    node.depends_on = [
+                        recovery_node_id if dep == failed_node_id else dep
+                        for dep in node.depends_on
+                    ]
+
+        plan.updated_at = utc_now()
+        # Verify no cycles introduced
+        self.get_execution_layers(plan)
+        return plan
