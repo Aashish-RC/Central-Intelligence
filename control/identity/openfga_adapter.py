@@ -38,6 +38,76 @@ class RelationshipTuple:
     expires_at: Optional[float] = None
 
 
+CANONICAL_OPENFGA_MODEL: Dict[str, Any] = {
+    "schema_version": "1.1",
+    "type_definitions": [
+        {"type": "user", "relations": {}},
+        {
+            "type": "document",
+            "relations": {
+                "owner": {"this": {}},
+                "editor": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "owner"}}]}},
+                "viewer": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "editor"}}]}},
+                "can_share": {"computedUserset": {"relation": "owner"}},
+                "can_edit": {"computedUserset": {"relation": "editor"}},
+                "can_view": {"computedUserset": {"relation": "viewer"}},
+            },
+            "metadata": {
+                "relations": {
+                    "owner": {"directly_related_user_types": [{"type": "user"}]},
+                    "editor": {"directly_related_user_types": [{"type": "user"}]},
+                    "viewer": {"directly_related_user_types": [{"type": "user"}]},
+                }
+            },
+        },
+        {
+            "type": "memory",
+            "relations": {
+                "owner": {"this": {}},
+                "admin": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "owner"}}]}},
+                "read": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "admin"}}]}},
+                "write": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "admin"}}]}},
+            },
+            "metadata": {
+                "relations": {
+                    "owner": {"directly_related_user_types": [{"type": "user"}]},
+                    "admin": {"directly_related_user_types": [{"type": "user"}]},
+                    "read": {"directly_related_user_types": [{"type": "user"}]},
+                    "write": {"directly_related_user_types": [{"type": "user"}]},
+                }
+            },
+        },
+        {
+            "type": "organization",
+            "relations": {
+                "admin": {"this": {}},
+                "member": {"union": {"child": [{"this": {}}, {"computedUserset": {"relation": "admin"}}]}},
+                "can_create_agent": {"computedUserset": {"relation": "member"}},
+                "can_delete_agent": {"computedUserset": {"relation": "admin"}},
+            },
+            "metadata": {
+                "relations": {
+                    "admin": {"directly_related_user_types": [{"type": "user"}]},
+                    "member": {"directly_related_user_types": [{"type": "user"}]},
+                }
+            },
+        },
+        {
+            "type": "agent",
+            "relations": {
+                "created_by": {"this": {}},
+                "acts_for": {"computedUserset": {"relation": "created_by"}},
+            },
+            "metadata": {
+                "relations": {
+                    "created_by": {"directly_related_user_types": [{"type": "user"}]},
+                }
+            },
+        },
+    ],
+}
+
+
 @dataclass
 class DelegationGrant:
     """Scoped, expiring delegated authorization for sub-agents or third-party apps."""
@@ -75,6 +145,7 @@ class OpenFGAAdapter:
         self._tuples: Set[Tuple[str, str, str]] = set()  # (user, relation, object)
         self._tuple_conditions: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
         self._delegations: Dict[str, DelegationGrant] = {}  # delegation_id -> grant
+        self._store_initialized: bool = False
 
         if not _defer_prod_check and self.adapter_mode == "live":
             self._ensure_live_backend()
@@ -112,6 +183,57 @@ class OpenFGAAdapter:
                 f"Live OpenFGA server at {self.api_url} is unreachable: {exc}",
                 cause=exc,
             )
+
+        if os.getenv("CI_TEST_MODE") != "1":
+            self._ensure_store_initialized()
+
+    def _ensure_store_initialized(self) -> None:
+        """Resolve store by name if needed, and bootstrap canonical authorization model."""
+        if self._store_initialized or self.adapter_mode != "live":
+            return
+        client = self._http_client()
+        is_ulid = len(self.store_id) == 26 and self.store_id.isalnum()
+        resolved_id = None
+
+        if is_ulid:
+            try:
+                chk = client.get(f"/stores/{self.store_id}", timeout=3.0)
+                if chk.status_code == 200:
+                    resolved_id = self.store_id
+            except Exception:
+                pass
+
+        if not resolved_id:
+            try:
+                list_resp = client.get("/stores", timeout=5.0)
+                if list_resp.status_code == 200:
+                    stores = list_resp.json().get("stores", [])
+                    for s in stores:
+                        if s.get("name") == self.store_id or s.get("id") == self.store_id:
+                            resolved_id = s.get("id")
+                            break
+            except Exception:
+                pass
+
+        if not resolved_id:
+            try:
+                create_resp = client.post("/stores", json={"name": self.store_id}, timeout=5.0)
+                if create_resp.status_code in (200, 201):
+                    resolved_id = create_resp.json().get("id")
+            except Exception:
+                pass
+
+        if resolved_id:
+            self.store_id = resolved_id
+            try:
+                models_resp = client.get(f"/stores/{self.store_id}/authorization-models", timeout=3.0)
+                models = models_resp.json().get("authorization_models", []) if models_resp.status_code == 200 else []
+                if not models:
+                    client.post(f"/stores/{self.store_id}/authorization-models", json=CANONICAL_OPENFGA_MODEL, timeout=5.0)
+            except Exception:
+                pass
+
+        self._store_initialized = True
 
     def _normalize_id(self, entity: str, default_type: str) -> str:
         if ":" in entity:
@@ -270,10 +392,15 @@ class OpenFGAAdapter:
                 fail_closed_in_production("openfga", f"OpenFGA check failed: {exc}", cause=exc)
 
         # 1. Check for Active Delegations
+        import fnmatch
         for grant in self._delegations.values():
             if grant.delegatee == u and grant.is_valid():
                 if action in grant.capabilities or "*" in grant.capabilities:
-                    if grant.resource_pattern == "*" or grant.resource_pattern in r:
+                    if (
+                        grant.resource_pattern == "*"
+                        or grant.resource_pattern in r
+                        or fnmatch.fnmatch(r, grant.resource_pattern)
+                    ):
                         return True
 
         # 2. Document Hierarchy Evaluation

@@ -62,8 +62,12 @@ def filter_results_by_permission(
     authorized: List[Any] = []
     for item in results:
         doc = getattr(item, "document", item)
-        doc_id = getattr(doc, "id", str(doc))
-        doc_meta = getattr(doc, "metadata", {}) or {}
+        if isinstance(doc, dict):
+            doc_id = doc.get("id", str(doc))
+            doc_meta = doc.get("metadata", {}) or {}
+        else:
+            doc_id = getattr(doc, "id", str(doc))
+            doc_meta = getattr(doc, "metadata", {}) or {}
 
         if check_document_access(
             user_id=user_id,
