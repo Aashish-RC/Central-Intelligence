@@ -1,7 +1,7 @@
 # Central Intelligence Platform Audit — 03. Layer-by-Layer Audit
 
-**Baseline:** Commit `138b95b` on branch `main`  
-**CI Status:** Passing (GitHub Actions Run `43480953326`)  
+**Baseline:** Commit `138b95b` on branch `main` (Verified on `fix/compose-e2e-live-integrations`)  
+**CI Status:** Passing (GitHub Actions Runs `43729421345` / `43729436913`, 5/5 jobs green: Python 3.11, Python 3.13, TypeScript, License & Hygiene, Compose E2E)  
 **Scope:** Exhaustive audit of all 19 layers across all 4 planes, providing implemented components, missing features, integration status, test coverage, security/operational concerns, dependencies, completion estimates (0–100%), severity-ranked findings, and recommended next actions.
 
 ---
