@@ -406,6 +406,59 @@ class InfisicalAdapter:
 
         return secret
 
+    def delete_secret(
+        self,
+        key: str,
+        tenant_id: str = "default",
+        app_id: Optional[str] = None,
+        actor_id: str = "system",
+    ) -> bool:
+        """Revokes and permanently removes a secret (Feature 12.35)."""
+        self._ensure_live_backend()
+        s_key = self._scope_key(key, tenant_id, app_id)
+        if s_key not in self._vault:
+            raise KeyError(f"Secret '{key}' not found in tenant '{tenant_id}' (app: '{app_id}')")
+
+        secret = self._vault.pop(s_key)
+        self._record_audit(actor_id, "DELETE", key, tenant_id, app_id, version=secret.current_version)
+
+        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
+            self._ensure_token()
+            try:
+                headers = {"Authorization": f"Bearer {self._access_token}"}
+                params = {
+                    "projectSlug": self.project_id,
+                    "environment": app_id or "dev",
+                    "secretName": key,
+                }
+                resp = self._http_client().delete(
+                    f"/api/v1/secrets/{key}",
+                    params=params,
+                    headers=headers,
+                    timeout=5.0,
+                )
+                if resp.status_code not in (200, 204):
+                    fail_closed_in_production(
+                        "infisical",
+                        f"Infisical delete returned HTTP {resp.status_code}: {resp.text}",
+                    )
+            except ProductionSafetyError:
+                raise
+            except Exception as exc:
+                fail_closed_in_production("infisical", f"Infisical delete failed: {exc}", cause=exc)
+
+        return True
+
+    def revoke_secret(
+        self,
+        key: str,
+        tenant_id: str = "default",
+        app_id: Optional[str] = None,
+        actor_id: str = "system",
+    ) -> bool:
+        """Alias for delete_secret satisfying revocation requirements."""
+        return self.delete_secret(key, tenant_id=tenant_id, app_id=app_id, actor_id=actor_id)
+
     def inject_secrets(
         self,
         keys: List[str],
