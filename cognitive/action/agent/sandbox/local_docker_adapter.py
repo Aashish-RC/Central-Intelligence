@@ -22,7 +22,7 @@ BLOCKED_COMMAND_PATTERNS: List[Pattern] = [
     re.compile(r"(?:/etc/shadow|/etc/passwd|SAM|SYSTEM32[\/\\]config)", re.IGNORECASE),
     re.compile(r"(?:^|[\/\\\'\"\s])(?:\.vault_key|\.ssh[\/\\]id_rsa|\.ssh[\/\\]id_ed25519)(?:$|[\/\\\'\"\s])", re.IGNORECASE),
     re.compile(r"\b(?:nc|netcat)\b.*?-e\s+", re.IGNORECASE),
-    re.compile(r"/dev/tcp/\d+/\d+", re.IGNORECASE),
+    re.compile(r"/dev/tcp/[^\s/]+/\d+", re.IGNORECASE),
 ]
 
 

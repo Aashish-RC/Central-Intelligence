@@ -41,6 +41,7 @@ class DockerRunner(BaseDeviceRunner):
         network: str = "none",
         timeout_seconds: Optional[float] = None,
         command_runner: Optional[Callable[..., subprocess.CompletedProcess]] = None,
+        container_bin: Optional[str] = None,
     ):
         self.governor = governor or SecurityGovernor()
         self.image = image
@@ -53,21 +54,29 @@ class DockerRunner(BaseDeviceRunner):
             else float(os.getenv("SANDBOX_TIMEOUT_SECONDS", "30.0"))
         )
         self.command_runner = command_runner or subprocess.run
+        self.container_bin = container_bin or os.getenv("CONTAINER_RUNTIME") or "docker"
         self._docker_available: Optional[bool] = None
 
     def is_docker_available(self) -> bool:
-        """Check whether Docker CLI is installed and the daemon is responsive."""
+        """Check whether container runtime (Docker or Podman) CLI is installed and daemon is responsive."""
         if self._docker_available is not None:
             return self._docker_available
 
-        docker_bin = shutil.which("docker")
-        if not docker_bin:
-            self._docker_available = False
-            return False
+        bin_name = self.container_bin
+        bin_path = shutil.which(bin_name)
+        if not bin_path:
+            # Fall back to podman if docker is not installed
+            if bin_name == "docker" and shutil.which("podman"):
+                bin_name = "podman"
+                self.container_bin = "podman"
+                bin_path = shutil.which("podman")
+            else:
+                self._docker_available = False
+                return False
 
         try:
             res = subprocess.run(
-                ["docker", "info"],
+                [bin_name, "info"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=2.0,
@@ -84,10 +93,10 @@ class DockerRunner(BaseDeviceRunner):
         container_name: Optional[str] = None,
         scratch_dir: Optional[str] = None,
     ) -> List[str]:
-        """Construct the exact Docker CLI command for a request based on language."""
+        """Construct the exact Docker/Podman CLI command for a request based on language."""
         c_name = container_name or f"pheonix-sb-{uuid.uuid4().hex[:12]}"
         cmd: List[str] = [
-            "docker", "run", "--rm", "-i",
+            self.container_bin, "run", "--rm", "-i",
             "--name", c_name,
             "--network", self.network,
             f"--memory={self.memory}",

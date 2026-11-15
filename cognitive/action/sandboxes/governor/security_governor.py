@@ -11,6 +11,8 @@ BLOCKED_CODE_PATTERNS: List[Pattern] = [
     re.compile(r"(?:/etc/shadow|/etc/passwd|SAM|SYSTEM32[\/\\]config)", re.IGNORECASE),
     re.compile(r"(?:^|[\/\\\'\"\s])(?:\.vault_key|id_rsa|id_ed25519)(?:$|[\/\\\'\"\s])", re.IGNORECASE),
     re.compile(r"\bos\.fork\(\)"),
+    re.compile(r"\b(?:nc|netcat)\b.*?-e\s+", re.IGNORECASE),
+    re.compile(r"/dev/tcp/[^\s/]+/\d+", re.IGNORECASE),
 ]
 
 BLOCKED_NETWORK_PATTERNS: List[Pattern] = [

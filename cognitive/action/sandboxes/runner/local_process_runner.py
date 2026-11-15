@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import time
@@ -69,15 +70,27 @@ class LocalProcessRunner(BaseDeviceRunner):
             custom_env=request.environment,
         )
 
-        # Build command based on language
+        # Build command based on language (Strictly shell=False to prevent shell injection)
         if request.language.lower() == "python":
             script_file = scratch_path / "sandbox_entry.py"
             script_file.write_text(request.code, encoding="utf-8")
             cmd = [sys.executable, str(script_file)]
-            use_shell = False
         else:
-            cmd = request.code
-            use_shell = True
+            try:
+                cmd_args = shlex.split(request.code, posix=(os.name != "nt"))
+                if os.name == "nt":
+                    cmd = ["cmd.exe", "/c"] + cmd_args
+                else:
+                    cmd = cmd_args
+            except Exception as parse_err:
+                return SandboxResult(
+                    request_id=request.id,
+                    status=SandboxStatus.FAILED,
+                    exit_code=-1,
+                    stderr=f"Failed to parse command arguments: {parse_err}",
+                )
+
+        use_shell = False
 
         start_time = time.perf_counter()
         timeout = request.limits.timeout_seconds
