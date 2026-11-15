@@ -1,6 +1,7 @@
 """Security Governor: Static code inspection, path traversal checks, and environment sanitization."""
 
 import os
+from pathlib import Path
 import re
 from typing import Dict, List, Optional, Pattern, Tuple
 from ..core.interfaces import BaseSecurityGovernor
@@ -13,6 +14,14 @@ BLOCKED_CODE_PATTERNS: List[Pattern] = [
     re.compile(r"\bos\.fork\(\)"),
     re.compile(r"\b(?:nc|netcat)\b.*?-e\s+", re.IGNORECASE),
     re.compile(r"/dev/tcp/[^\s/]+/\d+", re.IGNORECASE),
+    # Windows host escape & execution primitives
+    re.compile(r"\b(?:cmd(?:\.exe)?|powershell(?:\.exe)?|pwsh(?:\.exe)?)\s+/(?:c|k|e|v|q)\b", re.IGNORECASE),
+    re.compile(r"\b(?:powershell(?:\.exe)?|pwsh(?:\.exe)?)\b.*?(?:-enc(?:odedcommand)?|-c(?:ommand)?|-ep(?:ecutionpolicy)?\s+bypass)", re.IGNORECASE),
+    re.compile(r"\b(?:wscript|cscript|mshta|rundll32|reg|vssadmin|certutil|bitsadmin)(?:\.exe)?\b", re.IGNORECASE),
+    re.compile(r"\bformat\s+[a-zA-Z]:", re.IGNORECASE),
+    re.compile(r"\bdiskpart(?:\.exe)?\b", re.IGNORECASE),
+    re.compile(r"(?:[A-Za-z]:[\/\\](?:windows|winnt|programdata|system32|syswow64)|\\\\(?:localhost|127\.0\.0\.1|[^\s\/\\]+)[\/\\])", re.IGNORECASE),
+    re.compile(r"(?:HKLM|HKCU|HKEY_LOCAL_MACHINE|HKEY_CURRENT_USER)[\/\\]", re.IGNORECASE),
 ]
 
 BLOCKED_NETWORK_PATTERNS: List[Pattern] = [
@@ -33,6 +42,11 @@ SENSITIVE_ENV_KEYS: List[str] = [
     "DATABASE_URL",
     "PRIVATE",
 ]
+
+# Windows reserved device names: CON, PRN, AUX, NUL, COM1-9, LPT1-9
+WINDOWS_RESERVED_DEVICE_NAMES: Pattern = re.compile(
+    r"^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?$", re.IGNORECASE
+)
 
 # Hard ceiling thresholds for Feature 5.33
 MAX_ALLOWED_TIMEOUT_SECONDS: float = 300.0
@@ -107,6 +121,9 @@ class SecurityGovernor(BaseSecurityGovernor):
             "mkfs",
             "dd if=/dev/zero",
             "chmod -R 777 /",
+            "cmd.exe",
+            "powershell.exe",
+            "pwsh.exe",
         ]:
             if bad in code:
                 return False, f"Command blocked by sandbox security policy: '{bad}'"
@@ -117,10 +134,28 @@ class SecurityGovernor(BaseSecurityGovernor):
                 if pat.search(code):
                     return False, f"Network access is disabled for this sandbox: blocked '{pat.pattern}'"
 
-        # Check virtual files for path traversal
+        # Check virtual files for path traversal & dangerous Windows paths
         for filename in request.files.keys():
+            # Standard unix/relative traversal
             if ".." in filename or filename.startswith(("/", "\\")):
                 return False, f"Path traversal attempt detected in filename: '{filename}'"
+
+            # Windows drive-letter traversal (e.g. C:foo, C:\foo, D:/foo)
+            if re.match(r"^[a-zA-Z]:", filename):
+                return False, f"Windows drive path escape detected in filename: '{filename}'"
+
+            # Windows UNC network share path (e.g. \\server\share or //server/share)
+            if filename.startswith(("\\\\", "//")):
+                return False, f"UNC network share path escape detected in filename: '{filename}'"
+
+            # NTFS Alternate Data Stream escape (e.g. file.txt:stream)
+            if ":" in filename:
+                return False, f"NTFS alternate data stream escape detected in filename: '{filename}'"
+
+            # Windows reserved DOS device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+            base_name = Path(filename).name
+            if WINDOWS_RESERVED_DEVICE_NAMES.match(base_name):
+                return False, f"Reserved Windows device name detected in filename: '{filename}'"
 
         return True, None
 

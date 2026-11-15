@@ -39,6 +39,7 @@ class CuratedToolMetadata(BaseModel):
     rate_limit_per_minute: int = 60
     input_schema: Dict[str, Any] = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
+    tenant_id: Optional[str] = None
 
 
 class CuratedToolRegistry:
@@ -74,20 +75,31 @@ class CuratedToolRegistry:
         return self._tools.get(tool_id)
 
     def list_curated_tools(
-        self, approved_only: bool = True, role: Optional[str] = None
+        self,
+        approved_only: bool = True,
+        role: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> List[CuratedToolMetadata]:
-        """List registered tools according to curation status and user roles."""
+        """List registered tools according to curation status, user roles, and tenant boundary."""
         tools = list(self._tools.values())
         if approved_only:
             tools = [t for t in tools if t.is_approved]
         if role:
             tools = [t for t in tools if not t.required_roles or role in t.required_roles or "admin" in t.required_roles]
+        if tenant_id is not None:
+            tools = [t for t in tools if t.tenant_id is None or t.tenant_id == "global" or t.tenant_id == tenant_id]
+        else:
+            tools = [t for t in tools if t.tenant_id is None or t.tenant_id == "global"]
         return tools
 
     def check_access(
-        self, tool_id: str, agent_id: str, agent_roles: List[str]
+        self,
+        tool_id: str,
+        agent_id: str,
+        agent_roles: List[str],
+        tenant_id: Optional[str] = None,
     ) -> None:
-        """Verify tool approval status and agent role permissions."""
+        """Verify tool approval status, agent role permissions, and strict tenant isolation."""
         tool = self._tools.get(tool_id)
         if not tool:
             raise ToolAccessDeniedError(f"Tool '{tool_id}' does not exist in registry.")
@@ -96,6 +108,13 @@ class CuratedToolRegistry:
             raise ToolAccessDeniedError(
                 f"Tool '{tool_id}' has not been approved by an administrator."
             )
+
+        # Enforce tenant isolation
+        if tool.tenant_id and tool.tenant_id != "global":
+            if not tenant_id or tenant_id != tool.tenant_id:
+                raise ToolAccessDeniedError(
+                    f"Tool '{tool_id}' is restricted to tenant '{tool.tenant_id}'. Caller tenant '{tenant_id}' is denied."
+                )
 
         if tool.required_roles:
             role_set = set(agent_roles)

@@ -217,6 +217,80 @@ def test_tenant_workspace_isolation():
     assert len(bob_results) == 1
     assert bob_results[0]["id"] == "doc_pub"
 
+    # Tools Tenant Isolation (Layer 5 Curated Registry)
+    from cognitive.action.registry.curated_registry import (
+        CuratedToolMetadata,
+        CuratedToolRegistry,
+        ToolAccessDeniedError,
+    )
+    registry = CuratedToolRegistry()
+
+    tool_global = CuratedToolMetadata(
+        tool_id="tool_global_search",
+        name="Global Search",
+        is_approved=True,
+        tenant_id="global",
+    )
+    tool_alpha = CuratedToolMetadata(
+        tool_id="tool_alpha_internal",
+        name="Alpha Internal ERP",
+        is_approved=True,
+        tenant_id="alpha",
+    )
+    tool_beta = CuratedToolMetadata(
+        tool_id="tool_beta_finance",
+        name="Beta Payroll API",
+        is_approved=True,
+        tenant_id="beta",
+    )
+    registry.register_tool(tool_global)
+    registry.register_tool(tool_alpha)
+    registry.register_tool(tool_beta)
+
+    # Listing tools for Alpha returns global + alpha, excludes beta
+    alpha_tools = [t.tool_id for t in registry.list_curated_tools(tenant_id="alpha")]
+    assert "tool_global_search" in alpha_tools
+    assert "tool_alpha_internal" in alpha_tools
+    assert "tool_beta_finance" not in alpha_tools
+
+    # Listing tools for Beta returns global + beta, excludes alpha
+    beta_tools = [t.tool_id for t in registry.list_curated_tools(tenant_id="beta")]
+    assert "tool_global_search" in beta_tools
+    assert "tool_beta_finance" in beta_tools
+    assert "tool_alpha_internal" not in beta_tools
+
+    # Access check: Beta cannot invoke Alpha's internal tool
+    with pytest.raises(ToolAccessDeniedError, match="restricted to tenant 'alpha'"):
+        registry.check_access(
+            tool_id="tool_alpha_internal",
+            agent_id="agent_beta_01",
+            agent_roles=["admin"],
+            tenant_id="beta",
+        )
+
+    # Alpha agent can invoke Alpha's tool
+    registry.check_access(
+        tool_id="tool_alpha_internal",
+        agent_id="agent_alpha_01",
+        agent_roles=["user"],
+        tenant_id="alpha",
+    )
+
+    # API Tenant Isolation & Cryptographic Boundary (Layer 12 TenantManager)
+    from control.identity.tenancy.tenant_manager import TenantManager
+    tm = TenantManager()
+    t_alpha = tm.create_tenant(name="Alpha Corp", tenant_id="alpha")
+    t_beta = tm.create_tenant(name="Beta LLC", tenant_id="beta")
+
+    # Dedicated 256-bit AES encryption keys per tenant
+    assert t_alpha.encryption_key != t_beta.encryption_key
+
+    # Strict cross-tenant data isolation gate
+    assert tm.check_data_isolation("alpha", "alpha") is True
+    assert tm.check_data_isolation("beta", "alpha") is False
+    assert tm.check_data_isolation("alpha", "beta") is False
+
+
 
 # ---------------------------------------------------------------------------
 # WS-02.5: Cryptographic Merkle Audit Ledger & Incident Detection

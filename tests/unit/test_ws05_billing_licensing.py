@@ -11,6 +11,7 @@ Verifies:
 
 from __future__ import annotations
 
+import json
 import os
 from unittest.mock import MagicMock, patch
 import httpx
@@ -372,3 +373,136 @@ def test_automated_refund_pipeline_skips_user_error():
     assert res.status == "skipped_non_provider_error"
     assert res.tokens_refunded == 0
     assert res.cents_refunded == 0
+
+
+# =========================================================================
+# WS-05.2 & WS-05.3: Webhook HMAC Signature, Replay Protection, Restarts & Concurrency
+# =========================================================================
+
+def test_hyperswitch_webhook_signature_and_replay_protection():
+    """Verify HMAC-SHA256 signature enforcement, timestamp expiry, and duplicate replay prevention."""
+    import time
+    secret = "hs_test_secret_12345678"
+    adapter = HyperswitchAdapter(webhook_secret=secret, _defer_prod_check=True)
+
+    payload = {
+        "event_id": "evt_replay_001",
+        "type": "payment_intent.succeeded",
+        "content": {"payment_id": "pay_sig_test", "amount": 2500, "customer_id": "cust_sig"},
+    }
+    raw_bytes = json.dumps(payload, sort_keys=True).encode("utf-8")
+
+    # 1. Valid signature with timestamp header (t=...,v1=...)
+    now = time.time()
+    valid_sig = adapter.compute_webhook_signature(raw_bytes, secret=secret, timestamp=now)
+    res = adapter.handle_webhook(payload, signature=valid_sig, raw_body=raw_bytes, enforce_signature=True)
+    assert res["settled"] is True
+    assert res["status"] == "succeeded"
+    assert res["duplicate"] is False
+
+    # 2. Duplicate event replay must be detected and return idempotent response
+    replay_res = adapter.handle_webhook(payload, signature=valid_sig, raw_body=raw_bytes, enforce_signature=True)
+    assert replay_res["settled"] is True
+    assert replay_res["duplicate"] is True
+    assert replay_res["invoice_settled"] is False
+
+    # 3. Forged/invalid signature must be rejected
+    bad_sig = adapter.compute_webhook_signature(raw_bytes, secret="wrong_secret", timestamp=now)
+    with pytest.raises(ValueError, match="Invalid webhook signature"):
+        adapter.handle_webhook(payload, signature=bad_sig, raw_body=raw_bytes, enforce_signature=True)
+
+    # 4. Expired timestamp (> tolerance) must be rejected
+    expired_ts = now - 600.0
+    expired_sig = adapter.compute_webhook_signature(raw_bytes, secret=secret, timestamp=expired_ts)
+    with pytest.raises(ValueError, match="Webhook timestamp expired"):
+        adapter.handle_webhook(payload, signature=expired_sig, raw_body=raw_bytes, enforce_signature=True)
+
+
+def test_hyperswitch_durable_idempotency_across_restarts(tmp_path):
+    """Verify that restarting the service does not cause duplicate payments or double charges."""
+    db_file = str(tmp_path / "hyperswitch_durability.db")
+
+    # Instance 1: Create initial payment with idempotency key
+    adapter1 = HyperswitchAdapter(db_path=db_file, _defer_prod_check=True)
+    p1 = adapter1.create_payment(
+        amount_cents=5000,
+        customer_id="cust_restart",
+        idempotency_key="idemp_unique_restart_key",
+    )
+    assert p1.payment_id.startswith("pay_")
+    assert p1.amount_cents == 5000
+
+    # Simulate complete service shutdown and restart with Instance 2
+    adapter2 = HyperswitchAdapter(db_path=db_file, _defer_prod_check=True)
+    p2 = adapter2.create_payment(
+        amount_cents=5000,
+        customer_id="cust_restart",
+        idempotency_key="idemp_unique_restart_key",
+    )
+
+    # Must return existing payment intent without creating a second record
+    assert p2.payment_id == p1.payment_id
+    assert p2.amount_cents == p1.amount_cents
+    assert len(adapter2._payments) == 1
+
+
+def test_hyperswitch_concurrent_payments_no_double_charge():
+    """Verify that concurrent payment requests with the same idempotency key result in exactly 1 payment."""
+    import concurrent.futures
+
+    adapter = HyperswitchAdapter(_defer_prod_check=True)
+    results = []
+
+    def make_payment():
+        return adapter.create_payment(
+            amount_cents=4500,
+            customer_id="cust_concurrent",
+            idempotency_key="concurrent_fixed_key",
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(make_payment) for _ in range(8)]
+        for f in concurrent.futures.as_completed(futures):
+            results.append(f.result())
+
+    # All 8 threads must receive the exact same payment_id
+    assert len(results) == 8
+    first_id = results[0].payment_id
+    for r in results:
+        assert r.payment_id == first_id
+
+    # Exactly 1 payment in storage
+    assert len(adapter._payments) == 1
+
+
+def test_hyperswitch_concurrent_refund_protection():
+    """Verify that concurrent partial refunds cannot exceed the total payment amount."""
+    import concurrent.futures
+
+    adapter = HyperswitchAdapter(_defer_prod_check=True)
+    p = adapter.create_payment(amount_cents=3000, customer_id="cust_refund_race")
+
+    successful_refunds = []
+    failed_refunds = []
+
+    def do_refund(amount):
+        try:
+            rf = adapter.refund_payment(p.payment_id, amount_cents=amount)
+            successful_refunds.append(rf)
+        except ValueError as err:
+            failed_refunds.append(str(err))
+
+    # Concurrently attempt two $20 (2000 cents) refunds on a $30 (3000 cents) payment
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        f1 = executor.submit(do_refund, 2000)
+        f2 = executor.submit(do_refund, 2000)
+        concurrent.futures.wait([f1, f2])
+
+    # Exactly one must succeed, one must fail because balance is only $10 left
+    assert len(successful_refunds) == 1
+    assert len(failed_refunds) == 1
+    assert "exceeds refundable balance" in failed_refunds[0]
+
+    # Payment refunded amount must not exceed original
+    assert adapter.get_payment(p.payment_id).refunded_cents == 2000
+
