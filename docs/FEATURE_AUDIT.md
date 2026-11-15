@@ -472,4 +472,18 @@
 | PaddleOCR Vision & Speech Engine (L1) | Image OCR and speech-to-text with optional extras and fail-closed verification | 🟢 VERIFIED-LIVE | `cognitive/perception/vision/paddleocr_adapter.py`, `cognitive/perception/voice_speech/stt/dictation_engine.py`, `pyproject.toml` | `cognitive/perception/vision/tests/test_paddleocr_fail_closed.py`, `tests/integration/test_compose_stack_e2e.py` | `[perception]` optional dependencies added; silent mock fallbacks eliminated in live mode with `ProductionSafetyError` (Task 4.4, F-DEP-01) |
 | Dual-Boundary Tag Reconciliation (L9) | Cryptographic untrusted context boundary defense | 🟢 VERIFIED-LIVE | `control/context/trust/untrusted_sandbox.py`, `docs/SECURITY_REVIEW.md`, `docs/architecture.md` | `control/context/trust/tests/test_boundary_tag_format.py`, `tests/integration/test_compose_stack_e2e.py` | Reconciled documentation mismatch; canonical `<untrusted_content source=... trust=... flagged=... threats=...>` enforced across docs and code (Task 4.5, F-DOC-01) |
 
+---
+
+## Milestone 5: Compose E2E Infrastructure & Live Stack Verification (L2, L3, L8, L12, L15)
+
+| Feature / Adapter | Description | Status | Implementation File(s) | Live Test Suite | Notes |
+|---|---|---|---|---|---|
+| Valkey In-Memory Cache (OSI BSD-3) | Redis wire protocol cache, session store, and pub/sub | 🟢 VERIFIED-LIVE | `docker-compose.yml` (`valkey:8.0.2-alpine`) | `tests/integration/test_compose_stack_e2e.py::test_valkey_redis_wire_roundtrip_e2e` | Verified live wire commands (PING, SET with TTL, GET, DEL) against live container `:6379` in CI |
+| Qdrant Vector Engine v1.20 | Vector store for memory embeddings and similarity search | 🟢 VERIFIED-LIVE | `docker-compose.yml` (`qdrant/qdrant:v1.20.0`) | `tests/integration/test_compose_stack_e2e.py::test_qdrant_vector_roundtrip_e2e` | Verified live collection creation, Cosine vector upsert, query_points, and collection teardown against `:6333` in CI |
+| L2 QdrantAdapter Integration | Real L2 Memory semantic tier vector upsert and retrieval | 🟢 VERIFIED-LIVE | `cognitive/memory/tiers/semantic/qdrant_adapter.py` | `tests/integration/test_compose_stack_e2e.py::test_memory_qdrant_adapter_v120_e2e` | Healthcheck passing, multi-vector MemoryRecord upsert, cosine query, delete and delete_by_user against live Qdrant in CI |
+| Keycloak 26 IAM & OIDC | OpenID Connect discovery and Admin CLI token authentication | 🟢 VERIFIED-LIVE | `docker-compose.yml` (`quay.io/keycloak/keycloak:26.8.2`) | `tests/integration/test_compose_stack_e2e.py::test_keycloak_oidc_and_admin_api_e2e` | Verified live OIDC discovery, admin credential password grant, and `/admin/realms` master realm verification against `:8085` in CI |
+| Temporal Workflow Engine (L8) | Distributed workflow engine and client execution | 🟢 VERIFIED-LIVE | `docker-compose.yml` (`temporalio/temporal:1.10.0`) | `tests/integration/test_compose_stack_e2e.py::test_temporal_workflow_execution_e2e` | Verified live async Temporal client connection, worker task queue polling, and workflow execution against `:7233` in CI |
+| Apache AGE Graph Database (L2/L3) | PostgreSQL 16 + OpenCypher graph database | 🟢 VERIFIED-LIVE | `docker-compose.yml` (`apache/age:release_PG16_1.6.0`), `cognitive/memory/tiers/graph/age_adapter.py`, `knowledge/graph.py` | `tests/integration/test_compose_stack_e2e.py::test_postgres_apache_age_graph_adapters_e2e` | Verified live PostgreSQL connection on `:5433`, L2/L3 graph adapters, relationship creation, Cypher queries, and parameter injection defense in CI |
+
+
 
