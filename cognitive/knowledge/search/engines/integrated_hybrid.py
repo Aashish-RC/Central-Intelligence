@@ -197,19 +197,26 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                 )
                 indexed_backends.append("pgvector")
             except Exception as exc:
+                # Compensating rollback: delete from Qdrant
+                if "qdrant" in indexed_backends and self.qdrant:
+                    try:
+                        self.qdrant.delete(_doc_id_to_uuid(document.id), user_id=tenant)
+                    except Exception:
+                        pass
                 if self.strict_backends:
-                    # Compensating rollback: delete from Qdrant
-                    if "qdrant" in indexed_backends and self.qdrant:
-                        try:
-                            self.qdrant.delete(_doc_id_to_uuid(document.id))
-                        except Exception:
-                            pass
                     raise RetrievalBackendError("pgvector", f"Failed to index into pgvector: {exc}", cause=exc)
 
         # 3. Index entities and relationships into Apache AGE graph
         if self.age:
+            created_relationships: List[Tuple[str, str, str]] = []
+            newly_created_entities: List[str] = []
+            doc_node_created = False
             try:
-                # Add Document root node
+                # Check whether document root node already exists for this tenant
+                doc_node_existed = (
+                    hasattr(self.age, "entity_exists")
+                    and self.age.entity_exists(tenant, document.id, document.project_id)
+                )
                 self.age.add_entity(
                     user_id=tenant,
                     name=document.id,
@@ -217,11 +224,18 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                     properties={"title": document.title, "tenant_id": tenant, "doc_id": document.id},
                     project_id=document.project_id,
                 )
-                # Add auxiliary graph entities
+                if not doc_node_existed:
+                    doc_node_created = True
+
+                # Add auxiliary graph entities, tracking newly created vs pre-existing shared ones
                 if graph_entities:
                     for ent in graph_entities:
                         name = ent.get("name")
                         if name:
+                            ent_existed = (
+                                hasattr(self.age, "entity_exists")
+                                and self.age.entity_exists(tenant, name, document.project_id)
+                            )
                             self.age.add_entity(
                                 user_id=tenant,
                                 name=name,
@@ -229,7 +243,10 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                                 properties=ent.get("properties", {}),
                                 project_id=document.project_id,
                             )
-                # Add graph edges / relationships
+                            if not ent_existed and name not in newly_created_entities:
+                                newly_created_entities.append(name)
+
+                # Add graph edges / relationships, tracking newly created edges
                 if graph_relationships:
                     for src, rel, tgt in graph_relationships:
                         self.age.add_relationship(
@@ -240,22 +257,67 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                             properties={"doc_id": document.id, "tenant_id": tenant},
                             project_id=document.project_id,
                         )
+                        created_relationships.append((src, rel, tgt))
+
                 indexed_backends.append("apache_age")
             except Exception as exc:
-                if self.strict_backends:
-                    # Compensating rollback: delete from pgvector and Qdrant
-                    if "pgvector" in indexed_backends and self.pgvector:
-                        try:
-                            self.pgvector.delete_embedding(
-                                f"pgvec_{self.collection_name}", document.id, user_id=tenant
+                # -------------------------------------------------------------
+                # Compensating rollback: Clean up partial writes in Apache AGE
+                # -------------------------------------------------------------
+                # 1. Remove partially created relationships
+                for src, rel, tgt in created_relationships:
+                    try:
+                        self.age.delete_relationship(
+                            user_id=tenant,
+                            source=src,
+                            relation=rel,
+                            target=tgt,
+                            project_id=document.project_id,
+                        )
+                    except Exception:
+                        pass
+
+                # 2. Remove newly created entities (preserving pre-existing shared entities!)
+                for ent_name in newly_created_entities:
+                    try:
+                        if hasattr(self.age, "delete_entity"):
+                            self.age.delete_entity(
+                                user_id=tenant,
+                                name=ent_name,
+                                project_id=document.project_id,
                             )
-                        except Exception:
-                            pass
-                    if "qdrant" in indexed_backends and self.qdrant:
-                        try:
-                            self.qdrant.delete(_doc_id_to_uuid(document.id))
-                        except Exception:
-                            pass
+                    except Exception:
+                        pass
+
+                # 3. Remove document root node if it was newly created
+                if doc_node_created:
+                    try:
+                        if hasattr(self.age, "delete_entity"):
+                            self.age.delete_entity(
+                                user_id=tenant,
+                                name=document.id,
+                                project_id=document.project_id,
+                            )
+                    except Exception:
+                        pass
+
+                # -------------------------------------------------------------
+                # Compensating rollback: Clean up pgvector and Qdrant
+                # -------------------------------------------------------------
+                if "pgvector" in indexed_backends and self.pgvector:
+                    try:
+                        self.pgvector.delete_embedding(
+                            f"pgvec_{self.collection_name}", document.id, user_id=tenant
+                        )
+                    except Exception:
+                        pass
+                if "qdrant" in indexed_backends and self.qdrant:
+                    try:
+                        self.qdrant.delete(_doc_id_to_uuid(document.id), user_id=tenant)
+                    except Exception:
+                        pass
+
+                if self.strict_backends:
                     raise RetrievalBackendError("apache_age", f"Failed to index into Apache AGE: {exc}", cause=exc)
 
     def index_batch(self, docs: List[SearchDocument]) -> int:
@@ -266,10 +328,21 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             count += 1
         return count
 
-    def delete_document(self, doc_id: str, tenant_id: Optional[str] = None) -> bool:
-        """Delete a document by its composite ID across Qdrant, pgvector, and Apache AGE."""
+    def delete_document(
+        self,
+        doc_id: str,
+        tenant_id: Optional[str] = None,
+        caller_tenant_id: Optional[str] = None,
+    ) -> bool:
+        """Delete a document by its composite ID across Qdrant, pgvector, and Apache AGE,
+        strictly requiring an authenticated, non-wildcard tenant context.
+        """
         if not doc_id:
             return False
+
+        effective_tenant = self._validate_tenant_authorization(caller_tenant_id, tenant_id)
+        if not effective_tenant or effective_tenant.strip() in ("", "*"):
+            raise PermissionError("Missing or unauthorized tenant context for deletion")
 
         qdrant_deleted = False
         pg_deleted = False
@@ -278,7 +351,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         if self.qdrant:
             try:
                 rec_uuid = _doc_id_to_uuid(doc_id)
-                qdrant_deleted = self.qdrant.delete(rec_uuid)
+                qdrant_deleted = self.qdrant.delete(rec_uuid, user_id=effective_tenant)
             except Exception:
                 pass
 
@@ -288,46 +361,65 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                 pg_deleted = self.pgvector.delete_embedding(
                     collection=col_name,
                     record_id=doc_id,
-                    user_id=tenant_id,
+                    user_id=effective_tenant,
                 )
             except Exception:
                 pass
 
         if self.age:
             try:
+                if hasattr(self.age, "delete_entity"):
+                    if self.age.delete_entity(user_id=effective_tenant, name=doc_id):
+                        age_deleted = True
+
                 cypher = (
                     "MATCH (n) WHERE (n.name = $name OR n.doc_id = $name) "
-                    "AND ($tenant IS NULL OR n.user_id = $tenant) "
+                    "AND n.user_id = $tenant "
                     "DETACH DELETE n RETURN count(*) AS deleted"
                 )
                 rows = self.age.execute_query(
                     cypher,
-                    params={"name": doc_id, "tenant": tenant_id},
+                    params={"name": doc_id, "tenant": effective_tenant},
                 )
-                if rows:
+                if rows and isinstance(rows[0].get("deleted"), int) and rows[0]["deleted"] > 0:
                     age_deleted = True
+
                 cypher_edge = (
-                    "MATCH ()-[r]->() WHERE r.doc_id = $name "
-                    "AND ($tenant IS NULL OR r.tenant_id = $tenant) "
-                    "DELETE r"
+                    "MATCH ()-[r]->() WHERE (r.doc_id = $name OR r.name = $name) "
+                    "AND (r.tenant_id = $tenant OR r.user_id = $tenant) "
+                    "DELETE r RETURN count(r) AS deleted"
                 )
-                self.age.execute_query(
+                rows_edge = self.age.execute_query(
                     cypher_edge,
-                    params={"name": doc_id, "tenant": tenant_id},
+                    params={"name": doc_id, "tenant": effective_tenant},
                 )
+                if rows_edge and isinstance(rows_edge[0].get("deleted"), int) and rows_edge[0]["deleted"] > 0:
+                    age_deleted = True
             except Exception:
                 pass
 
         return qdrant_deleted or pg_deleted or age_deleted
 
-    def delete_by_project(self, project_id: str, tenant_id: Optional[str] = None) -> int:
-        """Purge all indexed documents belonging to a project across all backends."""
+    def delete_by_project(
+        self,
+        project_id: str,
+        tenant_id: Optional[str] = None,
+        caller_tenant_id: Optional[str] = None,
+    ) -> int:
+        """Purge all indexed documents belonging to a project across all backends,
+        strictly requiring an authenticated, non-wildcard tenant context.
+        """
         if not project_id:
             return 0
+
+        effective_tenant = self._validate_tenant_authorization(caller_tenant_id, tenant_id)
+        if not effective_tenant or effective_tenant.strip() in ("", "*"):
+            raise PermissionError("Missing or unauthorized tenant context for deletion")
+
         total_deleted = 0
         if self.qdrant and hasattr(self.qdrant, "delete_by_project"):
             try:
-                total_deleted += self.qdrant.delete_by_project(project_id=project_id, user_id=tenant_id)
+                total_deleted += self.qdrant.delete_by_project(project_id=project_id, user_id=effective_tenant)
             except Exception:
                 pass
 
@@ -337,14 +429,14 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                 total_deleted += self.pgvector.delete_by_project(
                     collection=col_name,
                     project_id=project_id,
-                    user_id=tenant_id,
+                    user_id=effective_tenant,
                 )
             except Exception:
                 pass
 
         if self.age and hasattr(self.age, "delete_by_project"):
             try:
-                total_deleted += self.age.delete_by_project(project_id=project_id, user_id=tenant_id)
+                total_deleted += self.age.delete_by_project(project_id=project_id, user_id=effective_tenant)
             except Exception:
                 pass
 

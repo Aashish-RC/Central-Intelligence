@@ -125,7 +125,7 @@ if ($dockerOk) {
 }
 
 Invoke-NativeCheck 'D3: Local hybrid RRF ranking' $Python -Arguments @('-m','pytest','tests/unit/test_ws04_durable_memory.py::test_hybrid_search_rrf_ranking','-v','-rs') | Out-Null
-Invoke-NativeCheck 'D3: Retrieval hardening unit suite (8 controls)' $Python -Arguments @('-m','pytest','tests/unit/test_d3_retrieval_hardening.py','-v','-rs') | Out-Null
+Invoke-NativeCheck 'D3: Retrieval hardening unit suite (12 controls)' $Python -Arguments @('-m','pytest','tests/unit/test_d3_retrieval_hardening.py','-v','-rs') | Out-Null
 
 if ($dockerOk) {
     Write-Log "`n========== D3: Live Qdrant =========="

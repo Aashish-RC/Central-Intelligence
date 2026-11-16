@@ -396,6 +396,58 @@ class ApacheAGEAdapter(BaseGraphStore):
 
         return removed
 
+    def entity_exists(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Check whether an entity vertex exists for this user and project."""
+        if not self._is_in_memory and self._conn:
+            try:
+                where_pid = "AND n.project_id = $project_id " if project_id else ""
+                params: Dict[str, Any] = {"name": name, "user_id": user_id}
+                if project_id:
+                    params["project_id"] = project_id
+                cypher = (
+                    f"MATCH (n) WHERE (n.name = $name OR n.doc_id = $name) AND n.user_id = $user_id {where_pid}"
+                    "RETURN n.name AS name"
+                )
+                rows = self._run_age_cypher(
+                    cypher,
+                    params=params,
+                    return_keys=["name"],
+                )
+                return len(rows) > 0
+            except Exception:
+                pass
+        return self._fallback.entity_exists(user_id=user_id, name=name, project_id=project_id)
+
+    def delete_entity(
+        self,
+        user_id: str,
+        name: str,
+        project_id: Optional[str] = None,
+    ) -> bool:
+        """Detach and delete an entity vertex and its edges from Apache AGE and fallback cache."""
+        removed = self._fallback.delete_entity(user_id=user_id, name=name, project_id=project_id)
+        if not self._is_in_memory and self._conn:
+            where_pid = "AND n.project_id = $project_id " if project_id else ""
+            params: Dict[str, Any] = {"name": name, "user_id": user_id}
+            if project_id:
+                params["project_id"] = project_id
+            cypher = (
+                f"MATCH (n) WHERE (n.name = $name OR n.doc_id = $name) AND n.user_id = $user_id {where_pid}"
+                "DETACH DELETE n RETURN 1 AS deleted"
+            )
+            try:
+                rows = self._run_age_cypher(
+                    cypher,
+                    params=params,
+                    return_keys=["deleted"],
+                )
+                if len(rows) > 0:
+                    removed = True
+            except Exception as exc:
+                if not self._auto_fallback:
+                    raise AdapterConnectionError(f"Apache AGE delete_entity failed: {exc}")
+        return removed
+
     def multi_hop_query(
         self,
         user_id: str,
@@ -483,9 +535,10 @@ class ApacheAGEAdapter(BaseGraphStore):
         """Purge all graph vertices and edges belonging to project_id, optionally user-scoped."""
         removed = getattr(self._fallback, "delete_by_project", lambda p, u: 0)(project_id, user_id)
         if not self._is_in_memory and self._conn:
+            where_user = "WHERE n.user_id = $user_id " if user_id else ""
             cypher = (
                 "MATCH (n {project_id: $project_id}) "
-                "WHERE ($user_id IS NULL OR n.user_id = $user_id) "
+                f"{where_user}"
                 "DETACH DELETE n RETURN count(*) AS deleted"
             )
             try:

@@ -215,6 +215,23 @@ class MemgraphAdapter(BaseGraphStore):
 
         return removed
 
+    def entity_exists(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Check whether an entity vertex exists for this user and project."""
+        return self._fallback.entity_exists(user_id=user_id, name=name, project_id=project_id)
+
+    def delete_entity(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Detach and delete an entity vertex and its edges."""
+        removed = self._fallback.delete_entity(user_id=user_id, name=name, project_id=project_id)
+        if not self._is_in_memory and self._client:
+            pid = project_id or "default"
+            cypher = "MATCH (n {name: $name, user_id: $user_id, project_id: $project_id}) DETACH DELETE n;"
+            try:
+                self._client.execute_query(cypher, {"name": name, "user_id": user_id, "project_id": pid})
+                removed = True
+            except Exception:
+                pass
+        return removed
+
     def multi_hop_query(
         self,
         user_id: str,

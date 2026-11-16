@@ -218,13 +218,17 @@ class DockerRunner(BaseDeviceRunner):
 
         start_time = time.perf_counter()
         try:
-            res = self.command_runner(
-                cmd,
-                input=stdin_input,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
+            runner_kwargs: Dict[str, Any] = {
+                "capture_output": True,
+                "text": True,
+                "timeout": timeout,
+            }
+            if stdin_input is not None:
+                runner_kwargs["input"] = stdin_input
+            else:
+                runner_kwargs["stdin"] = subprocess.DEVNULL
+
+            res = self.command_runner(cmd, **runner_kwargs)
             duration_ms = (time.perf_counter() - start_time) * 1000.0
 
             status = (

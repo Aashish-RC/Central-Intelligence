@@ -12,6 +12,7 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
     PointIdsList,
+    HasIdCondition,
 )
 
 from cognitive.memory.core.interfaces import BaseVectorStore
@@ -156,21 +157,41 @@ class QdrantAdapter(BaseVectorStore):
 
         return records
 
-    def delete(self, record_id: UUID) -> bool:
+    def delete(self, record_id: UUID, user_id: Optional[str] = None) -> bool:
+        """Delete a vector record by UUID, optionally verifying user/tenant ownership."""
         try:
-            self._client.delete(
-                collection_name=self._collection_name,
-                points_selector=PointIdsList(points=[str(record_id)]),
-            )
-            return True
+            if user_id:
+                pts = self._client.retrieve(
+                    collection_name=self._collection_name,
+                    ids=[str(record_id)],
+                    with_payload=True,
+                )
+                if not pts:
+                    return False
+                payload = pts[0].payload or {}
+                if payload.get("user_id") != user_id:
+                    return False
+                self._client.delete(
+                    collection_name=self._collection_name,
+                    points_selector=PointIdsList(points=[str(record_id)]),
+                )
+                return True
+            else:
+                self._client.delete(
+                    collection_name=self._collection_name,
+                    points_selector=PointIdsList(points=[str(record_id)]),
+                )
+                return True
         except Exception:
             return False
 
     def delete_by_user(self, user_id: str) -> int:
         filt = Filter(must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))])
         try:
-            self._client.delete(collection_name=self._collection_name, points_selector=filt)
-            return 1
+            cnt = self._client.count(collection_name=self._collection_name, count_filter=filt).count
+            if cnt > 0:
+                self._client.delete(collection_name=self._collection_name, points_selector=filt)
+            return cnt
         except Exception:
             return 0
 
@@ -180,7 +201,9 @@ class QdrantAdapter(BaseVectorStore):
             conditions.append(FieldCondition(key="user_id", match=MatchValue(value=user_id)))
         filt = Filter(must=conditions)
         try:
-            self._client.delete(collection_name=self._collection_name, points_selector=filt)
-            return 1
+            cnt = self._client.count(collection_name=self._collection_name, count_filter=filt).count
+            if cnt > 0:
+                self._client.delete(collection_name=self._collection_name, points_selector=filt)
+            return cnt
         except Exception:
             return 0

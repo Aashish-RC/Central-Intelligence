@@ -206,7 +206,7 @@ def live_services():
     _CONTAINERS_STARTED_BY_TEST.clear()
 
 
-def test_d3_combined_live_retrieval_e2e(live_services):
+def test_d3_combined_live_retrieval_e2e(live_services, monkeypatch):
     """Primary D3 Test: End-to-end retrieval verifying all 3 backends contribute,
 
     with RRF ranking, graph enrichment, tenant isolation, deduplication, and persistence.
@@ -442,7 +442,87 @@ def test_d3_combined_live_retrieval_e2e(live_services):
             f"Deleted document {doc_consensus.id} reappeared in live retrieval results!"
         )
 
-        # 12. Verify Tenant Authorization Boundary
+        # 12. Verify Cross-Tenant Deletion Isolation & Context Rejection on Live Backends
+        # Tenant Beta attempts to delete Tenant Alpha's document
+        del_attempt = engine.delete_document(doc_qdrant_only.id, tenant_id=tenant_beta)
+        assert del_attempt is False, "Cross-tenant document deletion should return False"
+
+        # Verify doc_qdrant_only remains present in live Qdrant
+        q_hits = qdrant.query_similar(user_id=tenant_alpha, query_embedding=vec_qdrant, top_k=1)
+        assert len(q_hits) == 1 and q_hits[0].metadata.get("doc_id") == doc_qdrant_only.id
+
+        # Tenant Beta attempts to delete by project
+        del_proj_beta = engine.delete_by_project("proj_core", tenant_id=tenant_beta)
+        assert del_proj_beta == 0
+
+        # Verify unauthorized deletion attempts fail immediately
+        with pytest.raises(PermissionError):
+            engine.delete_document(doc_qdrant_only.id, tenant_id=None)
+        with pytest.raises(PermissionError):
+            engine.delete_document(doc_qdrant_only.id, tenant_id="*")
+        with pytest.raises(PermissionError):
+            engine.delete_document(doc_qdrant_only.id, tenant_id="")
+        with pytest.raises(PermissionError):
+            engine.delete_document(doc_qdrant_only.id, tenant_id=tenant_alpha, caller_tenant_id=tenant_beta)
+        with pytest.raises(PermissionError):
+            engine.delete_by_project("proj_core", tenant_id=None)
+        with pytest.raises(PermissionError):
+            engine.delete_by_project("proj_core", tenant_id="*")
+
+        # 13. Verify Apache AGE Live Partial-Write Recovery & Shared Entity Preservation
+        shared_live_name = f"LiveSharedProtocol_{col_suffix}"
+        age.add_entity(user_id=tenant_alpha, name=shared_live_name, entity_type="Protocol", project_id="proj_core")
+        assert age.entity_exists(tenant_alpha, shared_live_name, "proj_core") is True
+
+        doc_partial_live = SearchDocument(
+            id=f"doc_live_partial_{col_suffix}",
+            title="Live Partial Write Test",
+            content="Testing live partial write recovery against real backends",
+            tenant_id=tenant_alpha,
+            project_id="proj_core",
+            corpus_type=CorpusType.FILE,
+        )
+
+        orig_add_rel = age.add_relationship
+        rel_calls = 0
+
+        def failing_live_add_rel(*args, **kwargs):
+            nonlocal rel_calls
+            rel_calls += 1
+            if rel_calls >= 2:
+                raise RuntimeError("Simulated live network drop during graph edge insertion")
+            return orig_add_rel(*args, **kwargs)
+
+        monkeypatch.setattr(age, "add_relationship", failing_live_add_rel)
+
+        with pytest.raises(RetrievalBackendError) as exc_live:
+            engine.index_document(
+                doc_partial_live,
+                embedding=vec_consensus,
+                graph_entities=[
+                    {"name": shared_live_name, "label": "Protocol"},
+                    {"name": f"LiveTransient_{col_suffix}", "label": "Transient"},
+                ],
+                graph_relationships=[
+                    (doc_partial_live.id, "SPECIFIES", shared_live_name),
+                    (doc_partial_live.id, "CREATES", f"LiveTransient_{col_suffix}"),
+                ],
+            )
+        assert exc_live.value.backend == "apache_age"
+
+        # Verify live Apache AGE state:
+        # Pre-existing shared entity MUST still exist in live database
+        assert age.entity_exists(tenant_alpha, shared_live_name, "proj_core") is True
+        # Transient entity MUST be rolled back
+        assert age.entity_exists(tenant_alpha, f"LiveTransient_{col_suffix}", "proj_core") is False
+        # Root document node MUST be rolled back
+        assert age.entity_exists(tenant_alpha, doc_partial_live.id, "proj_core") is False
+        # Qdrant must have 0 points for doc_partial_live
+        assert not any(r.metadata.get("doc_id") == doc_partial_live.id for r in qdrant.query_similar(tenant_alpha, vec_consensus, top_k=5))
+        # pgvector must have 0 rows for doc_partial_live
+        assert not any(r.get("id") == doc_partial_live.id for r in pgvec.search_embeddings(f"pgvec_{collection_name}", vec_consensus, top_k=5, user_id=tenant_alpha))
+
+        # 14. Verify Tenant Authorization Boundary
         with pytest.raises(PermissionError):
             engine.retrieve(
                 query=SearchQuery(query_text="Raft consensus", tenant_id=tenant_beta),

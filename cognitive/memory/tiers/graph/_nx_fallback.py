@@ -112,6 +112,32 @@ class NetworkXGraphFallback:
             return True
         return False
 
+    def entity_exists(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Check whether an entity node exists for user_id and project_id."""
+        if project_id:
+            nid = self.node_id(user_id, name, project_id)
+            return nid in self.graph
+        return any(
+            d.get("user_id") == user_id and (d.get("name") == name or d.get("doc_id") == name)
+            for _, d in self.graph.nodes(data=True)
+        )
+
+    def delete_entity(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Detach and delete an entity node and all its edges."""
+        if project_id:
+            nid = self.node_id(user_id, name, project_id)
+            if nid in self.graph:
+                self.graph.remove_node(nid)
+                return True
+            return False
+        nodes_to_del = [
+            nid for nid, d in self.graph.nodes(data=True)
+            if d.get("user_id") == user_id and (d.get("name") == name or d.get("doc_id") == name)
+        ]
+        for nid in nodes_to_del:
+            self.graph.remove_node(nid)
+        return len(nodes_to_del) > 0
+
     def multi_hop_query(
         self,
         user_id: str,

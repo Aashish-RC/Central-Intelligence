@@ -103,8 +103,8 @@ class BaseVectorStore(ABC):
         pass
 
     @abstractmethod
-    def delete(self, record_id: UUID) -> bool:
-        """Delete a vector record by UUID."""
+    def delete(self, record_id: UUID, user_id: Optional[str] = None) -> bool:
+        """Delete a vector record by UUID, optionally scoped by user/tenant."""
         pass
 
     @abstractmethod
@@ -207,6 +207,14 @@ class BaseGraphStore(ABC):
     ) -> bool:
         """Remove a relationship between entities."""
         pass
+
+    def entity_exists(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Check whether an entity vertex exists for this user and project."""
+        return False
+
+    def delete_entity(self, user_id: str, name: str, project_id: Optional[str] = None) -> bool:
+        """Detach and delete an entity vertex and its edges for this user and project."""
+        return False
 
     @abstractmethod
     def check_health(self) -> bool:
