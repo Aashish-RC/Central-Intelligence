@@ -7,6 +7,16 @@ root_dir = Path(__file__).resolve().parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
+# Load .env into os.environ if present so test runners match local docker compose configs
+env_file = root_dir / ".env"
+if env_file.is_file():
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
 cognitive_dir = root_dir / "cognitive"
 control_dir = root_dir / "control"
 platform_infra_dir = root_dir / "platform_infra"

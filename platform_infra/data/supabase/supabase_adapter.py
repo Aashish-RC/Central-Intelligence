@@ -90,8 +90,14 @@ class SupabaseAdapter:
             )
             cur = self._pg_conn.cursor()
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-            cur.execute("CREATE EXTENSION IF NOT EXISTS age")
             self._pg_conn.commit()
+            try:
+                cur.execute("CREATE EXTENSION IF NOT EXISTS age")
+                self._pg_conn.commit()
+            except Exception:
+                # age extension may not be installed on this Postgres instance;
+                # Apache AGE connections are handled separately via _get_age_conn()
+                self._pg_conn.rollback()
             cur.close()
         except ImportError:
             fail_closed_in_production(
@@ -134,7 +140,15 @@ class SupabaseAdapter:
             if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
                 return None
             try:
-                age_url = self.connection_url.replace(":5432", ":5433")
+                age_url = os.getenv("AGE_POSTGRES_URL")
+                if not age_url:
+                    u = urlparse(self.connection_url)
+                    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
+                    age_url = (
+                        self.connection_url.replace(f":{u.port}", f":{age_port}")
+                        if u.port
+                        else self.connection_url
+                    )
                 self._age_conn = self._connect_age(age_url)
             except ImportError:
                 fail_closed_in_production("supabase", "pg8000 not installed")

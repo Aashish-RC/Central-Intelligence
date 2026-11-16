@@ -2,7 +2,7 @@
 
 import os
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from cognitive.memory.config import (
@@ -438,6 +438,31 @@ class MemoryEngine:
     def consolidate(self, user_id: str, session_id: str) -> ConsolidationResult:
         """Execute REM Sleep consolidation cycle on a session."""
         return self.consolidation.consolidate_session(user_id=user_id, session_id=session_id)
+
+    def integrated_hybrid_retrieve(
+        self,
+        query: str,
+        tenant_id: str,
+        query_embedding: Optional[List[float]] = None,
+        top_k: int = 10,
+        pgvector_adapter: Optional[Any] = None,
+        weights: Optional[Tuple[float, float, float]] = None,
+    ):
+        """Execute unified 3-backend retrieval across Qdrant, Apache AGE, and pgvector (Task D3)."""
+        from cognitive.knowledge.search.engines.integrated_hybrid import IntegratedHybridRetrievalEngine
+
+        emb = query_embedding if query_embedding is not None else self.embedder.embed_text(query)
+        qdrant = self.vectors if isinstance(self.vectors, QdrantAdapter) else None
+        age = self.graph if isinstance(self.graph, ApacheAGEAdapter) else None
+        pgvec = pgvector_adapter or getattr(self, "_pgvector_adapter", None)
+
+        engine = IntegratedHybridRetrievalEngine(
+            qdrant_adapter=qdrant,
+            age_adapter=age,
+            pgvector_adapter=pgvec,
+            weights=weights or (0.40, 0.40, 0.20),
+        )
+        return engine.retrieve(query=query, tenant_id=tenant_id, query_embedding=emb, top_k=top_k)
 
     def get_active_facts(self, user_id: str, project_id: Optional[str] = None) -> List[FactItem]:
         """Fetch all currently active ground-truth facts for a user."""

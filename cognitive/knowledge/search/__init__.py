@@ -8,6 +8,11 @@ from .core.models import (
     SearchResponse,
 )
 from .engines.local_hybrid import LocalHybridSearchEngine
+from .engines.integrated_hybrid import (
+    IntegratedHybridRetrievalEngine,
+    IntegratedRetrievalResponse,
+    RetrievalBackendError,
+)
 from .engines.rrf import ReciprocalRankFusion
 from .indexer.corpus_indexer import CorpusIndexer
 from .core.index import MeilisearchClient, query
@@ -24,6 +29,9 @@ __all__ = [
     "SearchResult",
     "SearchResponse",
     "LocalHybridSearchEngine",
+    "IntegratedHybridRetrievalEngine",
+    "IntegratedRetrievalResponse",
+    "RetrievalBackendError",
     "ReciprocalRankFusion",
     "CorpusIndexer",
     "MeilisearchClient",

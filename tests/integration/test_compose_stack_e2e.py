@@ -29,6 +29,17 @@ from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 pytestmark = pytest.mark.live
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Load local .env into os.environ if present so test configurations match docker compose
+_env_path = REPO_ROOT / ".env"
+if _env_path.is_file():
+    for _line in _env_path.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith("#") or "=" not in _line:
+            continue
+        _k, _, _v = _line.partition("=")
+        os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
+
 COMPOSE_SERVICES = ["valkey", "qdrant", "apache-age", "temporal", "keycloak"]
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
@@ -810,6 +821,7 @@ def test_supabase_relational_and_vector_persist():
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
     env.pop("CI_TEST_MODE", None)
+    env["PYTHONPATH"] = os.pathsep.join([p for p in sys.path if p])
 
     # Subprocess 1: insert row and store embedding
     p1 = subprocess.run(
@@ -825,6 +837,7 @@ adapter.insert_row('{table_name}', {{'title': 'Durability Test'}}, '{user_id}')
 adapter.store_embedding('{collection}', '{doc_id}', [1.0, 0.0, 0.0], 'Embedded document content', '{user_id}')
 """,
         ],
+        cwd=REPO_ROOT,
         env=env,
         capture_output=True,
         text=True,
@@ -849,6 +862,7 @@ assert len(results) == 1 and results[0]['id'] == '{doc_id}', f"Embedding missing
 sys.exit(0)
 """,
         ],
+        cwd=REPO_ROOT,
         env=env,
         capture_output=True,
         text=True,
@@ -864,6 +878,7 @@ def test_sandbox_executes_real_python():
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
     env.pop("CI_TEST_MODE", None)
+    env["PYTHONPATH"] = os.pathsep.join([p for p in sys.path if p])
 
     p = subprocess.run(
         [
@@ -886,6 +901,7 @@ async def main():
 asyncio.run(main())
 """,
         ],
+        cwd=REPO_ROOT,
         env=env,
         capture_output=True,
         text=True,

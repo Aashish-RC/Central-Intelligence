@@ -35,6 +35,9 @@ class E2BSandboxAdapter:
         command: str,
         config: Optional[SandboxConfig] = None,
         env_vars: Optional[Dict[str, str]] = None,
+        project_id: str = "e2b-fallback",
+        tenant_id: str = "default",
+        files: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Execute command in an E2B microVM or local Docker sandbox."""
         config = config or SandboxConfig()
@@ -80,7 +83,11 @@ class E2BSandboxAdapter:
                 from .local_docker_adapter import LocalDockerSandboxAdapter
                 local = LocalDockerSandboxAdapter()
                 result = await local.execute_command(
-                    command, config=config, project_id="e2b-fallback",
+                    command,
+                    config=config,
+                    project_id=project_id,
+                    tenant_id=tenant_id,
+                    files=files,
                 )
                 result["provider"] = "local-docker"
                 result["execution_time_ms"] = (time.perf_counter() - start_time) * 1000

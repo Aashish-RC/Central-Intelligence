@@ -128,7 +128,9 @@ class SandboxManager(BaseSandboxManager):
         self,
         command: str,
         project_id: str = "default",
+        tenant_id: str = "default",
         timeout_seconds: Optional[float] = None,
+        files: Optional[Dict[str, str]] = None,
     ) -> SandboxResult:
         """Asynchronously executes a shell command within the canonical sandbox with security governance & permissions."""
         import asyncio
@@ -137,9 +139,11 @@ class SandboxManager(BaseSandboxManager):
             limits.timeout_seconds = timeout_seconds
         req = ExecutionRequest(
             project_id=project_id,
+            tenant_id=tenant_id,
             language="shell",
             code=command,
             limits=limits,
+            files=files or {},
         )
         try:
             loop = asyncio.get_running_loop()
@@ -153,10 +157,18 @@ class SandboxManager(BaseSandboxManager):
         config: Optional[Any] = None,
         cwd: Optional[str] = None,
         project_id: str = "default",
+        tenant_id: str = "default",
+        files: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Asynchronous execution interface compatible with agent sandbox adapters."""
         timeout = getattr(config, "timeout_seconds", 30.0) if config else 30.0
-        res = await self.run_command(command, project_id=project_id, timeout_seconds=timeout)
+        res = await self.run_command(
+            command,
+            project_id=project_id,
+            tenant_id=tenant_id,
+            timeout_seconds=timeout,
+            files=files,
+        )
         if res.status == SandboxStatus.BLOCKED:
             from agent.core.exceptions import SandboxExecutionError
             raise SandboxExecutionError(
@@ -173,5 +185,6 @@ class SandboxManager(BaseSandboxManager):
             "execution_time_ms": res.duration_ms,
             "provider": getattr(self.runner, "__class__", type(self.runner)).__name__,
             "status": res.status.value,
+            "tenant_id": res.tenant_id,
         }
 

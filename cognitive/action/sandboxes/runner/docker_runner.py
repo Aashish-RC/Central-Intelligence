@@ -59,8 +59,8 @@ class DockerRunner(BaseDeviceRunner):
 
     def is_docker_available(self) -> bool:
         """Check whether container runtime (Docker or Podman) CLI is installed and daemon is responsive."""
-        if self._docker_available is not None:
-            return self._docker_available
+        if self._docker_available is True:
+            return True
 
         bin_name = self.container_bin
         bin_path = shutil.which(bin_name)
@@ -79,7 +79,7 @@ class DockerRunner(BaseDeviceRunner):
                 [bin_name, "info"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                timeout=2.0,
+                timeout=15.0,
             )
             self._docker_available = (res.returncode == 0)
         except Exception:
@@ -95,18 +95,37 @@ class DockerRunner(BaseDeviceRunner):
     ) -> List[str]:
         """Construct the exact Docker/Podman CLI command for a request based on language."""
         c_name = container_name or f"pheonix-sb-{uuid.uuid4().hex[:12]}"
+        
+        # Effective resource limits
+        mem_limit = f"{request.limits.max_memory_mb}m" if (request.limits and request.limits.max_memory_mb) else self.memory
+        if not mem_limit.endswith("m") and not mem_limit.endswith("g"):
+            mem_limit = f"{mem_limit}m"
+
+        cpu_limit = self.cpus
+        if request.limits and getattr(request.limits, "max_cpu_percent", None):
+            cpu_val = request.limits.max_cpu_percent / 100.0
+            cpu_limit = f"{cpu_val:.1f}"
+
+        pids_limit = str(request.limits.max_processes if (request.limits and request.limits.max_processes) else 32)
+        net_mode = "bridge" if (request.limits and request.limits.network_access) else self.network
+
         cmd: List[str] = [
             self.container_bin, "run", "--rm", "-i",
             "--name", c_name,
-            "--network", self.network,
-            f"--memory={self.memory}",
-            f"--cpus={self.cpus}",
+            "--network", net_mode,
+            f"--memory={mem_limit}",
+            f"--cpus={cpu_limit}",
+            "--pids-limit", pids_limit,
+            "--cap-drop", "ALL",
+            "--security-opt", "no-new-privileges",
             "--read-only",
             "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
             "-e", "PYTHONDONTWRITEBYTECODE=1",
+            "--label", f"tenant={request.tenant_id}",
+            "--label", f"project={request.project_id}",
         ]
 
-        if scratch_dir and request.files:
+        if scratch_dir:
             scratch_path = Path(scratch_dir).resolve()
             cmd.extend(["-v", f"{str(scratch_path)}:/workspace:ro", "-w", "/workspace"])
 
@@ -129,6 +148,7 @@ class DockerRunner(BaseDeviceRunner):
         if not is_valid:
             return SandboxResult(
                 request_id=request.id,
+                tenant_id=request.tenant_id,
                 status=SandboxStatus.BLOCKED,
                 exit_code=-1,
                 stderr=err or "Execution blocked by security policy",
@@ -138,6 +158,7 @@ class DockerRunner(BaseDeviceRunner):
         if self.command_runner == subprocess.run and not self.is_docker_available():
             return SandboxResult(
                 request_id=request.id,
+                tenant_id=request.tenant_id,
                 status=SandboxStatus.BLOCKED,
                 exit_code=-1,
                 stderr=(
@@ -194,6 +215,7 @@ class DockerRunner(BaseDeviceRunner):
 
             return SandboxResult(
                 request_id=request.id,
+                tenant_id=request.tenant_id,
                 status=status,
                 exit_code=res.returncode,
                 stdout=stdout,
@@ -216,6 +238,7 @@ class DockerRunner(BaseDeviceRunner):
 
             return SandboxResult(
                 request_id=request.id,
+                tenant_id=request.tenant_id,
                 status=SandboxStatus.TIMEOUT,
                 exit_code=-1,
                 stdout=getattr(exc, "stdout", "") or "",
@@ -227,6 +250,7 @@ class DockerRunner(BaseDeviceRunner):
             duration_ms = (time.perf_counter() - start_time) * 1000.0
             return SandboxResult(
                 request_id=request.id,
+                tenant_id=request.tenant_id,
                 status=SandboxStatus.FAILED,
                 exit_code=-1,
                 stdout="",

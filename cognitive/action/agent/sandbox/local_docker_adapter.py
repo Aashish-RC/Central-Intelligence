@@ -113,6 +113,8 @@ class LocalDockerSandboxAdapter:
         cwd: Optional[str] = None,
         project_id: str = "default",
         trusted_local_path: bool = False,
+        tenant_id: str = "default",
+        files: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Execute command in sandbox, strictly prohibiting unauthorized host shell fallback."""
         self.validate_command_security(command)
@@ -121,7 +123,12 @@ class LocalDockerSandboxAdapter:
         if self.manager and hasattr(self.manager, "execute_command"):
             try:
                 res = await self.manager.execute_command(
-                    command, config=config, cwd=cwd, project_id=project_id
+                    command,
+                    config=config,
+                    cwd=cwd,
+                    project_id=project_id,
+                    tenant_id=tenant_id,
+                    files=files,
                 )
                 if isinstance(res, dict) and res.get("status") == "blocked":
                     raise SandboxExecutionError(

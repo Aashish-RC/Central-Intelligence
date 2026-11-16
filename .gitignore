@@ -33,6 +33,7 @@ htmlcov/
 *.wal
 *.log
 logs/
+inspection-logs/
 data/
 !platform_infra/data/
 wal/
