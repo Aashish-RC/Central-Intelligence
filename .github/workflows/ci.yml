@@ -82,18 +82,10 @@ jobs:
       - name: Run license, lockfile, and compose hygiene check
         run: python scripts/check_licenses.py
 
-      - name: Validate docker-compose configuration with required env vars
-        env:
-          MEILISEARCH_MASTER_KEY: ci-dummy-meili-key
-          NANGO_SECRET_KEY: ci-dummy-nango-secret
-          KEYCLOAK_ADMIN: admin
-          KEYCLOAK_ADMIN_PASSWORD: ci-dummy-keycloak-password
-          INFISICAL_ENCRYPTION_KEY: ci-dummy-infisical-key
-          LIVEKIT_KEYS: "ci-key: ci-secret"
-          POSTGRES_PASSWORD: ci-dummy-postgres-password
-          POSTHOG_SECRET: ci-dummy-posthog-secret
-          SVIX_JWT_SECRET: ci-dummy-svix-jwt-secret
-        run: docker compose config -q
+      - name: Validate docker-compose configuration with example placeholders
+        run: |
+          cp .env.example .env
+          docker compose config -q
 
   compose-e2e:
     name: Compose E2E (Qdrant v1.20, Apache AGE, Temporal, Keycloak, Valkey)
