@@ -1,0 +1,94 @@
+apiVersion: v1alpha1
+kind: Installation
+metadata:
+  name: signoz
+spec:
+  deployment:
+    flavor: compose
+    mode: docker
+  signoz:
+    spec:
+      image: signoz/signoz:v0.150.0
+  ingester:
+    spec:
+      image: signoz/signoz-otel-collector:latest@sha256:09513891a155624e3fc84844c5d41de1fc174dccf48312cfffa9a05e93c1e349
+  telemetrystore:
+    spec:
+      image: clickhouse/clickhouse-server:25.12.5
+  telemetrykeeper:
+    kind: clickhousekeeper
+    spec:
+      image: clickhouse/clickhouse-keeper:25.12.5
+  metastore:
+    kind: postgres
+    spec:
+      image: postgres:16
+  patches:
+    - target: 'deployment\compose.yaml'
+      operations:
+        - op: add
+          path: /services/ingester/profiles
+          value: ["core"]
+        - op: remove
+          path: /services/ingester/ports
+        - op: add
+          path: /services/ingester/healthcheck
+          value:
+            test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133/"]
+            interval: 15s
+            timeout: 5s
+            retries: 10
+            start_period: 60s
+        - op: add
+          path: /services/ingester/depends_on
+          value:
+            signoz-signoz-0:
+              condition: service_healthy
+            signoz-telemetrystore-clickhouse-0-0:
+              condition: service_healthy
+            signoz-telemetrystore-migrator:
+              condition: service_completed_successfully
+        - op: add
+          path: /services/signoz-metastore-postgres-0/profiles
+          value: ["core"]
+        - op: replace
+          path: /services/signoz-metastore-postgres-0/environment/1
+          value: POSTGRES_PASSWORD=${SIGNOZ_DB_PASSWORD:?SIGNOZ_DB_PASSWORD must be set}
+        - op: add
+          path: /services/signoz-signoz-0/profiles
+          value: ["core"]
+        - op: replace
+          path: /services/signoz-signoz-0/environment/0
+          value: SIGNOZ_SQLSTORE_POSTGRES_DSN=postgres://signoz:${SIGNOZ_DB_PASSWORD:?SIGNOZ_DB_PASSWORD must be set}@signoz-metastore-postgres-0:5432/signoz?sslmode=disable
+        - op: replace
+          path: /services/signoz-signoz-0/ports/0
+          value: 3301:8080
+        - op: add
+          path: /services/signoz-signoz-0/depends_on
+          value:
+            signoz-metastore-postgres-0:
+              condition: service_healthy
+            signoz-telemetrystore-clickhouse-0-0:
+              condition: service_healthy
+            signoz-telemetrystore-migrator:
+              condition: service_completed_successfully
+        - op: add
+          path: /services/signoz-telemetrykeeper-clickhousekeeper-0/profiles
+          value: ["core"]
+        - op: add
+          path: /services/signoz-telemetrystore-clickhouse-0-0/profiles
+          value: ["core"]
+        - op: add
+          path: /services/signoz-telemetrystore-clickhouse-user-scripts/profiles
+          value: ["core"]
+        - op: add
+          path: /services/signoz-telemetrystore-migrator/profiles
+          value: ["core"]
+        - op: add
+          path: /services/signoz-telemetrystore-migrator/depends_on
+          value:
+            signoz-telemetrystore-clickhouse-0-0:
+              condition: service_healthy
+        - op: add
+          path: /services/signoz-telemetrystore-migrator/restart
+          value: "no"

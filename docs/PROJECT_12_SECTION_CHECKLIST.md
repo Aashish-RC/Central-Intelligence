@@ -92,7 +92,7 @@
 - [x] Repair shared Compose E2E fixture and confirm live core-service test execution
   - Evidence/qualification: PR #2 merged.
 - [ ] Validate all mandatory Compose services, including currently skipped integrations
-  - Evidence/qualification: Repository reports green Compose CI; one completion document describes 11 live cases failing closed/offline; reconcile exact live coverage.
+  - Evidence/qualification: `docker compose config --quiet` and rendered core-profile YAML validation pass with process-only placeholder secrets; 37 core service definitions are present. No services were started, migrations or readiness were verified, or images built/pulled. See `docs/verification/01_COMPOSE_SERVICE_VALIDATION.md`.
 - [ ] Verify cloud, private and on-prem deployment profiles
   - Evidence/qualification: Compose profiles are not equivalent to successful deployments in all three environments.
 - [ ] Complete monitoring, migration, scaling, backup and rollback exercises
@@ -102,7 +102,7 @@
 - [x] Restore passing Python 3.11, Python 3.13, TypeScript and Compose CI
   - Evidence/qualification: Recent GitHub Actions CI runs successful.
 - [ ] Run all 11 previously skipped live integration scenarios
-  - Evidence/qualification: Conflicting documentation: 31/31 claimed elsewhere, while completion program describes 11 failed-closed/offline; require exact per-test evidence.
+  - Evidence/qualification: 19 tests collect. The selected 11-case preflight reports 10 missing-prerequisite failures, one mocked Kamal sequence pass, zero skips, and zero genuine live-service passes. See `docs/verification/02_LIVE_INTEGRATION_CLOSURE.md`.
 - [ ] Complete load, soak, fault-injection and recovery testing
   - Evidence/qualification: Load tests reported; prolonged soak and real fault recovery not fully evidenced.
 - [ ] Perform full security, isolation and release acceptance testing

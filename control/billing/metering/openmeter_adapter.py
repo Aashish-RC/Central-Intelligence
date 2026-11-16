@@ -105,7 +105,7 @@ class OpenMeterAdapter:
                     headers=headers,
                     timeout=1.0,
                 )
-                remote_success = resp.status_code in (200, 201, 202)
+                remote_success = resp.status_code in (200, 201, 202, 204)
                 if not remote_success and self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
                     fail_closed_in_production(
                         "openmeter",

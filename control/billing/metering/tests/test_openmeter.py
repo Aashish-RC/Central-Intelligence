@@ -116,3 +116,19 @@ def test_4_tenant_per_app_breakdown(adapter):
     assert breakdown["customer_service_bot"].total_tokens == 400
     assert breakdown["data_analysis_bot"].total_tokens == 2000
 
+
+def test_5_no_content_response_counts_as_successful_ingestion(adapter, monkeypatch):
+    class NoContentResponse:
+        status_code = 204
+        text = ""
+
+    monkeypatch.setattr("httpx.Client.post", lambda *args, **kwargs: NoContentResponse())
+    adapter.adapter_mode = "live"
+
+    result = adapter.record_event(
+        TokenUsageEvent(user_id="alice", total_tokens=10),
+        dispatch_remote=True,
+    )
+
+    assert result["remote_dispatched"] is True
+

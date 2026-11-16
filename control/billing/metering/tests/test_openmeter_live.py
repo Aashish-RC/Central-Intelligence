@@ -25,7 +25,7 @@ def skip_without_live_openmeter(request):
     if request.node.name == "test_live_query_fails_closed_when_openmeter_down":
         return
     if not OPENMETER_LIVE_URL:
-        pytest.skip("OPENMETER_LIVE_URL not set; skipping live OpenMeter tests")
+        pytest.fail("OPENMETER_LIVE_URL is required for live OpenMeter tests", pytrace=False)
 
 
 def test_event_appears_in_live_query(monkeypatch):
@@ -50,13 +50,15 @@ def test_event_appears_in_live_query(monkeypatch):
     result = adapter.record_event(event, dispatch_remote=True)
     assert result["remote_dispatched"] is True
 
-    # Allow OpenMeter buffer ingestion
-    time.sleep(0.3)
-
     # Empty local events to prove query reads from live backend
     adapter._local_events = []
-    summary = adapter.query_usage(user_id=user_id)
-    assert summary.total_tokens >= 150
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        summary = adapter.query_usage(user_id=user_id)
+        if summary.total_tokens >= 150:
+            break
+        time.sleep(1)
+    assert summary.total_tokens >= 150, "OpenMeter did not persist the ingested token event"
 
 
 def test_live_query_fails_closed_when_openmeter_down(monkeypatch):

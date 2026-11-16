@@ -4,7 +4,7 @@ endpoints:
   custom:
     - name: "Central Intelligence"
       apiKey: "${REASONING_GATEWAY_API_KEY}"
-      baseURL: "http://reasoning:8787"
+      baseURL: "${LIBRECHAT_GATEWAY_URL}"
       models:
         default: ["gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"]
         fetch: true

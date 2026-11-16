@@ -62,6 +62,28 @@ def _default_compose_env() -> dict[str, str]:
     env.setdefault("KEYCLOAK_ADMIN", "admin")
     env.setdefault("KEYCLOAK_ADMIN_PASSWORD", "e2e-admin-pass")
     env.setdefault("INFISICAL_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef")
+    env.setdefault("INFISICAL_AUTH_SECRET", "e2e-infisical-auth-secret")
+    env.setdefault("INFISICAL_POSTGRES_PASSWORD", "e2e-infisical-db-pass")
+    env.setdefault("OPENFGA_POSTGRES_PASSWORD", "e2e-openfga-db-pass")
+    env.setdefault("SIGNOZ_DB_PASSWORD", "e2e-signoz-db-pass")
+    env.setdefault("LAGO_POSTGRES_PASSWORD", "e2e-lago-db-pass")
+    env.setdefault("LAGO_SECRET_KEY_BASE", "e2e-lago-secret-key-base-0123456789abcdef0123456789abcdef")
+    env.setdefault("LAGO_RSA_PRIVATE_KEY", "e2e-lago-rsa-private-key")
+    env.setdefault("LAGO_ENCRYPTION_PRIMARY_KEY", "e2e-lago-primary-key")
+    env.setdefault("LAGO_ENCRYPTION_DETERMINISTIC_KEY", "e2e-lago-deterministic-key")
+    env.setdefault("LAGO_ENCRYPTION_KEY_DERIVATION_SALT", "e2e-lago-key-derivation-salt")
+    env.setdefault("OPENMETER_POSTGRES_PASSWORD", "e2e-openmeter-db-pass")
+    env.setdefault("OPENMETER_CLICKHOUSE_PASSWORD", "e2e-openmeter-clickhouse-pass")
+    env.setdefault("LIBRECHAT_MONGO_USER", "e2e")
+    env.setdefault("LIBRECHAT_MONGO_PASSWORD", "e2e-mongo-pass")
+    env.setdefault("LIBRECHAT_CREDS_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+    env.setdefault("LIBRECHAT_CREDS_IV", "0123456789abcdef0123456789abcdef")
+    env.setdefault("LIBRECHAT_JWT_SECRET", "e2e-librechat-jwt-secret")
+    env.setdefault("LIBRECHAT_JWT_REFRESH_SECRET", "e2e-librechat-refresh-secret")
+    if not env.get("REASONING_GATEWAY_API_KEY"):
+        env["REASONING_GATEWAY_API_KEY"] = "e2e-test-reasoning-gateway-key"
+    if not env.get("LIBRECHAT_GATEWAY_URL"):
+        env["LIBRECHAT_GATEWAY_URL"] = "http://host.docker.internal:4000/v1"
     env.setdefault("LIVEKIT_KEYS", "e2ekey: e2esecret")
     env.setdefault("POSTGRES_PASSWORD", "e2e-postgres-pass")
     env.setdefault("POSTHOG_SECRET", "e2e-test-posthog-secret")
@@ -108,6 +130,13 @@ def _wait_for_http(url: str, timeout_s: float = 120.0) -> None:
     raise TimeoutError(f"Service at {url} did not become ready within {timeout_s}s: {last_exc}")
 
 
+def _required_live_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        pytest.fail(f"Required live integration variable {name} is not set", pytrace=False)
+    return value
+
+
 @pytest.fixture(scope="module", autouse=True)
 def compose_stack_lifecycle():
     """Optionally bring up Qdrant, Temporal, Keycloak, Apache AGE, and Valkey via Docker Compose."""
@@ -124,9 +153,10 @@ def compose_stack_lifecycle():
     )
 
     if not services_reachable and not docker_running:
-        pytest.skip(
+        pytest.fail(
             "Compose E2E stack is offline: Valkey (:6379), Qdrant (:6333), Keycloak (:8085) "
-            "are not listening and Docker daemon is stopped."
+            "are not listening and Docker daemon is stopped.",
+            pytrace=False,
         )
 
     if auto_start:
@@ -429,9 +459,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
 
 def test_openfga_persists_across_python_restart():
     """Verify OpenFGA state survives Python process restart (F-INT-01)."""
-    openfga_url = os.getenv("OPENFGA_LIVE_URL")
-    if not openfga_url:
-        pytest.skip("OPENFGA_LIVE_URL not set; skipping live persistence test")
+    openfga_url = _required_live_env("OPENFGA_LIVE_URL")
 
     client = httpx.Client(base_url=openfga_url, timeout=5.0)
     store_name = f"e2e-fga-{uuid4().hex[:8]}"
@@ -505,12 +533,10 @@ sys.exit(0 if allowed else 1)
 
 def test_infisical_persists_across_python_restart():
     """Verify Infisical secrets survive Python process restart (F-INT-02)."""
-    infisical_url = os.getenv("INFISICAL_LIVE_URL")
-    if not infisical_url:
-        pytest.skip("INFISICAL_LIVE_URL not set; skipping live persistence test")
+    infisical_url = _required_live_env("INFISICAL_LIVE_URL")
 
-    client_id = os.getenv("INFISICAL_CLIENT_ID", "")
-    client_secret = os.getenv("INFISICAL_CLIENT_SECRET", "")
+    client_id = _required_live_env("INFISICAL_CLIENT_ID")
+    client_secret = _required_live_env("INFISICAL_CLIENT_SECRET")
     key = f"E2E_SECRET_{uuid4().hex[:8]}"
     val = f"val_{uuid4().hex}"
 
@@ -558,11 +584,9 @@ sys.exit(0 if retrieved == '{val}' else 1)
 
 def test_lago_persists_across_python_restart():
     """Verify Lago customer subscriptions survive Python process restart (F-INT-03)."""
-    lago_url = os.getenv("LAGO_LIVE_URL")
-    if not lago_url:
-        pytest.skip("LAGO_LIVE_URL not set; skipping live persistence test")
+    lago_url = _required_live_env("LAGO_LIVE_URL")
 
-    api_key = os.getenv("LAGO_API_KEY", "")
+    api_key = _required_live_env("LAGO_API_KEY")
     customer_id = f"e2e_cust_{uuid4().hex[:8]}"
 
     env = os.environ.copy()
@@ -609,9 +633,7 @@ sys.exit(0 if allowed else 1)
 
 def test_openmeter_persists_across_python_restart():
     """Verify OpenMeter events survive Python process restart (F-INT-04)."""
-    openmeter_url = os.getenv("OPENMETER_LIVE_URL")
-    if not openmeter_url:
-        pytest.skip("OPENMETER_LIVE_URL not set; skipping live persistence test")
+    openmeter_url = _required_live_env("OPENMETER_LIVE_URL")
 
     api_token = os.getenv("OPENMETER_API_TOKEN", "")
     user_id = f"e2e_usr_{uuid4().hex[:8]}"
@@ -641,8 +663,6 @@ assert res['remote_dispatched'] is True
     )
     assert p1.returncode == 0, f"Process 1 record event failed: {p1.stderr}"
 
-    time.sleep(0.3)
-
     # Subprocess 2: query usage from fresh process
     p2 = subprocess.run(
         [
@@ -650,10 +670,16 @@ assert res['remote_dispatched'] is True
             "-c",
             f"""
 import os, sys
+import time
 from control.billing.metering.openmeter_adapter import OpenMeterAdapter
 adapter = OpenMeterAdapter(endpoint_url='{openmeter_url}', api_token='{api_token}')
-summary = adapter.query_usage(user_id='{user_id}')
-sys.exit(0 if summary.total_tokens >= 150 else 1)
+deadline = time.monotonic() + 30
+while time.monotonic() < deadline:
+    summary = adapter.query_usage(user_id='{user_id}')
+    if summary.total_tokens >= 150:
+        sys.exit(0)
+    time.sleep(1)
+raise AssertionError(f'OpenMeter usage was not persisted; got {{summary.total_tokens}} tokens')
 """,
         ],
         env=env,
@@ -665,9 +691,7 @@ sys.exit(0 if summary.total_tokens >= 150 else 1)
 
 def test_signoz_persists_across_python_restart():
     """Verify SigNoz traces survive Python process restart (F-INT-05)."""
-    signoz_url = os.getenv("SIGNOZ_LIVE_URL")
-    if not signoz_url:
-        pytest.skip("SIGNOZ_LIVE_URL not set; skipping live persistence test")
+    signoz_url = _required_live_env("SIGNOZ_LIVE_URL")
 
     otlp_url = os.getenv("SIGNOZ_OTLP_URL", "http://localhost:4318")
     op_name = f"e2e_trace_{uuid4().hex[:8]}"
@@ -695,17 +719,22 @@ span.end()
     )
     assert p1.returncode == 0, f"Process 1 start trace failed: {p1.stderr}"
 
-    time.sleep(1.0)
-
     # Subprocess 2: query trace from SigNoz
     p2 = subprocess.run(
         [
             sys.executable,
             "-c",
             f"""
-import os, sys, httpx
-resp = httpx.get('{signoz_url}/api/v1/traces', params={{'serviceName': 'central-intelligence'}}, timeout=5.0)
-sys.exit(0 if resp.status_code == 200 else 1)
+import os, sys, time, httpx
+deadline = time.monotonic() + 30
+while time.monotonic() < deadline:
+    resp = httpx.get('{signoz_url}/api/v1/traces', params={{'serviceName': 'central-intelligence'}}, timeout=5.0)
+    if resp.status_code != 200:
+        raise AssertionError(f'SigNoz trace query returned HTTP {{resp.status_code}}: {{resp.text}}')
+    if '{op_name}' in resp.text:
+        sys.exit(0)
+    time.sleep(1)
+raise AssertionError('SigNoz did not return the trace emitted by the first process')
 """,
         ],
         env=env,
@@ -717,9 +746,7 @@ sys.exit(0 if resp.status_code == 200 else 1)
 
 def test_temporal_workflow_survives_worker_restart():
     """Verify Temporal workflows survive worker process death and replay from server history (F-INT-07)."""
-    temporal_url = os.getenv("TEMPORAL_LIVE_URL")
-    if not temporal_url:
-        pytest.skip("TEMPORAL_LIVE_URL not set; skipping live Temporal replay persistence test")
+    temporal_url = _required_live_env("TEMPORAL_LIVE_URL")
 
     queue = f"e2e-wf-queue-{uuid4().hex[:8]}"
     wf_id = f"e2e-wf-{uuid4().hex[:8]}"
@@ -813,9 +840,7 @@ asyncio.run(main())
 
 def test_supabase_relational_and_vector_persist():
     """Verify Supabase Postgres relational rows and pgvector embeddings survive Python restart (F-INT-06)."""
-    postgres_url = os.getenv("POSTGRES_LIVE_URL")
-    if not postgres_url:
-        pytest.skip("POSTGRES_LIVE_URL not set; skipping live Supabase persistence test")
+    postgres_url = _required_live_env("POSTGRES_LIVE_URL")
 
     table_name = f"e2e_rel_{uuid4().hex[:8]}"
     collection = f"e2e_vec_{uuid4().hex[:8]}"
@@ -877,7 +902,7 @@ sys.exit(0)
 def test_sandbox_executes_real_python():
     """Verify Sandbox executes actual Python code in a container, returning real computed stdout (F-INT-08)."""
     if os.getenv("SANDBOX_LIVE") != "1":
-        pytest.skip("SANDBOX_LIVE=1 not set; skipping live container execution test")
+        pytest.fail("SANDBOX_LIVE=1 is required for this live container execution test", pytrace=False)
 
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
@@ -913,11 +938,8 @@ asyncio.run(main())
     assert p.returncode == 0, f"Container execution failed: {p.stderr}"
 
 
-def test_kamal_invokes_real_cli(monkeypatch):
-    """Verify Kamal deploy invokes real CLI commands in sequence (F-OPS-01)."""
-    if os.getenv("KAMAL_LIVE") != "1":
-        pytest.skip("KAMAL_LIVE=1 not set; skipping Kamal live CLI invocation test")
-
+def test_kamal_deployment_command_sequence_is_simulated(monkeypatch):
+    """Verify Kamal command ordering with mocked subprocess and HTTP calls (F-OPS-01)."""
     from unittest.mock import MagicMock
     from platform_infra.release.ci.kamal_adapter import KamalAdapter, KamalConfig, DeploymentPhase
 
@@ -959,14 +981,12 @@ def test_kamal_invokes_real_cli(monkeypatch):
 
 def test_bytebase_migration_executes_real_ddl():
     """Verify Bytebase apply_migration executes real DDL observable in Postgres (F-OPS-02)."""
-    bytebase_url = os.getenv("BYTEBASE_LIVE_URL")
-    if not bytebase_url:
-        pytest.skip("BYTEBASE_LIVE_URL not set; skipping live Bytebase DDL test")
+    bytebase_url = _required_live_env("BYTEBASE_LIVE_URL")
 
     import pg8000.native
     from platform_infra.release.db.bytebase_adapter import BytebaseAdapter, MigrationStatus
 
-    token = os.getenv("BYTEBASE_API_TOKEN", "bb_test_token")
+    token = _required_live_env("BYTEBASE_API_TOKEN")
     adapter = BytebaseAdapter(endpoint_url=bytebase_url, api_token=token, _defer_prod_check=True)
     adapter.adapter_mode = "live"
 
@@ -1009,15 +1029,17 @@ def test_bytebase_migration_executes_real_ddl():
 
 def test_librechat_routes_to_reasoning_gateway():
     """Verify LibreChat adapter bridges to Layer 4 gateway and returns dynamic completions."""
-    gateway_url = os.getenv("REASONING_GATEWAY_URL")
-    if not gateway_url:
-        pytest.skip("REASONING_GATEWAY_URL not set; skipping live LibreChat gateway test")
+    librechat_url = _required_live_env("LIBRECHAT_LIVE_URL")
+    response = httpx.get(f"{librechat_url.rstrip('/')}/health", timeout=10.0)
+    assert response.status_code == 200
+
+    gateway_url = _required_live_env("REASONING_GATEWAY_URL")
 
     from surface.interaction.web.librechat_adapter import LibreChatAdapter
 
     adapter = LibreChatAdapter(
         gateway_url=gateway_url,
-        api_key=os.getenv("REASONING_GATEWAY_API_KEY", "test_key"),
+        api_key=_required_live_env("REASONING_GATEWAY_API_KEY"),
         _defer_prod_check=True,
     )
     adapter.adapter_mode = "live"
