@@ -532,6 +532,106 @@ class HyperswitchAdapter:
             logger.info("Hyperswitch refunded %s for payment %s ($%.2f)", refund_id, payment_id, refund_amount / 100.0)
             return record
 
+    def sync_payment_status(self, payment_id: str) -> PaymentIntent:
+        """
+        Queries remote Hyperswitch gateway to reconcile and synchronize status of a single payment (DEF-04).
+        If remote state differs from local state, durable storage and caches are updated.
+        """
+        with self._lock:
+            intent = self.get_payment(payment_id)
+            is_live = (self.adapter_mode == "live" and os.getenv("CI_TEST_MODE") != "1")
+
+            remote_status_str = None
+            remote_refunded_cents = None
+            if is_live:
+                try:
+                    headers = {"api-key": self.api_key, "Content-Type": "application/json"}
+                    with httpx.Client(timeout=10.0) as client:
+                        resp = client.get(f"{self.api_url}/payments/{payment_id}", headers=headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        remote_status_str = data.get("status")
+                        remote_refunded_cents = data.get("amount_refunded") or data.get("refunded_cents")
+                    elif resp.status_code == 404:
+                        logger.warning("Payment %s not found on remote gateway", payment_id)
+                    else:
+                        raise ProductionSafetyError(
+                            f"Remote payment query failed with HTTP {resp.status_code}: {resp.text}"
+                        )
+                except ProductionSafetyError:
+                    raise
+                except Exception as exc:
+                    raise ProductionSafetyError(f"Remote payment query connection failed: {exc}") from exc
+            else:
+                # In simulated mode, if payment is pending/processing, resolve to succeeded
+                if intent.status in (PaymentStatus.PROCESSING, PaymentStatus.REQUIRES_CUSTOMER_ACTION):
+                    remote_status_str = PaymentStatus.SUCCEEDED.value
+
+            if remote_status_str:
+                new_status = PaymentStatus(remote_status_str)
+                if new_status != intent.status:
+                    logger.info("Reconciled payment %s status: %s -> %s", payment_id, intent.status.value, new_status.value)
+                    was_succeeded = (intent.status == PaymentStatus.SUCCEEDED)
+                    intent.status = new_status
+                    if new_status == PaymentStatus.SUCCEEDED and intent.invoice_id and not was_succeeded:
+                        self._settle_lago_invoice(intent.invoice_id, intent)
+                if remote_refunded_cents is not None and remote_refunded_cents > intent.refunded_cents:
+                    intent.refunded_cents = remote_refunded_cents
+
+                self._persist_payment(intent)
+
+            return intent
+
+    def reconcile_remote_settlements(
+        self,
+        payment_ids: Optional[List[str]] = None,
+        include_completed: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Reconciles local payment records with the remote Hyperswitch payment gateway (Feature 13.13 / DEF-04).
+        - Queries remote gateway for latest payment/settlement state.
+        - Detects status discrepancies (e.g. processing -> succeeded or processing -> failed).
+        - Safely updates durable SQLite ledger and memory cache.
+        - Triggers downstream Lago invoice settlement on newly confirmed successes.
+        - Resolves entitlement drift and returns structured reconciliation audit report.
+        """
+        with self._lock:
+            targets = payment_ids if payment_ids is not None else list(self._payments.keys())
+            reconciled = 0
+            divergences = 0
+            settled_invoices: List[str] = []
+            discrepancies: List[Dict[str, Any]] = []
+
+            for pid in targets:
+                intent = self._payments.get(pid)
+                if not intent:
+                    continue
+                # Skip already completed transactions unless explicitly requested
+                if not include_completed and intent.status not in (PaymentStatus.PROCESSING, PaymentStatus.REQUIRES_CUSTOMER_ACTION) and payment_ids is None:
+                    continue
+
+                old_status = intent.status.value
+                synced = self.sync_payment_status(pid)
+                reconciled += 1
+                if synced.status.value != old_status:
+                    divergences += 1
+                    discrepancies.append({
+                        "payment_id": pid,
+                        "old_status": old_status,
+                        "new_status": synced.status.value,
+                        "invoice_id": synced.invoice_id,
+                    })
+                    if synced.status == PaymentStatus.SUCCEEDED and synced.invoice_id:
+                        settled_invoices.append(synced.invoice_id)
+
+            return {
+                "total_checked": reconciled,
+                "divergences_resolved": divergences,
+                "settled_invoices": settled_invoices,
+                "discrepancies": discrepancies,
+                "timestamp": time.time(),
+            }
+
     def compute_webhook_signature(
         self,
         payload_bytes: bytes,

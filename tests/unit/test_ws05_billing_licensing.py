@@ -506,3 +506,86 @@ def test_hyperswitch_concurrent_refund_protection():
     # Payment refunded amount must not exceed original
     assert adapter.get_payment(p.payment_id).refunded_cents == 2000
 
+
+def test_hyperswitch_remote_settlement_reconciliation_resolves_drift(tmp_path):
+    """Verify that reconcile_remote_settlements resolves status discrepancies and settles invoices (DEF-04)."""
+    db_file = str(tmp_path / "hyperswitch_recon.db")
+    lago = LagoAdapter(_defer_prod_check=True)
+    adapter = HyperswitchAdapter(lago_adapter=lago, _defer_prod_check=True, db_path=db_file)
+
+    invoice = lago.generate_invoice(customer_id="cust_recon")
+    assert invoice.status == "open"
+
+    # Create unconfirmed payment (processing)
+    payment = adapter.create_payment(
+        amount_cents=5000,
+        customer_id="cust_recon",
+        invoice_id=invoice.invoice_id,
+        confirm=False,
+    )
+    assert payment.status == PaymentStatus.PROCESSING
+    assert invoice.status == "open"
+
+    # Execute reconciliation
+    recon_report = adapter.reconcile_remote_settlements()
+    assert recon_report["total_checked"] == 1
+    assert recon_report["divergences_resolved"] == 1
+    assert invoice.invoice_id in recon_report["settled_invoices"]
+    assert adapter.get_payment(payment.payment_id).status == PaymentStatus.SUCCEEDED
+    assert invoice.status == "paid"
+
+    # Verify reconciliation survives service restart across durable SQLite
+    adapter2 = HyperswitchAdapter(lago_adapter=lago, _defer_prod_check=True, db_path=db_file)
+    assert adapter2.get_payment(payment.payment_id).status == PaymentStatus.SUCCEEDED
+
+
+def test_hyperswitch_live_remote_settlement_reconciliation(monkeypatch):
+    """Verify live wire remote settlement reconciliation via HTTP GET /payments/{id}."""
+    monkeypatch.setenv("ADAPTER_MODE", "live")
+    monkeypatch.delenv("CI_TEST_MODE", raising=False)
+
+    lago = LagoAdapter(_defer_prod_check=True)
+    adapter = HyperswitchAdapter(lago_adapter=lago, _defer_prod_check=True)
+    adapter.adapter_mode = "live"
+
+    # Mock remote gateway returning processing status on POST /payments, then succeeded on GET /payments/{id}
+    def mock_post(self, url, **kwargs):
+        return httpx.Response(
+            200,
+            json={
+                "payment_id": "pay_live_test_123",
+                "status": "processing",
+                "client_secret": "hs_sec_test",
+            },
+            request=httpx.Request("POST", url),
+        )
+
+    def mock_get(self, url, **kwargs):
+        return httpx.Response(
+            200,
+            json={
+                "payment_id": "pay_live_test_123",
+                "status": "succeeded",
+                "amount": 7500,
+                "amount_refunded": 0,
+            },
+            request=httpx.Request("GET", url),
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    invoice = lago.generate_invoice(customer_id="cust_live_recon")
+    payment = adapter.create_payment(
+        amount_cents=7500,
+        customer_id="cust_live_recon",
+        invoice_id=invoice.invoice_id,
+        confirm=False,
+    )
+    assert payment.status == PaymentStatus.PROCESSING
+
+    synced = adapter.sync_payment_status(payment.payment_id)
+    assert synced.status == PaymentStatus.SUCCEEDED
+    assert invoice.status == "paid"
+
+

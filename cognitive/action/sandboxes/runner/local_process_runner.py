@@ -19,6 +19,86 @@ class LocalProcessRunner(BaseDeviceRunner):
     def __init__(self, governor: Optional[SecurityGovernor] = None):
         self.governor = governor or SecurityGovernor()
 
+    def _apply_windows_job_limits(self, pid: int, max_memory_mb: Optional[int] = None) -> Optional[int]:
+        """Applies Windows Job Object memory and lifecycle ceilings to process (DEF-03 / Task C4)."""
+        if os.name != "nt":
+            return None
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.windll.kernel32
+
+            PROCESS_ALL_ACCESS = 0x1F0FFF
+            h_proc = kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+            if not h_proc:
+                return None
+
+            h_job = kernel32.CreateJobObjectW(None, None)
+            if not h_job:
+                kernel32.CloseHandle(h_proc)
+                return None
+
+            class IO_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ("ReadOperationCount", ctypes.c_uint64),
+                    ("WriteOperationCount", ctypes.c_uint64),
+                    ("OtherOperationCount", ctypes.c_uint64),
+                    ("ReadTransferCount", ctypes.c_uint64),
+                    ("WriteTransferCount", ctypes.c_uint64),
+                    ("OtherTransferCount", ctypes.c_uint64),
+                ]
+
+            class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+                _fields_ = [
+                    ("PerProcessUserTimeLimit", ctypes.c_int64),
+                    ("PerJobUserTimeLimit", ctypes.c_int64),
+                    ("LimitFlags", wintypes.DWORD),
+                    ("MinimumWorkingSetSize", ctypes.c_size_t),
+                    ("MaximumWorkingSetSize", ctypes.c_size_t),
+                    ("ActiveProcessLimit", wintypes.DWORD),
+                    ("Affinity", ctypes.c_size_t),
+                    ("PriorityClass", wintypes.DWORD),
+                    ("SchedulingClass", wintypes.DWORD),
+                ]
+
+            class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+                _fields_ = [
+                    ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                    ("IoInfo", IO_COUNTERS),
+                    ("ProcessMemoryLimit", ctypes.c_size_t),
+                    ("JobMemoryLimit", ctypes.c_size_t),
+                    ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                    ("PeakJobMemoryUsed", ctypes.c_size_t),
+                ]
+
+            JobObjectExtendedLimitInformation = 9
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+            JOB_OBJECT_LIMIT_JOB_MEMORY = 0x00000200
+
+            info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+            flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            if max_memory_mb and max_memory_mb > 0:
+                flags |= JOB_OBJECT_LIMIT_JOB_MEMORY
+                info.JobMemoryLimit = int(max_memory_mb * 1024 * 1024)
+
+            info.BasicLimitInformation.LimitFlags = flags
+
+            success = kernel32.SetInformationJobObject(
+                h_job,
+                JobObjectExtendedLimitInformation,
+                ctypes.byref(info),
+                ctypes.sizeof(info),
+            )
+
+            if success:
+                kernel32.AssignProcessToJobObject(h_job, h_proc)
+
+            kernel32.CloseHandle(h_proc)
+            return h_job
+        except Exception:
+            return None
+
     def execute(self, request: ExecutionRequest, scratch_dir: str) -> SandboxResult:
         # 1. Host execution is unconditionally forbidden in production
         if is_production():
@@ -96,6 +176,7 @@ class LocalProcessRunner(BaseDeviceRunner):
         timeout = request.limits.timeout_seconds
         max_bytes = request.limits.max_output_bytes
 
+        h_job = None
         try:
             proc = subprocess.Popen(
                 cmd,
@@ -106,6 +187,10 @@ class LocalProcessRunner(BaseDeviceRunner):
                 stderr=subprocess.PIPE,
                 text=True,
             )
+
+            # Apply OS-level Job Object memory and lifecycle ceilings on Windows (DEF-03 / Task C4)
+            if os.name == "nt":
+                h_job = self._apply_windows_job_limits(proc.pid, request.limits.max_memory_mb)
 
             try:
                 stdout, stderr = proc.communicate(timeout=timeout)
@@ -137,6 +222,13 @@ class LocalProcessRunner(BaseDeviceRunner):
                     stderr=f"Sandbox execution timed out after {timeout} seconds",
                     duration_ms=round(duration_ms, 2),
                 )
+            finally:
+                if h_job and os.name == "nt":
+                    try:
+                        import ctypes
+                        ctypes.windll.kernel32.CloseHandle(h_job)
+                    except Exception:
+                        pass
 
         except Exception as e:
             duration_ms = (time.perf_counter() - start_time) * 1000.0

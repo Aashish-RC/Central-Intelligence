@@ -77,8 +77,8 @@ class InfisicalAdapter:
     ):
         self.server_url = server_url.rstrip("/")
         self.project_id = project_id
-        self.client_id = client_id
-        self.client_secret = client_secret
+        self.client_id = client_id or os.getenv("INFISICAL_CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("INFISICAL_CLIENT_SECRET")
         self.adapter_mode = (
             "simulated" if _defer_prod_check else require_live_adapter("infisical")
         )

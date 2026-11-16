@@ -311,3 +311,27 @@ def test_windows_filesystem_traversal_and_device_names_blocked(win_file):
         ]
     )
 
+
+def test_windows_job_object_limits_enforced():
+    """LocalProcessRunner configures Windows Job Object memory ceilings on Windows hosts (DEF-03 / Task C4)."""
+    import os
+    import sys
+    from cognitive.action.sandboxes.runner.local_process_runner import LocalProcessRunner
+
+    runner = LocalProcessRunner()
+    if os.name == "nt":
+        import subprocess
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.2)"])
+        try:
+            h_job = runner._apply_windows_job_limits(proc.pid, max_memory_mb=256)
+            assert h_job is not None and h_job != 0
+        finally:
+            proc.wait()
+            if h_job:
+                import ctypes
+                ctypes.windll.kernel32.CloseHandle(h_job)
+    else:
+        # Non-Windows gracefully returns None
+        assert runner._apply_windows_job_limits(12345, max_memory_mb=256) is None
+
+

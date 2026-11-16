@@ -153,6 +153,9 @@ class OpenMeterAdapter:
             val = int(row.get("value", 0))
             summary.total_tokens += val
             summary.billable_tokens += val
+            cost_val = float(row.get("cost_usd", row.get("cost", 0.0)))
+            summary.total_cost_usd += cost_val
+            summary.billable_cost_usd += cost_val
             summary.events_count += 1
             grp = row.get("groupBy") or row.get("groupedBy")
             if isinstance(grp, dict):

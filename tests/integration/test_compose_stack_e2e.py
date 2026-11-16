@@ -58,6 +58,30 @@ def _default_compose_env() -> dict[str, str]:
     return env
 
 
+def _is_docker_available() -> bool:
+    """Check if local Docker daemon is running and responsive."""
+    try:
+        res = subprocess.run(
+            ["docker", "info"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3.0,
+        )
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
+def _is_service_reachable(host: str, port: int, timeout_s: float = 1.0) -> bool:
+    """Fast socket check for listening local service."""
+    import socket
+    try:
+        with socket.create_connection((host, port), timeout=timeout_s):
+            return True
+    except Exception:
+        return False
+
+
 def _wait_for_http(url: str, timeout_s: float = 120.0) -> None:
     """Poll an HTTP endpoint until it responds with <500 status or raise TimeoutError."""
     deadline = time.monotonic() + timeout_s
@@ -80,6 +104,19 @@ def compose_stack_lifecycle():
     env = _default_compose_env()
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
     keycloak_url = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
+
+    docker_running = _is_docker_available()
+    services_reachable = (
+        _is_service_reachable("localhost", 6379)
+        or _is_service_reachable("localhost", 6333)
+        or _is_service_reachable("localhost", 8085)
+    )
+
+    if not services_reachable and not docker_running:
+        pytest.skip(
+            "Compose E2E stack is offline: Valkey (:6379), Qdrant (:6333), Keycloak (:8085) "
+            "are not listening and Docker daemon is stopped."
+        )
 
     if auto_start:
         os.environ.setdefault("QDRANT_URL", qdrant_url)

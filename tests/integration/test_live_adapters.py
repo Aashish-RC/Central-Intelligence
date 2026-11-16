@@ -241,8 +241,14 @@ def test_10_3_openfga_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
     # When live OpenFGA daemon is responsive, live adapter operations proceed
     def mock_get(self, url, *args, **kwargs):
-        return httpx.Response(200, request=httpx.Request("GET", url))
+        return httpx.Response(200, json={"stores": [{"id": "store_123"}]}, request=httpx.Request("GET", url))
+    def mock_post(self, url, *args, **kwargs):
+        payload = kwargs.get("json") or {}
+        user = payload.get("tuple_key", {}).get("user", "")
+        allowed = (user != "user:bob")
+        return httpx.Response(200, json={"allowed": allowed}, request=httpx.Request("POST", url))
     monkeypatch.setattr(httpx.Client, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
 
     adapter = OpenFGAAdapter()
     assert adapter.adapter_mode == "live"
@@ -262,9 +268,17 @@ def test_10_3_infisical_adapter_live(monkeypatch: pytest.MonkeyPatch):
         InfisicalAdapter()
 
     # When live Infisical vault daemon is responsive, live adapter operations proceed
+    monkeypatch.setenv("INFISICAL_CLIENT_ID", "test-client-id")
+    monkeypatch.setenv("INFISICAL_CLIENT_SECRET", "test-client-secret")
+
     def mock_get(self, url, *args, **kwargs):
-        return httpx.Response(200, request=httpx.Request("GET", url))
+        return httpx.Response(200, json={"secret": {"secretValue": "postgres://user:pass@localhost:5432/db", "version": 1}}, request=httpx.Request("GET", url))
+    def mock_post(self, url, *args, **kwargs):
+        if "universal-auth" in str(url):
+            return httpx.Response(200, json={"accessToken": "test-token", "expiresIn": 3600}, request=httpx.Request("POST", url))
+        return httpx.Response(200, json={"secret": {"secretValue": "postgres://user:pass@localhost:5432/db", "version": 1}}, request=httpx.Request("POST", url))
     monkeypatch.setattr(httpx.Client, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
 
     adapter = InfisicalAdapter()
     assert adapter.adapter_mode == "live"
@@ -281,6 +295,17 @@ def test_10_3_infisical_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_4_openmeter_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("OPENMETER_ADAPTER_MODE", "live")
+    def mock_post(self, url, *args, **kwargs):
+        return httpx.Response(201, json={"status": "accepted"}, request=httpx.Request("POST", url))
+    def mock_get(self, url, *args, **kwargs):
+        return httpx.Response(
+            200,
+            json={"data": [{"value": 200, "cost_usd": 0.002, "groupBy": {"model": "gpt-4o"}}]},
+            request=httpx.Request("GET", url),
+        )
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
     adapter = OpenMeterAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -303,6 +328,14 @@ def test_10_4_openmeter_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_4_lago_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LAGO_ADAPTER_MODE", "live")
+    def mock_post(self, url, *args, **kwargs):
+        return httpx.Response(
+            200,
+            json={"customer": {"external_id": "cust_42"}, "plan": {"code": "developer_pro"}},
+            request=httpx.Request("POST", url),
+        )
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+
     adapter = LagoAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -381,6 +414,10 @@ def test_10_4_hyperswitch_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_5_signoz_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("SIGNOZ_ADAPTER_MODE", "live")
+    def mock_get(self, url, *args, **kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", url))
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
     adapter = SigNozAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -425,6 +462,31 @@ def test_10_5_posthog_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_6_supabase_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("SUPABASE_ADAPTER_MODE", "live")
+    import pg8000
+    mock_conn = MagicMock()
+    mock_cur = MagicMock()
+    mock_conn.cursor.return_value = mock_cur
+    monkeypatch.setattr(pg8000, "connect", lambda *args, **kwargs: mock_conn)
+
+    last_query = [""]
+    def record_execute(sql, *args, **kwargs):
+        last_query[0] = str(sql)
+    mock_cur.execute.side_effect = record_execute
+
+    def smart_fetchall():
+        q = last_query[0]
+        if "ag_graph" in q:
+            return [("graph_exists",)]
+        if "vec_embeddings" in q:
+            return [("doc_1", "vector doc", "{}", "u1", 0.999)]
+        if "cypher" in q:
+            return [("Concept",)]
+        return [("p1", "AI dev", "u1")]
+
+    mock_cur.fetchall.side_effect = smart_fetchall
+    mock_cur.fetchone.return_value = [True]
+    mock_cur.description = [("id",), ("bio",), ("user_id",)]
+
     adapter = SupabaseAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -506,6 +568,18 @@ def test_10_6_automq_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_7_temporal_adapter_live(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("TEMPORAL_ADAPTER_MODE", "live")
+    mock_client = MagicMock()
+    mock_handle = MagicMock()
+    async def mock_result():
+        return {"nodes_executed": ["n1", "n2"], "success": True, "outputs": {}}
+    mock_handle.result = mock_result
+    async def mock_start(*args, **kwargs):
+        return mock_handle
+    mock_client.start_workflow = mock_start
+    async def mock_get_client(self):
+        return mock_client
+    monkeypatch.setattr(TemporalWorkflowAdapter, "_get_client", mock_get_client)
+
     adapter = TemporalWorkflowAdapter(checkpoint_dir=str(tmp_path))
     assert adapter.adapter_mode == "live"
 
@@ -561,6 +635,15 @@ def test_10_8_growthbook_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_8_bytebase_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("BYTEBASE_ADAPTER_MODE", "live")
+    monkeypatch.setenv("BYTEBASE_API_TOKEN", "bb_live_token_secret_12345")
+    def mock_get(url, *args, **kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", url))
+    def mock_post(self, url, *args, **kwargs):
+        return httpx.Response(200, json={"status": "success"}, request=httpx.Request("POST", url))
+    monkeypatch.setattr(httpx, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+
     adapter = BytebaseAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -577,7 +660,12 @@ def test_10_8_bytebase_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_10_8_kamal_adapter_live(monkeypatch: pytest.MonkeyPatch):
+    import shutil
     monkeypatch.setenv("KAMAL_ADAPTER_MODE", "live")
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/local/bin/kamal" if cmd == "kamal" else None)
+    monkeypatch.setattr(KamalAdapter, "_run_kamal", lambda self, cmd, env: None)
+    monkeypatch.setattr(httpx, "get", lambda url, *args, **kwargs: httpx.Response(200, request=httpx.Request("GET", url)))
+
     adapter = KamalAdapter()
     assert adapter.adapter_mode == "live"
 
@@ -656,13 +744,27 @@ def test_10_9_langwatch_adapter_live(monkeypatch: pytest.MonkeyPatch):
 
 def test_10_10_librechat_adapter_live(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LIBRECHAT_ADAPTER_MODE", "live")
+    def mock_get(url, *args, **kwargs):
+        return httpx.Response(200, request=httpx.Request("GET", url))
+    def mock_post(self, url, *args, **kwargs):
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": "Draft project roadmap"}}]},
+            request=httpx.Request("POST", url),
+        )
+    monkeypatch.setattr(httpx, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+    monkeypatch.setattr(httpx.Client, "post", mock_post)
+
     adapter = LibreChatAdapter()
     assert adapter.adapter_mode == "live"
 
     conv = adapter.create_conversation(title="Planning", provider="anthropic", model="claude-3-7-sonnet")
     msg = adapter.send_message(conv.conversation_id, "Draft project roadmap", role="user")
     assert msg.content == "Draft project roadmap"
-    assert len(conv.messages) == 1
+    assert len(conv.messages) == 2
+    assert conv.messages[0].role == "user"
+    assert conv.messages[1].role == "assistant"
 
 
 def test_10_10_jan_desktop_adapter_live(monkeypatch: pytest.MonkeyPatch):
