@@ -1,8 +1,8 @@
 # Central Intelligence — Critical Acceptance Checklist
 
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Branch:** `feature/critical-completion-mission`  
-**Latest Baseline Commit:** `b3778ea`  
+**Branch:** `main`  
+**Reviewed Commit:** `5dfb59c0090f90e450fc574b801847e96f2ca985`  
 **Status Date:** 2026-11-16  
 
 ---
@@ -16,7 +16,7 @@
 | **A2** | Complete v1 feature inventory across 19 layers | **VERIFIED** | Complete frozen inventory across all 19 layers with zero ambiguous or unowned requirements. | `docs/FEATURE_AUDIT.md`, `docs/GATEWAY_SPEC_AUDIT.md`, and `test_19_layer_operational_readiness_matrix` pass. |
 | **A3** | Requirement to implementation & test traceability | **VERIFIED** | 100% requirement-to-code-to-test mapping covering all 337 features and gateway spec. | Complete traceability matrix in `docs/` and verified across dedicated test suites. |
 | **A4** | Re-audit implementations (real vs simulated) | **VERIFIED** | Explicit classification of mock vs live behavior; zero undeclared mocks; fail-closed behavior in live mode. | 31/31 live adapter integration tests pass (`tests/integration/test_live_adapters.py`); fail-closed verified when backends unreachable. |
-| **A5** | Evidence-backed scorecard & dependency graph | **VERIFIED** | Layer-by-layer scorecard with strict completion and verified operational readiness metrics. | Documented in `docs/CRITICAL_PROGRESS_DASHBOARD.md` (93.3% strict completion, 100% functional completeness). |
+| **A5** | Evidence-backed scorecard & dependency graph | **VERIFIED** | Layer-by-layer scorecard with strict completion and verified operational readiness metrics. | Documented in `docs/CRITICAL_PROGRESS_DASHBOARD.md`; critical checklist now reports 30/30 (100%) after C3/D3 closure. Prior 93.3% figure is historical. |
 
 ### B. Identity, Secrets and Governance
 | ID | Task | Status | Acceptance Criteria | Evidence |
@@ -62,3 +62,21 @@
 | **F3** | Load, soak, concurrency & recovery testing | **VERIFIED** | 10,000 memory ops, concurrent chat, RAG throughput, crash recovery. | All 3 load tests pass in `tests/load/` (`test_load_chat`, `test_load_memory`, `test_load_retrieval`). |
 | **F4** | Threat modeling, vulnerability scanning, pentesting | **VERIFIED** | Threat model review, dependency vulnerability audit, tenant boundary verification. | Security review documented in `docs/SECURITY_REVIEW.md`. Formal `pip-audit` passed (0 known vulnerabilities found after chromadb cleanup). |
 | **F5** | Data integrity, SLO reliability & audit completeness | **VERIFIED** | End-to-end Merkle audit completeness, p99 latency guarantees, zero uninspected errors. | Merkle audit trails verified across tool and workflow runs; full 19-layer matrix passes in `test_19_layer_operational_readiness_matrix`. |
+
+---
+
+## GitHub Source Review — 2026-11-16
+
+- **Reviewed revision:** `5dfb59c0090f90e450fc574b801847e96f2ca985` on `main`.
+- **Critical checklist:** 30/30 tasks marked VERIFIED based on repository acceptance evidence; this is **not** a separate production-readiness certification.
+- **C3 source inspected:** `SecurityGovernor.validate_filename()` and `DockerRunner.execute()` enforce filename checks and resolved scratch-directory containment. The repository report records 56 unit checks and 12 live isolation controls.
+- **D3 source inspected:** `IntegratedHybridRetrievalEngine` now requires a tenant context for deletion, scopes backend deletes to that tenant, and attempts compensating cleanup for partially indexed Apache AGE graph entities/relationships. The repository checklist records 12 retrieval hardening unit controls and 3 combined live tests.
+- **Evidence provenance:** Counts above are from committed test documentation and execution reports; this GitHub source review did not independently execute Docker or pytest.
+
+### Follow-up quality and operational gates (not included in 30/30)
+
+- [ ] Verify tenant identity is derived from a trusted authenticated context at every external entrypoint; matching caller-supplied strings alone is insufficient authorization.
+- [ ] Exercise partial graph write and rollback-cleanup failures, including process interruption, to establish durable recovery/reconciliation rather than best-effort cleanup alone.
+- [ ] Run and record successful Ruff/static checks and the full cross-layer regression suite against this exact commit.
+- [ ] Run the 19-layer end-to-end operational audit, including restart recovery, multi-tenant concurrency, backup/restore, and deployment rollback.
+
