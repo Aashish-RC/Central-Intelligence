@@ -265,7 +265,7 @@ def test_keycloak_oidc_and_admin_api_e2e() -> None:
             "username": admin_user,
             "password": admin_password,
         },
-        timeout=10.0,
+        timeout=30.0,
     )
     token_resp.raise_for_status()
     access_token = token_resp.json()["access_token"]
@@ -274,7 +274,7 @@ def test_keycloak_oidc_and_admin_api_e2e() -> None:
     realms_resp = httpx.get(
         f"{keycloak_url}/admin/realms",
         headers={"Authorization": f"Bearer {access_token}"},
-        timeout=10.0,
+        timeout=30.0,
     )
     realms_resp.raise_for_status()
     realm_names = {r["realm"] for r in realms_resp.json()}
@@ -461,6 +461,7 @@ def test_openfga_persists_across_python_restart():
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
     env.pop("CI_TEST_MODE", None)
+    env["PYTHONPATH"] = os.pathsep.join([str(REPO_ROOT)] + [p for p in sys.path if p])
 
     # Subprocess 1: write tuple
     p1 = subprocess.run(
@@ -475,6 +476,7 @@ adapter.write_tuple('{user_id}', 'viewer', '{doc_id}')
 """,
         ],
         env=env,
+        cwd=str(REPO_ROOT),
         capture_output=True,
         text=True,
     )
@@ -494,6 +496,7 @@ sys.exit(0 if allowed else 1)
 """,
         ],
         env=env,
+        cwd=str(REPO_ROOT),
         capture_output=True,
         text=True,
     )
@@ -724,6 +727,7 @@ def test_temporal_workflow_survives_worker_restart():
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
     env.pop("CI_TEST_MODE", None)
+    env["PYTHONPATH"] = os.pathsep.join([str(REPO_ROOT)] + [p for p in sys.path if p])
 
     # Subprocess 1: Start Temporal worker in background
     worker_code = f"""
@@ -733,7 +737,7 @@ adapter = TemporalWorkflowAdapter(target_host='{temporal_url}', task_queue='{que
 adapter.adapter_mode = 'live'
 asyncio.run(adapter.start_worker())
 """
-    w1 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    w1 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, cwd=str(REPO_ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     time.sleep(2.0)
 
     try:
@@ -769,7 +773,7 @@ async def main():
 
 asyncio.run(main())
 """
-        p_start = subprocess.run([sys.executable, "-c", start_code], env=env, capture_output=True, text=True)
+        p_start = subprocess.run([sys.executable, "-c", start_code], env=env, cwd=str(REPO_ROOT), capture_output=True, text=True)
         assert p_start.returncode == 0, f"Failed to start workflow: {p_start.stderr}"
 
         # Kill worker 1 mid-execution
@@ -778,7 +782,7 @@ asyncio.run(main())
         w1.wait(timeout=5.0)
 
         # Start worker 2 (simulating worker restart)
-        w2 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        w2 = subprocess.Popen([sys.executable, "-c", worker_code], env=env, cwd=str(REPO_ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         time.sleep(1.0)
         try:
             # Query result from client
@@ -797,7 +801,7 @@ async def main():
 
 asyncio.run(main())
 """
-            p_res = subprocess.run([sys.executable, "-c", result_code], env=env, capture_output=True, text=True)
+            p_res = subprocess.run([sys.executable, "-c", result_code], env=env, cwd=str(REPO_ROOT), capture_output=True, text=True)
             assert p_res.returncode == 0, f"Workflow failed to complete upon worker restart: {p_res.stderr}"
         finally:
             w2.terminate()

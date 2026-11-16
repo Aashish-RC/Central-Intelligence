@@ -33,7 +33,7 @@ class CIDagWorkflow:
                 result = await workflow.execute_activity(
                     "execute_node",
                     args=[current_id, node.action_name, node.label, initial_input],
-                    start_to_close_timeout=timedelta(seconds=300),
+                    start_to_close_timeout=timedelta(seconds=5),
                 )
                 completed.add(current_id)
                 outputs[current_id] = result

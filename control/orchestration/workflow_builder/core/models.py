@@ -101,7 +101,7 @@ class WorkflowGraph(BaseModel):
             for ed in d.get("edges", [])
         ]
         return cls(
-            workflow_id=d.get("workflow_id", f"wf_{uuid.uuid4().hex[:8]}"),
+            workflow_id=d["workflow_id"] if d.get("workflow_id") else f"wf_{uuid.uuid4().hex[:8]}",
             name=d.get("name", "workflow"),
             description=d.get("description", ""),
             nodes=nodes,

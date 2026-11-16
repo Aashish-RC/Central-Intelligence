@@ -100,7 +100,7 @@ class TemporalWorkflowAdapter(BaseOrchestratorBridge):
         if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
             return
         try:
-            from temporalio.worker import Worker
+            from temporalio.worker import UnsandboxedWorkflowRunner, Worker
             from .temporal_workflow import CIDagWorkflow
             from .temporal_activities import execute_node
 
@@ -110,6 +110,7 @@ class TemporalWorkflowAdapter(BaseOrchestratorBridge):
                 task_queue=self.task_queue,
                 workflows=[CIDagWorkflow],
                 activities=[execute_node],
+                workflow_runner=UnsandboxedWorkflowRunner(),
             )
             await worker.run()
         except Exception as exc:

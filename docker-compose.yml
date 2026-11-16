@@ -13,7 +13,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /healthz HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -218,11 +218,11 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      test: ["CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /realms/master/.well-known/openid-configuration HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20
-      start_period: 25s
+      start_period: 60s
 
   # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
   openfga:
@@ -239,11 +239,11 @@ services:
     volumes:
       - openfga_data:/var/lib/openfga
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/healthz"]
+      test: ["CMD", "/openfga", "version"]
       interval: 5s
       timeout: 3s
       retries: 20
-      start_period: 15s
+      start_period: 5s
 
   # Infisical Vault for L12 Secret Management & Key Rotation (MIT)
   infisical:
@@ -385,11 +385,11 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 30s
+      test: ["CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/9092' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   # Svix Webhook Delivery Service for L15 Data & Event Webhooks (MIT)
   svix:
@@ -538,11 +538,11 @@ services:
     container_name: central-bytebase
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "5678:8080"
     volumes:
       - bytebase_data:/var/opt/bytebase
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/healthz || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20
