@@ -1,7 +1,9 @@
 """End-to-end Docker Compose integration suite (Qdrant, Temporal, Keycloak, Valkey).
 
 Excluded from offline default pytest via ``@pytest.mark.live``.
-Run directly against a live compose stack:
+Run the local Compose subset used by CI:
+    pytest -m "live and not requires_provisioned_services" tests/integration/test_compose_stack_e2e.py -v
+Run the full suite only after provisioning all required external targets and credentials:
     pytest -m live tests/integration/test_compose_stack_e2e.py -v
 Or let the suite start/stop the target compose services automatically:
     COMPOSE_E2E_AUTO_START=1 pytest -m live tests/integration/test_compose_stack_e2e.py -v
@@ -457,6 +459,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
         l3_graph.close()
 
 
+@pytest.mark.requires_provisioned_services
 def test_openfga_persists_across_python_restart():
     """Verify OpenFGA state survives Python process restart (F-INT-01)."""
     openfga_url = _required_live_env("OPENFGA_LIVE_URL")
@@ -531,6 +534,7 @@ sys.exit(0 if allowed else 1)
     assert p2.returncode == 0, f"Process 2 check failed: {p2.stderr}"
 
 
+@pytest.mark.requires_provisioned_services
 def test_infisical_persists_across_python_restart():
     """Verify Infisical secrets survive Python process restart (F-INT-02)."""
     infisical_url = _required_live_env("INFISICAL_LIVE_URL")
@@ -582,6 +586,7 @@ sys.exit(0 if retrieved == '{val}' else 1)
     assert p2.returncode == 0, f"Process 2 retrieve failed: {p2.stderr}"
 
 
+@pytest.mark.requires_provisioned_services
 def test_lago_persists_across_python_restart():
     """Verify Lago customer subscriptions survive Python process restart (F-INT-03)."""
     lago_url = _required_live_env("LAGO_LIVE_URL")
@@ -631,6 +636,7 @@ sys.exit(0 if allowed else 1)
     assert p2.returncode == 0, f"Process 2 entitlement failed: {p2.stderr}"
 
 
+@pytest.mark.requires_provisioned_services
 def test_openmeter_persists_across_python_restart():
     """Verify OpenMeter events survive Python process restart (F-INT-04)."""
     openmeter_url = _required_live_env("OPENMETER_LIVE_URL")
@@ -689,6 +695,7 @@ raise AssertionError(f'OpenMeter usage was not persisted; got {{summary.total_to
     assert p2.returncode == 0, f"Process 2 query usage failed: {p2.stderr}"
 
 
+@pytest.mark.requires_provisioned_services
 def test_signoz_persists_across_python_restart():
     """Verify SigNoz traces survive Python process restart (F-INT-05)."""
     signoz_url = _required_live_env("SIGNOZ_LIVE_URL")
@@ -838,6 +845,7 @@ asyncio.run(main())
             w1.terminate()
 
 
+@pytest.mark.requires_provisioned_services
 def test_supabase_relational_and_vector_persist():
     """Verify Supabase Postgres relational rows and pgvector embeddings survive Python restart (F-INT-06)."""
     postgres_url = _required_live_env("POSTGRES_LIVE_URL")
@@ -899,6 +907,7 @@ sys.exit(0)
     assert p2.returncode == 0, f"Process 2 query failed: {p2.stderr}"
 
 
+@pytest.mark.requires_provisioned_services
 def test_sandbox_executes_real_python():
     """Verify Sandbox executes actual Python code in a container, returning real computed stdout (F-INT-08)."""
     if os.getenv("SANDBOX_LIVE") != "1":
@@ -979,6 +988,7 @@ def test_kamal_deployment_command_sequence_is_simulated(monkeypatch):
     assert executed_commands == expected
 
 
+@pytest.mark.requires_provisioned_services
 def test_bytebase_migration_executes_real_ddl():
     """Verify Bytebase apply_migration executes real DDL observable in Postgres (F-OPS-02)."""
     bytebase_url = _required_live_env("BYTEBASE_LIVE_URL")
@@ -1027,6 +1037,7 @@ def test_bytebase_migration_executes_real_ddl():
         conn.close()
 
 
+@pytest.mark.requires_provisioned_services
 def test_librechat_routes_to_reasoning_gateway():
     """Verify LibreChat adapter bridges to Layer 4 gateway and returns dynamic completions."""
     librechat_url = _required_live_env("LIBRECHAT_LIVE_URL")

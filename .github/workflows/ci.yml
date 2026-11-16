@@ -98,6 +98,7 @@ jobs:
       KEYCLOAK_ADMIN_PASSWORD: e2e-admin-pass
       INFISICAL_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
       LIVEKIT_KEYS: "e2ekey: e2esecret"
+      TEMPORAL_LIVE_URL: localhost:7233
       POSTGRES_PASSWORD: e2e-postgres-pass
       POSTHOG_SECRET: e2e-test-posthog-secret
       SVIX_JWT_SECRET: e2e-test-svix-jwt-secret
@@ -116,10 +117,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install --require-hashes -r requirements.lock
 
-      - name: Run live Compose E2E test suite
+      - name: Provide Compose interpolation placeholders
+        run: cp .env.example .env
+
+      - name: Run local Compose E2E tests
         env:
           COMPOSE_E2E_AUTO_START: "1"
-        run: python -m pytest -m live tests/integration/test_compose_stack_e2e.py -v -s --tb=short
+        run: python -m pytest -m "live and not requires_provisioned_services" tests/integration/test_compose_stack_e2e.py -v -s --tb=short
 
       - name: Dump compose logs on failure
         if: failure()
@@ -129,6 +133,7 @@ jobs:
           KEYCLOAK_ADMIN: admin
           KEYCLOAK_ADMIN_PASSWORD: e2e-admin-pass
           INFISICAL_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
+          TEMPORAL_LIVE_URL: localhost:7233
           LIVEKIT_KEYS: "e2ekey: e2esecret"
           POSTGRES_PASSWORD: e2e-postgres-pass
           POSTHOG_SECRET: e2e-test-posthog-secret

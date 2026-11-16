@@ -104,7 +104,8 @@ norecursedirs = [
 ]
 asyncio_mode = "auto"
 markers = [
-    "live: marks tests requiring an actual browser environment (excluded from default CI)",
+    "live: marks tests requiring live service integrations (excluded from offline default pytest)",
+    "requires_provisioned_services: marks live tests requiring separately provisioned services or credentials",
     "disallow_local: marks tests disallowing local sandbox fallback",
 ]
 addopts = "-m 'not live' -p no:phoenix"
