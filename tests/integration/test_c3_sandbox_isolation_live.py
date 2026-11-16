@@ -63,21 +63,21 @@ pytestmark = [pytest.mark.live, pytest.mark.asyncio]
 
 
 def _require_docker() -> None:
-    """Skip test if Docker daemon is not operational."""
+    """Fail test if Docker daemon is not operational (live acceptance requires working engine)."""
     docker_bin = shutil.which("docker")
     if not docker_bin:
-        pytest.skip("Docker CLI not found on host")
+        pytest.fail("Docker CLI not found on host - live acceptance requires functional container engine")
     try:
         res = subprocess.run(
             ["docker", "info"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=5.0,
+            timeout=10.0,
         )
         if res.returncode != 0:
-            pytest.skip("Docker daemon is not responsive")
+            pytest.fail("Docker daemon is not responsive - live acceptance requires functional container engine")
     except Exception as exc:
-        pytest.skip(f"Docker health check failed: {exc}")
+        pytest.fail(f"Docker health check failed: {exc}")
 
 
 async def test_c3_01_permitted_real_python_execution(monkeypatch):
@@ -144,7 +144,7 @@ async def test_c3_03_effective_privileges_and_capabilities(monkeypatch):
 
 
 async def test_c3_04_effective_resource_limits(monkeypatch):
-    """Control 4: Kernel memory ceilings are enforced by cgroups inside the container."""
+    """Control 4: Kernel memory, CPU, and process ceilings are enforced inside the container."""
     _require_docker()
     monkeypatch.setenv("ADAPTER_MODE", "live")
     monkeypatch.delenv("CI_TEST_MODE", raising=False)
@@ -155,28 +155,47 @@ async def test_c3_04_effective_resource_limits(monkeypatch):
     cmd = (
         'python3 -c "'
         'import os\n'
-        'limit = None\n'
+        'mem_limit = None\n'
         'for p in [\'/sys/fs/cgroup/memory.max\', \'/sys/fs/cgroup/memory/memory.limit_in_bytes\']:\n'
         '    if os.path.exists(p):\n'
         '        with open(p) as f:\n'
         '            val = f.read().strip()\n'
         '            if val != \'max\':\n'
-        '                limit = int(val)\n'
+        '                mem_limit = int(val)\n'
         '                break\n'
-        'print(f\'CGROUP_MEMORY_LIMIT={limit}\')\n'
+        'pids_limit = None\n'
+        'for p in [\'/sys/fs/cgroup/pids.max\', \'/sys/fs/cgroup/pids/pids.max\']:\n'
+        '    if os.path.exists(p):\n'
+        '        with open(p) as f:\n'
+        '            val = f.read().strip()\n'
+        '            if val != \'max\':\n'
+        '                pids_limit = int(val)\n'
+        '                break\n'
+        'print(f\'CGROUP_MEMORY_LIMIT={mem_limit}\')\n'
+        'print(f\'CGROUP_PIDS_LIMIT={pids_limit}\')\n'
         '"'
     )
 
     res = await adapter.execute_command(cmd, config=config)
-    assert res["exit_code"] == 0
+    assert res["exit_code"] == 0, f"Execution failed: {res}"
     stdout = res["stdout"]
-    assert "CGROUP_MEMORY_LIMIT=" in stdout
-    # Extract limit integer
+    assert "CGROUP_MEMORY_LIMIT=" in stdout, f"Missing cgroup memory output: {stdout}"
+    
+    # Extract memory limit integer; MUST be finite and established
     limit_str = stdout.split("CGROUP_MEMORY_LIMIT=")[1].split()[0]
-    if limit_str != "None":
-        limit_bytes = int(limit_str)
-        # Default is 512MB = 536,870,912 bytes
-        assert limit_bytes <= 536870912, f"Memory ceiling {limit_bytes} exceeds 512MB"
+    assert limit_str != "None" and limit_str != "max", (
+        f"Failed to establish finite effective memory limit: {stdout}"
+    )
+    limit_bytes = int(limit_str)
+    # Default is 512MB = 536,870,912 bytes
+    assert 0 < limit_bytes <= 536870912, f"Memory ceiling {limit_bytes} exceeds 512MB or is invalid"
+
+    # Verify process/pids ceiling if present
+    if "CGROUP_PIDS_LIMIT=" in stdout:
+        pids_str = stdout.split("CGROUP_PIDS_LIMIT=")[1].split()[0]
+        if pids_str not in ("None", "max"):
+            pids_val = int(pids_str)
+            assert 0 < pids_val <= 64, f"Pids limit {pids_val} exceeds expected sandbox ceiling"
 
 
 async def test_c3_05_network_denied_by_default(monkeypatch):
@@ -319,6 +338,52 @@ async def test_c3_08_adversarial_host_escape_blocked(monkeypatch):
     assert "blocked" in str(exc_info.value).lower()
 
 
+async def test_c3_08b_host_scratch_path_traversal_blocked(monkeypatch):
+    """Control 8b: Host scratch directory path traversal and special filenames are strictly rejected."""
+    _require_docker()
+    monkeypatch.setenv("ADAPTER_MODE", "live")
+    monkeypatch.delenv("CI_TEST_MODE", raising=False)
+    monkeypatch.delenv("E2B_API_KEY", raising=False)
+
+    adapter = E2BSandboxAdapter()
+    config = SandboxConfig(timeout_seconds=10)
+
+    dangerous_file_keys = [
+        "../../etc/cron.d/evil",
+        "C:\\Windows\\system32\\evil.dll",
+        "D:/System/rootkit.sys",
+        "\\\\evil-server\\share\\malware.exe",
+        "//192.168.1.5/share/exploit.bat",
+        "test.txt:hidden_stream",
+        "CON",
+        "aux/file.txt",
+        "sub/con.py",
+        "COM1",
+        "evil.txt.",
+        "evil.txt ",
+        "/absolute/root/file.py",
+    ]
+
+    for bad_name in dangerous_file_keys:
+        with pytest.raises(SandboxExecutionError) as exc_info:
+            await adapter.execute_command(
+                'python3 -c "print(1)"',
+                config=config,
+                files={bad_name: "payload content"},
+            )
+        err = str(exc_info.value).lower()
+        assert any(
+            token in err
+            for token in [
+                "blocked",
+                "traversal",
+                "escape",
+                "reserved",
+                "rejected",
+            ]
+        ), f"Filename '{bad_name}' was not blocked as expected: {err}"
+
+
 async def test_c3_09_tenant_isolation_and_workspace_cleanup(monkeypatch):
     """Control 9: Tenant workspaces are isolated; Tenant B cannot observe Tenant A's scratch files."""
     _require_docker()
@@ -380,9 +445,10 @@ async def test_c3_10_timeout_and_process_cleanup(monkeypatch):
     assert elapsed < 10.0, f"Timeout enforcement exceeded expected window: {elapsed:.2f}s"
     assert "timed out" in str(exc_info.value).lower()
 
-    # Verify no dangling containers with our prefix remain running
+    # Verify no dangling containers with our prefix remain running across configured runtime
+    runtime_bin = os.getenv("CONTAINER_RUNTIME") or "docker"
     res = subprocess.run(
-        ["docker", "ps", "--filter", "name=pheonix-sb-", "--format", "{{.Names}}"],
+        [runtime_bin, "ps", "--filter", "name=pheonix-sb-", "--format", "{{.Names}}"],
         capture_output=True,
         text=True,
     )

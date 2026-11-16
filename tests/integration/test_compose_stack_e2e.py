@@ -76,7 +76,7 @@ def _is_docker_available() -> bool:
             ["docker", "info"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=3.0,
+            timeout=10.0,
         )
         return res.returncode == 0
     except Exception:
@@ -891,7 +891,7 @@ from agent.core.manifest import SandboxConfig
 
 async def main():
     adapter = E2BSandboxAdapter()
-    config = SandboxConfig(timeout_seconds=15)
+    config = SandboxConfig(timeout_seconds=30)
     res = await adapter.execute_command("python3 -c 'print(2+2)'", config=config)
     assert res['exit_code'] == 0, f"Non-zero exit: {res}"
     assert res['stdout'].strip() == "4", f"Expected '4', got: {res['stdout']}"

@@ -85,8 +85,8 @@ class SandboxManager(BaseSandboxManager):
             except ImportError:
                 pass
 
-        # Create an isolated temporary workspace directory
-        temp_scratch = tempfile.mkdtemp(prefix=f"pheonix_sb_{request.project_id}_")
+        # Create an isolated temporary workspace directory scoped by tenant and project
+        temp_scratch = tempfile.mkdtemp(prefix=f"pheonix_sb_{request.tenant_id}_{request.project_id}_")
 
         try:
             result = self.runner.execute(request, scratch_dir=temp_scratch)

@@ -429,6 +429,101 @@ class SupabaseAdapter:
                 cause=exc,
             )
 
+    def delete_embedding(
+        self,
+        collection: str,
+        record_id: str,
+        user_id: Optional[str] = None,
+    ) -> bool:
+        """Delete a vector embedding record from pgvector by ID, optionally user-scoped."""
+        if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
+            records = self.vector_collections.get(collection, [])
+            initial_len = len(records)
+            self.vector_collections[collection] = [
+                r for r in records
+                if not (r.id == record_id and (user_id is None or r.user_id == user_id))
+            ]
+            return len(self.vector_collections[collection]) < initial_len
+
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
+                [f"vec_{collection}"],
+            )
+            exists = cur.fetchone()[0]
+            if not exists:
+                cur.close()
+                return False
+
+            sql = f"DELETE FROM vec_{collection} WHERE id = %s"
+            params: List[Any] = [record_id]
+            if user_id:
+                sql += " AND user_id = %s"
+                params.append(user_id)
+            cur.execute(sql, params)
+            deleted_count = cur.rowcount
+            conn.commit()
+            cur.close()
+            return deleted_count > 0
+        except Exception as exc:
+            fail_closed_in_production(
+                "supabase",
+                f"delete_embedding failed: {exc}",
+                cause=exc,
+            )
+            return False
+
+    def delete_by_project(
+        self,
+        collection: str,
+        project_id: str,
+        user_id: Optional[str] = None,
+    ) -> int:
+        """Delete all embeddings belonging to a project, optionally user/tenant-scoped."""
+        if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
+            records = self.vector_collections.get(collection, [])
+            initial_len = len(records)
+            self.vector_collections[collection] = [
+                r for r in records
+                if not (
+                    r.metadata.get("project_id") == project_id
+                    and (user_id is None or r.user_id == user_id)
+                )
+            ]
+            return initial_len - len(self.vector_collections[collection])
+
+        try:
+            conn = self._get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
+                [f"vec_{collection}"],
+            )
+            exists = cur.fetchone()[0]
+            if not exists:
+                cur.close()
+                return 0
+
+            sql = f"DELETE FROM vec_{collection} WHERE (metadata->>'project_id' = %s)"
+            params: List[Any] = [project_id]
+            if user_id:
+                sql += " AND user_id = %s"
+                params.append(user_id)
+            cur.execute(sql, params)
+            deleted_count = cur.rowcount
+            conn.commit()
+            cur.close()
+            return max(deleted_count, 0)
+        except Exception as exc:
+            fail_closed_in_production(
+                "supabase",
+                f"delete_by_project failed: {exc}",
+                cause=exc,
+            )
+            return 0
+
     @staticmethod
     def _cosine_similarity(v1: List[float], v2: List[float]) -> float:
         if len(v1) != len(v2) or not v1:

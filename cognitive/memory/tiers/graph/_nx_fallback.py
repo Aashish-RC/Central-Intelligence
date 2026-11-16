@@ -294,6 +294,15 @@ class NetworkXGraphFallback:
             self.graph.remove_node(n)
         return len(nodes_to_remove)
 
+    def delete_by_project(self, project_id: str, user_id: Optional[str] = None) -> int:
+        nodes_to_remove = [
+            n for n, d in self.graph.nodes(data=True)
+            if d.get("project_id") == project_id and (user_id is None or d.get("user_id") == user_id)
+        ]
+        for n in nodes_to_remove:
+            self.graph.remove_node(n)
+        return len(nodes_to_remove)
+
     def query_manager_company_acquisitions(
         self,
         employee_name: str,

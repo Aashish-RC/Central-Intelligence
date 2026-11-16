@@ -72,7 +72,23 @@ class DockerExecutionEngine(BaseDeviceRunner):
 
         # Write files into scratch_dir
         for filename, content in request.files.items():
-            fp = scratch_path / filename
+            from ..governor.security_governor import SecurityGovernor
+            is_safe, err_msg = SecurityGovernor.validate_filename(filename)
+            if not is_safe:
+                return SandboxResult(
+                    request_id=request.id,
+                    status=SandboxStatus.BLOCKED,
+                    exit_code=-1,
+                    stderr=f"Virtual file rejected by security policy: {err_msg}",
+                )
+            fp = (scratch_path / filename).resolve()
+            if not fp.is_relative_to(scratch_path) or fp == scratch_path:
+                return SandboxResult(
+                    request_id=request.id,
+                    status=SandboxStatus.BLOCKED,
+                    exit_code=-1,
+                    stderr=f"Path traversal detected in virtual file: '{filename}'",
+                )
             fp.parent.mkdir(parents=True, exist_ok=True)
             fp.write_text(content, encoding="utf-8")
 

@@ -174,7 +174,33 @@ class DockerRunner(BaseDeviceRunner):
             scratch_path = Path(scratch_dir).resolve()
             scratch_path.mkdir(parents=True, exist_ok=True)
             for filename, content in request.files.items():
-                file_path = scratch_path / filename
+                is_safe, err_msg = self.governor.validate_filename(filename)
+                if not is_safe:
+                    return SandboxResult(
+                        request_id=request.id,
+                        tenant_id=request.tenant_id,
+                        status=SandboxStatus.BLOCKED,
+                        exit_code=-1,
+                        stderr=f"Virtual file rejected by security policy: {err_msg}",
+                    )
+                try:
+                    file_path = (scratch_path / filename).resolve()
+                    if not file_path.is_relative_to(scratch_path) or file_path == scratch_path:
+                        return SandboxResult(
+                            request_id=request.id,
+                            tenant_id=request.tenant_id,
+                            status=SandboxStatus.BLOCKED,
+                            exit_code=-1,
+                            stderr=f"Path traversal detected in virtual file: '{filename}'",
+                        )
+                except Exception as exc:
+                    return SandboxResult(
+                        request_id=request.id,
+                        tenant_id=request.tenant_id,
+                        status=SandboxStatus.BLOCKED,
+                        exit_code=-1,
+                        stderr=f"Invalid file path resolution: '{filename}' ({exc})",
+                    )
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content, encoding="utf-8")
 
@@ -225,10 +251,11 @@ class DockerRunner(BaseDeviceRunner):
 
         except subprocess.TimeoutExpired as exc:
             duration_ms = (time.perf_counter() - start_time) * 1000.0
-            # Ensure container is terminated
+            # Ensure container is terminated using configured container runtime (e.g. docker or podman)
+            runtime_bin = self.container_bin or "docker"
             try:
                 subprocess.run(
-                    ["docker", "rm", "-f", container_name],
+                    [runtime_bin, "rm", "-f", container_name],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     timeout=5.0,

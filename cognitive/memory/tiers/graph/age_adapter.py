@@ -478,3 +478,24 @@ class ApacheAGEAdapter(BaseGraphStore):
             except Exception:
                 pass
         return removed
+
+    def delete_by_project(self, project_id: str, user_id: Optional[str] = None) -> int:
+        """Purge all graph vertices and edges belonging to project_id, optionally user-scoped."""
+        removed = getattr(self._fallback, "delete_by_project", lambda p, u: 0)(project_id, user_id)
+        if not self._is_in_memory and self._conn:
+            cypher = (
+                "MATCH (n {project_id: $project_id}) "
+                "WHERE ($user_id IS NULL OR n.user_id = $user_id) "
+                "DETACH DELETE n RETURN count(*) AS deleted"
+            )
+            try:
+                rows = self._run_age_cypher(
+                    cypher,
+                    params={"project_id": project_id, "user_id": user_id},
+                    return_keys=["deleted"],
+                )
+                if rows and isinstance(rows[0].get("deleted"), int):
+                    removed = max(removed, rows[0]["deleted"])
+            except Exception:
+                pass
+        return removed

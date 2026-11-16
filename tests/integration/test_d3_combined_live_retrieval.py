@@ -26,6 +26,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any, Dict, Set
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import pg8000.dbapi
@@ -46,6 +48,7 @@ if _env_path.is_file():
         os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
 
 from cognitive.knowledge.search.core.models import CorpusType, SearchDocument, SearchQuery
+from cognitive.memory.core.interfaces import BaseEmbedder
 from cognitive.memory.core.models import MemoryRecord
 from cognitive.knowledge.search.engines.integrated_hybrid import (
     IntegratedHybridRetrievalEngine,
@@ -59,34 +62,74 @@ from platform_infra.data.supabase.supabase_adapter import SupabaseAdapter
 
 pytestmark = pytest.mark.live
 
-# Live service endpoints
+# Live service endpoints from environment / local approved configuration
 QDRANT_URL = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
 AGE_POSTGRES_PORT = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
-AGE_POSTGRES_PASS = os.getenv("POSTGRES_PASSWORD", "postgres-development-pass")
+AGE_POSTGRES_PASS = os.getenv("POSTGRES_PASSWORD") or os.getenv("AGE_POSTGRES_PASSWORD", "")
 AGE_URL = os.getenv(
     "AGE_POSTGRES_URL",
-    f"postgresql://postgres:{AGE_POSTGRES_PASS}@127.0.0.1:{AGE_POSTGRES_PORT}/postgres",
+    f"postgresql://postgres:{AGE_POSTGRES_PASS}@127.0.0.1:{AGE_POSTGRES_PORT}/postgres" if AGE_POSTGRES_PASS else "",
 )
-PGVECTOR_URL = os.getenv(
-    "POSTGRES_LIVE_URL",
-    "postgresql://postgres:ci-test-password@127.0.0.1:5434/ci_test",
-)
+PGVECTOR_URL = os.getenv("POSTGRES_LIVE_URL", "")
+
+# Track containers started exclusively by this test run
+_CONTAINERS_STARTED_BY_TEST: Set[str] = set()
+
+
+def _parse_db_url(url: str, default_port: int = 5432) -> Dict[str, Any]:
+    """Parse PostgreSQL connection URL without hardcoded fallback credentials."""
+    u = urlparse(url)
+    return {
+        "host": u.hostname or "127.0.0.1",
+        "port": u.port or default_port,
+        "user": u.username or "postgres",
+        "password": u.password or "",
+        "database": (u.path or "/postgres").lstrip("/") or "postgres",
+    }
+
+
+def _start_container_if_not_running(name: str) -> None:
+    """Start container only if currently stopped, tracking it for isolated teardown."""
+    try:
+        inspect_res = subprocess.run(
+            ["docker", "inspect", "--format", "{{.State.Running}}", name],
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+        )
+        if inspect_res.returncode == 0 and inspect_res.stdout.strip() == "true":
+            return  # Already running; do not track and do not stop later
+
+        start_res = subprocess.run(["docker", "start", name], capture_output=True, text=True, timeout=10.0)
+        if start_res.returncode == 0:
+            _CONTAINERS_STARTED_BY_TEST.add(name)
+        else:
+            pytest.fail(f"Failed to start container '{name}': {start_res.stderr}")
+    except Exception as exc:
+        pytest.fail(f"Container inspection/start failed for '{name}': {exc}")
 
 
 def _ensure_live_services() -> None:
-    """Ensure Docker containers for Qdrant and Apache AGE are started."""
+    """Ensure Docker containers for Qdrant, Apache AGE, and pgvector are started and responsive."""
     if not shutil.which("docker"):
-        pytest.skip("Docker CLI not available")
-    try:
-        # Start qdrant and apache-age if not running
-        subprocess.run(
-            ["docker", "start", "central-qdrant", "central-apache-age"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=10.0,
-        )
-    except Exception as exc:
-        pytest.skip(f"Failed to ensure containers running: {exc}")
+        pytest.fail("Docker CLI not found on host - live D3 tests require functional container engine")
+
+    if not PGVECTOR_URL:
+        pytest.fail("POSTGRES_LIVE_URL environment variable must be set for live pgvector tests")
+
+    if not AGE_URL:
+        pytest.fail("AGE_POSTGRES_URL or POSTGRES_PASSWORD environment variable must be set for Apache AGE tests")
+
+    # Start qdrant and apache-age if not already running
+    _start_container_if_not_running("central-qdrant")
+    _start_container_if_not_running("central-apache-age")
+
+    # Determine pgvector container based on port
+    pg_params = _parse_db_url(PGVECTOR_URL, default_port=5434)
+    if pg_params["port"] == 5434:
+        _start_container_if_not_running("ci-pgvector-test")
+    elif pg_params["port"] == 5432:
+        _start_container_if_not_running("central-supabase-db")
 
     # Wait for Qdrant HTTP healthz
     import httpx
@@ -100,18 +143,19 @@ def _ensure_live_services() -> None:
             pass
         time.sleep(1.0)
     else:
-        pytest.skip("Qdrant did not become healthy in time")
+        pytest.fail("Qdrant did not become healthy within 30 seconds")
 
     # Wait for Apache AGE Postgres
+    age_params = _parse_db_url(AGE_URL, default_port=AGE_POSTGRES_PORT)
     deadline = time.monotonic() + 30.0
     while time.monotonic() < deadline:
         try:
             conn = pg8000.dbapi.connect(
-                host="127.0.0.1",
-                port=AGE_POSTGRES_PORT,
-                user="postgres",
-                password=AGE_POSTGRES_PASS,
-                database="postgres",
+                host=age_params["host"],
+                port=age_params["port"],
+                user=age_params["user"],
+                password=age_params["password"],
+                database=age_params["database"],
                 timeout=2,
             )
             conn.close()
@@ -120,18 +164,18 @@ def _ensure_live_services() -> None:
             pass
         time.sleep(1.0)
     else:
-        pytest.skip("Apache AGE did not become ready in time")
+        pytest.fail("Apache AGE did not become ready within 30 seconds")
 
     # Wait for pgvector Postgres
     deadline = time.monotonic() + 30.0
     while time.monotonic() < deadline:
         try:
             conn = pg8000.dbapi.connect(
-                host="127.0.0.1",
-                port=5434,
-                user="postgres",
-                password="ci-test-password",
-                database="ci_test",
+                host=pg_params["host"],
+                port=pg_params["port"],
+                user=pg_params["user"],
+                password=pg_params["password"],
+                database=pg_params["database"],
                 timeout=2,
             )
             conn.close()
@@ -140,24 +184,26 @@ def _ensure_live_services() -> None:
             pass
         time.sleep(1.0)
     else:
-        pytest.skip("pgvector did not become ready in time")
+        pytest.fail(f"pgvector at {pg_params['host']}:{pg_params['port']} did not become ready within 30 seconds")
 
 
 @pytest.fixture(scope="module")
 def live_services():
-    """Module-level fixture ensuring live backends are ready."""
+    """Module-level fixture ensuring live backends are ready, stopping only containers started by this test."""
     _ensure_live_services()
     yield
-    # Conserve system memory after test module finishes
-    try:
-        subprocess.run(
-            ["docker", "stop", "central-qdrant", "central-apache-age"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=10.0,
-        )
-    except Exception:
-        pass
+    # Stop ONLY containers started by this test run; preserve unrelated containers
+    for c_name in list(_CONTAINERS_STARTED_BY_TEST):
+        try:
+            subprocess.run(
+                ["docker", "stop", c_name],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10.0,
+            )
+        except Exception:
+            pass
+    _CONTAINERS_STARTED_BY_TEST.clear()
 
 
 def test_d3_combined_live_retrieval_e2e(live_services):
@@ -193,10 +239,26 @@ def test_d3_combined_live_retrieval_e2e(live_services):
     pgvec = SupabaseAdapter(connection_url=PGVECTOR_URL, _defer_prod_check=True)
     pgvec.adapter_mode = "live"
 
+    class _Test8DimEmbedder(BaseEmbedder):
+        def embed_text(self, text: str) -> List[float]:
+            if "Vector Memory" in text:
+                return [0.80, 0.30, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            return [0.94, 0.11, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+        def embed_batch(self, texts: List[str]) -> List[List[float]]:
+            return [self.embed_text(t) for t in texts]
+
+        @property
+        def dimension(self) -> int:
+            return 8
+
+    test_embedder = _Test8DimEmbedder()
+
     engine = IntegratedHybridRetrievalEngine(
         qdrant_adapter=qdrant,
         age_adapter=age,
         pgvector_adapter=pgvec,
+        embedder=test_embedder,
         rrf_k=60,
         weights=(0.40, 0.40, 0.20),
         strict_backends=True,
@@ -360,8 +422,35 @@ def test_d3_combined_live_retrieval_e2e(live_services):
         assert len(pg_verify_hits) == 1
         assert pg_verify_hits[0]["id"] == doc_consensus.id
 
+        # 10. Verify Normal Search Interface (auto-embeds and queries vector backends)
+        normal_search_res = engine.search(
+            SearchQuery(query_text="Vector Memory ANN Indexing", tenant_id=tenant_alpha, limit=5)
+        )
+        assert normal_search_res.total_hits > 0
+        assert any(r.document.id == doc_qdrant_only.id for r in normal_search_res.results)
+
+        # 11. Verify Complete Document Deletion across All 3 Live Backends
+        del_ok = engine.delete_document(doc_consensus.id, tenant_id=tenant_alpha)
+        assert del_ok is True
+        post_del_res = engine.retrieve(
+            query=query,
+            tenant_id=tenant_alpha,
+            query_embedding=query_vec,
+            top_k=5,
+        )
+        assert not any(r.document.id == doc_consensus.id for r in post_del_res.results), (
+            f"Deleted document {doc_consensus.id} reappeared in live retrieval results!"
+        )
+
+        # 12. Verify Tenant Authorization Boundary
+        with pytest.raises(PermissionError):
+            engine.retrieve(
+                query=SearchQuery(query_text="Raft consensus", tenant_id=tenant_beta),
+                tenant_id=tenant_alpha,
+            )
+
     finally:
-        # 10. Clean up test data without disturbing unrelated tables
+        # 13. Clean up test data without disturbing unrelated tables
         try:
             if qdrant._client:
                 qdrant._client.delete_collection(collection_name=collection_name)

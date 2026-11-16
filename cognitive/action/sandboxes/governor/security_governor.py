@@ -95,6 +95,52 @@ class SecurityGovernor(BaseSecurityGovernor):
 
         return True, None
 
+    @staticmethod
+    def validate_filename(filename: str) -> Tuple[bool, Optional[str]]:
+        """Validate that a filename is safe to write inside a scratch directory."""
+        if not filename or not isinstance(filename, str) or not filename.strip():
+            return False, "Filename cannot be empty or whitespace only"
+
+        # Check for null bytes or control characters
+        if any(ord(c) < 32 for c in filename) or "\0" in filename:
+            return False, f"Prohibited control characters in filename: '{filename}'"
+
+        # Check for absolute unix or windows paths
+        if filename.startswith(("/", "\\")) or os.path.isabs(filename):
+            return False, f"Absolute path escape detected in filename: '{filename}'"
+
+        # Check for Windows drive-letter traversal (e.g. C:foo, C:\foo, D:/foo)
+        if re.match(r"^[a-zA-Z]:", filename):
+            return False, f"Windows drive path escape detected in filename: '{filename}'"
+
+        # Check for Windows UNC network share path (e.g. \\server\share or //server/share)
+        if filename.startswith(("\\\\", "//")):
+            return False, f"UNC network share path escape detected in filename: '{filename}'"
+
+        # Check for NTFS Alternate Data Stream escape (e.g. file.txt:stream)
+        if ":" in filename:
+            return False, f"NTFS alternate data stream escape detected in filename: '{filename}'"
+
+        # Check for relative traversal
+        parts = Path(filename).parts
+        if not parts:
+            return False, f"Invalid filename: '{filename}'"
+
+        for part in parts:
+            if part in ("..", "."):
+                return False, f"Path traversal attempt detected in filename: '{filename}'"
+            if ".." in part:
+                return False, f"Path traversal attempt detected in filename component: '{part}'"
+            # Windows strips trailing dots and spaces, which can cause file overwrite/escape
+            if part.endswith((".", " ")) or part.startswith(" "):
+                return False, f"Dangerous trailing/leading whitespace or dot in filename component: '{part}'"
+            # Reserved Windows device names in ANY path component (e.g. aux/foo.txt)
+            stem = Path(part).stem
+            if WINDOWS_RESERVED_DEVICE_NAMES.match(part) or WINDOWS_RESERVED_DEVICE_NAMES.match(stem):
+                return False, f"Reserved Windows device name detected in filename component: '{part}'"
+
+        return True, None
+
     def validate_request(self, request: ExecutionRequest) -> Tuple[bool, Optional[str]]:
         # 1. Validate requested resource bounds (Feature 5.33)
         valid_limits, limit_err = self.validate_resource_limits(request.limits)
@@ -136,26 +182,9 @@ class SecurityGovernor(BaseSecurityGovernor):
 
         # Check virtual files for path traversal & dangerous Windows paths
         for filename in request.files.keys():
-            # Standard unix/relative traversal
-            if ".." in filename or filename.startswith(("/", "\\")):
-                return False, f"Path traversal attempt detected in filename: '{filename}'"
-
-            # Windows drive-letter traversal (e.g. C:foo, C:\foo, D:/foo)
-            if re.match(r"^[a-zA-Z]:", filename):
-                return False, f"Windows drive path escape detected in filename: '{filename}'"
-
-            # Windows UNC network share path (e.g. \\server\share or //server/share)
-            if filename.startswith(("\\\\", "//")):
-                return False, f"UNC network share path escape detected in filename: '{filename}'"
-
-            # NTFS Alternate Data Stream escape (e.g. file.txt:stream)
-            if ":" in filename:
-                return False, f"NTFS alternate data stream escape detected in filename: '{filename}'"
-
-            # Windows reserved DOS device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
-            base_name = Path(filename).name
-            if WINDOWS_RESERVED_DEVICE_NAMES.match(base_name):
-                return False, f"Reserved Windows device name detected in filename: '{filename}'"
+            is_valid_file, file_err = self.validate_filename(filename)
+            if not is_valid_file:
+                return False, file_err
 
         return True, None
 

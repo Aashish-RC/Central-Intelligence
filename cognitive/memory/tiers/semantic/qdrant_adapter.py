@@ -173,3 +173,14 @@ class QdrantAdapter(BaseVectorStore):
             return 1
         except Exception:
             return 0
+
+    def delete_by_project(self, project_id: str, user_id: Optional[str] = None) -> int:
+        conditions = [FieldCondition(key="project_id", match=MatchValue(value=project_id))]
+        if user_id:
+            conditions.append(FieldCondition(key="user_id", match=MatchValue(value=user_id)))
+        filt = Filter(must=conditions)
+        try:
+            self._client.delete(collection_name=self._collection_name, points_selector=filt)
+            return 1
+        except Exception:
+            return 0

@@ -150,6 +150,33 @@ def test_docker_and_podman_cli_isolation_flags():
         assert any("/tmp:rw,noexec,nosuid" in arg for arg in captured_cmd)
 
 
+def test_docker_and_podman_timeout_forced_cleanup(monkeypatch):
+    """When execution times out, the runner must invoke forced container cleanup using the configured runtime CLI."""
+    for runtime in ["docker", "podman"]:
+        cleaned_cmds = []
+
+        def fake_timeout_runner(cmd, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=1.0)
+
+        def fake_subprocess_run(cmd, **kwargs):
+            cleaned_cmds.append(cmd)
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+        runner = DockerRunner(command_runner=fake_timeout_runner, container_bin=runtime)
+        monkeypatch.setattr(subprocess, "run", fake_subprocess_run)
+
+        req = ExecutionRequest(language="python", code="import time; time.sleep(10)")
+        res = runner.execute(req)
+
+        assert res.status == SandboxStatus.TIMEOUT
+        assert len(cleaned_cmds) >= 1
+        cleanup_call = cleaned_cmds[0]
+        assert cleanup_call[0] == runtime, f"Expected {runtime} in cleanup command, got {cleanup_call}"
+        assert cleanup_call[1] == "rm"
+        assert "-f" in cleanup_call
+        assert cleanup_call[3].startswith("pheonix-sb-")
+
+
 @pytest.mark.asyncio
 async def test_e2b_adapter_fails_closed_in_live_mode_when_no_docker_or_e2b(monkeypatch):
     """When E2B cloud is unconfigured and local docker fails, E2BSandboxAdapter fails closed."""
@@ -293,6 +320,15 @@ def test_windows_host_escape_commands_blocked(win_payload):
     "NUL",
     "COM1",
     "LPT1.log",
+    "aux/file.txt",
+    "sub/con.py",
+    "nested/prn/data.bin",
+    "evil.txt.",
+    "evil.txt ",
+    "null\0byte.py",
+    "/root/absolute.py",
+    "\\root\\absolute.py",
+    "dir/../../escape.py",
 ])
 def test_windows_filesystem_traversal_and_device_names_blocked(win_file):
     """Windows drive escapes, UNC paths, alternate data streams, and DOS device names are blocked."""
@@ -308,6 +344,9 @@ def test_windows_filesystem_traversal_and_device_names_blocked(win_file):
             "alternate data stream",
             "Reserved Windows device",
             "Path traversal",
+            "Absolute path",
+            "control characters",
+            "whitespace or dot",
         ]
     )
 

@@ -17,9 +17,11 @@ import math
 import re
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from cognitive.memory.core.interfaces import BaseEmbedder
 from cognitive.memory.core.models import MemoryRecord, utc_now
+from cognitive.memory.embeddings.embedder import get_embedder
 from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
 from cognitive.memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 from platform_infra.data.supabase.supabase_adapter import SupabaseAdapter
@@ -73,6 +75,8 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         weights: Tuple[float, float, float] = (0.40, 0.40, 0.20),
         strict_backends: bool = True,
         collection_name: str = "integrated_hybrid_kb",
+        embedder: Optional[BaseEmbedder] = None,
+        tenant_authorizer: Optional[Callable[[str], bool]] = None,
     ) -> None:
         self.qdrant = qdrant_adapter
         self.age = age_adapter
@@ -81,6 +85,45 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         self.weights = weights  # (w_qdrant, w_pgvector, w_age)
         self.strict_backends = strict_backends
         self.collection_name = collection_name
+        self.tenant_authorizer = tenant_authorizer
+        if embedder is not None:
+            self.embedder = embedder
+        else:
+            try:
+                self.embedder = get_embedder()
+            except Exception:
+                self.embedder = None
+
+    def _validate_tenant_authorization(
+        self, caller_tenant: Optional[str], query_tenant: Optional[str] = None
+    ) -> str:
+        """Verify tenant context is established by a trusted caller or boundary."""
+        effective_tenant = caller_tenant or query_tenant
+        if not effective_tenant or not isinstance(effective_tenant, str) or not effective_tenant.strip():
+            raise PermissionError("Tenant authorization failed: missing or empty tenant_id")
+
+        effective_tenant = effective_tenant.strip()
+
+        # Reject wildcard or injection characters in tenant_id
+        if any(c in effective_tenant for c in ("*", "?", ";", "'", "\"", "\0", "\\", "/", "\n", "\r")):
+            raise PermissionError(f"Tenant authorization failed: invalid tenant identifier '{effective_tenant}'")
+
+        # If both caller context and query context are provided, ensure they strictly match
+        if caller_tenant and query_tenant:
+            c_t = caller_tenant.strip()
+            q_t = query_tenant.strip()
+            if c_t != q_t:
+                raise PermissionError(
+                    f"Tenant authorization mismatch: caller authorization context '{c_t}' "
+                    f"does not match requested query tenant '{q_t}'"
+                )
+
+        # If an explicit authorizer callback is provided, invoke it
+        if self.tenant_authorizer is not None:
+            if not self.tenant_authorizer(effective_tenant):
+                raise PermissionError(f"Tenant authorization failed: authorizer rejected tenant '{effective_tenant}'")
+
+        return effective_tenant
 
     def index_document(
         self,
@@ -89,13 +132,17 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         graph_entities: Optional[List[Dict[str, Any]]] = None,
         graph_relationships: Optional[List[Tuple[str, str, str]]] = None,
     ) -> None:
-        """Atomically index a document into Qdrant, pgvector, and Apache AGE."""
+        """Index a document across Qdrant, pgvector, and Apache AGE with compensating cleanup on partial failure."""
         vec = embedding or document.embedding
         if not vec:
-            raise ValueError(f"Document {document.id} requires an embedding vector for hybrid indexing.")
+            if self.embedder is not None and (document.title or document.content):
+                vec = self.embedder.embed_text(f"{document.title}\n{document.content}")
+            else:
+                raise ValueError(f"Document {document.id} requires an embedding vector for hybrid indexing.")
 
+        tenant = self._validate_tenant_authorization(document.tenant_id)
         now = utc_now()
-        tenant = document.tenant_id
+        indexed_backends: List[str] = []
 
         # 1. Index into Qdrant vector store
         if self.qdrant:
@@ -113,6 +160,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                         "corpus_type": document.corpus_type.value,
                         "tags": document.tags,
                         "tenant_id": tenant,
+                        "project_id": document.project_id,
                         "custom": document.metadata,
                     },
                     confidence_score=1.0,
@@ -122,6 +170,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                     last_accessed_at=now,
                 )
                 self.qdrant.upsert_vectors([rec])
+                indexed_backends.append("qdrant")
             except Exception as exc:
                 if self.strict_backends:
                     raise RetrievalBackendError("qdrant", f"Failed to index into Qdrant: {exc}", cause=exc)
@@ -142,11 +191,19 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                         "corpus_type": document.corpus_type.value,
                         "tags": document.tags,
                         "tenant_id": tenant,
+                        "project_id": document.project_id,
                         "custom": document.metadata,
                     },
                 )
+                indexed_backends.append("pgvector")
             except Exception as exc:
                 if self.strict_backends:
+                    # Compensating rollback: delete from Qdrant
+                    if "qdrant" in indexed_backends and self.qdrant:
+                        try:
+                            self.qdrant.delete(_doc_id_to_uuid(document.id))
+                        except Exception:
+                            pass
                     raise RetrievalBackendError("pgvector", f"Failed to index into pgvector: {exc}", cause=exc)
 
         # 3. Index entities and relationships into Apache AGE graph
@@ -158,6 +215,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                     name=document.id,
                     entity_type="Document",
                     properties={"title": document.title, "tenant_id": tenant, "doc_id": document.id},
+                    project_id=document.project_id,
                 )
                 # Add auxiliary graph entities
                 if graph_entities:
@@ -169,6 +227,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                                 name=name,
                                 entity_type=ent.get("label") or ent.get("entity_type", "Entity"),
                                 properties=ent.get("properties", {}),
+                                project_id=document.project_id,
                             )
                 # Add graph edges / relationships
                 if graph_relationships:
@@ -179,9 +238,24 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                             relation=rel,
                             target=tgt,
                             properties={"doc_id": document.id, "tenant_id": tenant},
+                            project_id=document.project_id,
                         )
+                indexed_backends.append("apache_age")
             except Exception as exc:
                 if self.strict_backends:
+                    # Compensating rollback: delete from pgvector and Qdrant
+                    if "pgvector" in indexed_backends and self.pgvector:
+                        try:
+                            self.pgvector.delete_embedding(
+                                f"pgvec_{self.collection_name}", document.id, user_id=tenant
+                            )
+                        except Exception:
+                            pass
+                    if "qdrant" in indexed_backends and self.qdrant:
+                        try:
+                            self.qdrant.delete(_doc_id_to_uuid(document.id))
+                        except Exception:
+                            pass
                     raise RetrievalBackendError("apache_age", f"Failed to index into Apache AGE: {exc}", cause=exc)
 
     def index_batch(self, docs: List[SearchDocument]) -> int:
@@ -192,30 +266,89 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             count += 1
         return count
 
-    def delete_document(self, doc_id: str) -> bool:
-        """Delete a document by its composite ID across backends."""
-        deleted = False
+    def delete_document(self, doc_id: str, tenant_id: Optional[str] = None) -> bool:
+        """Delete a document by its composite ID across Qdrant, pgvector, and Apache AGE."""
+        if not doc_id:
+            return False
+
+        qdrant_deleted = False
+        pg_deleted = False
+        age_deleted = False
+
         if self.qdrant:
             try:
                 rec_uuid = _doc_id_to_uuid(doc_id)
-                self.qdrant.delete(rec_uuid)
-                deleted = True
+                qdrant_deleted = self.qdrant.delete(rec_uuid)
             except Exception:
                 pass
+
+        if self.pgvector:
+            try:
+                col_name = f"pgvec_{self.collection_name}"
+                pg_deleted = self.pgvector.delete_embedding(
+                    collection=col_name,
+                    record_id=doc_id,
+                    user_id=tenant_id,
+                )
+            except Exception:
+                pass
+
         if self.age:
             try:
-                self.age.execute_query(
-                    "MATCH (n {name: $name}) DETACH DELETE n",
-                    params={"name": doc_id},
+                cypher = (
+                    "MATCH (n) WHERE (n.name = $name OR n.doc_id = $name) "
+                    "AND ($tenant IS NULL OR n.user_id = $tenant) "
+                    "DETACH DELETE n RETURN count(*) AS deleted"
                 )
-                deleted = True
+                rows = self.age.execute_query(
+                    cypher,
+                    params={"name": doc_id, "tenant": tenant_id},
+                )
+                if rows:
+                    age_deleted = True
+                cypher_edge = (
+                    "MATCH ()-[r]->() WHERE r.doc_id = $name "
+                    "AND ($tenant IS NULL OR r.tenant_id = $tenant) "
+                    "DELETE r"
+                )
+                self.age.execute_query(
+                    cypher_edge,
+                    params={"name": doc_id, "tenant": tenant_id},
+                )
             except Exception:
                 pass
-        return deleted
 
-    def delete_by_project(self, project_id: str) -> int:
-        """Purge all indexed documents belonging to a project."""
-        return 0
+        return qdrant_deleted or pg_deleted or age_deleted
+
+    def delete_by_project(self, project_id: str, tenant_id: Optional[str] = None) -> int:
+        """Purge all indexed documents belonging to a project across all backends."""
+        if not project_id:
+            return 0
+        total_deleted = 0
+        if self.qdrant and hasattr(self.qdrant, "delete_by_project"):
+            try:
+                total_deleted += self.qdrant.delete_by_project(project_id=project_id, user_id=tenant_id)
+            except Exception:
+                pass
+
+        if self.pgvector and hasattr(self.pgvector, "delete_by_project"):
+            try:
+                col_name = f"pgvec_{self.collection_name}"
+                total_deleted += self.pgvector.delete_by_project(
+                    collection=col_name,
+                    project_id=project_id,
+                    user_id=tenant_id,
+                )
+            except Exception:
+                pass
+
+        if self.age and hasattr(self.age, "delete_by_project"):
+            try:
+                total_deleted += self.age.delete_by_project(project_id=project_id, user_id=tenant_id)
+            except Exception:
+                pass
+
+        return total_deleted
 
     def retrieve(
         self,
@@ -240,9 +373,18 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         """
         start_time = time.perf_counter()
         q_text = query.query_text if isinstance(query, SearchQuery) else str(query)
-        q_tenant = tenant_id or (query.tenant_id if isinstance(query, SearchQuery) else "default")
+        req_tenant = query.tenant_id if isinstance(query, SearchQuery) else None
+        q_tenant = self._validate_tenant_authorization(tenant_id, req_tenant)
         q_proj = project_id or (query.project_id if isinstance(query, SearchQuery) else "default")
         eff_weights = weights or self.weights
+
+        # Auto-compute query embedding using established embedder if not explicitly provided
+        effective_embedding = query_embedding
+        if effective_embedding is None and self.embedder is not None and q_text:
+            try:
+                effective_embedding = self.embedder.embed_text(q_text)
+            except Exception:
+                effective_embedding = None
 
         w_qdrant, w_pgvector, w_age = eff_weights
 
@@ -250,15 +392,16 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         pgvector_candidates: List[Tuple[str, SearchDocument, float]] = []
         age_candidates: List[Tuple[str, SearchDocument, float]] = []
         graph_relationships_found: List[Dict[str, Any]] = []
+        failed_backends: List[str] = []
 
         # -------------------------------------------------------------
         # 1. Qdrant Vector Retrieval
         # -------------------------------------------------------------
-        if self.qdrant and query_embedding is not None:
+        if self.qdrant and effective_embedding is not None:
             try:
                 hits = self.qdrant.query_similar(
                     user_id=q_tenant,
-                    query_embedding=query_embedding,
+                    query_embedding=effective_embedding,
                     top_k=top_k * 2,
                     active_only=True,
                 )
@@ -284,16 +427,17 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             except Exception as exc:
                 if self.strict_backends:
                     raise RetrievalBackendError("qdrant", str(exc), cause=exc)
+                failed_backends.append("qdrant")
 
         # -------------------------------------------------------------
         # 2. pgvector Relational Embedding Retrieval
         # -------------------------------------------------------------
-        if self.pgvector and query_embedding is not None:
+        if self.pgvector and effective_embedding is not None:
             try:
                 col_name = f"pgvec_{self.collection_name}"
                 pg_hits = self.pgvector.search_embeddings(
                     collection=col_name,
-                    query_vector=query_embedding,
+                    query_vector=effective_embedding,
                     top_k=top_k * 2,
                     user_id=q_tenant,
                 )
@@ -319,16 +463,17 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             except Exception as exc:
                 if self.strict_backends:
                     raise RetrievalBackendError("pgvector", str(exc), cause=exc)
+                failed_backends.append("pgvector")
 
         # -------------------------------------------------------------
         # 3. Apache AGE Graph Traversal & Relationship Retrieval
         # -------------------------------------------------------------
         if self.age:
             try:
-                # Query related graph edges and nodes for this authorized tenant
+                # Query related graph edges where BOTH source and target vertices belong strictly to this tenant
                 cypher = (
                     "MATCH (a)-[r]->(b) "
-                    "WHERE a.user_id = $tenant "
+                    "WHERE a.user_id = $tenant AND b.user_id = $tenant "
                     "RETURN a.name AS source, type(r) AS relation, b.name AS target, "
                     "a.props_json AS a_props, b.props_json AS b_props"
                 )
@@ -355,7 +500,6 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
 
                     # Check if source or target represents a document ID
                     target_doc_id = a_props.get("doc_id") or b_props.get("doc_id") or src or tgt
-                    # If query text mentions source, target, or relation, score higher
                     keywords = re.findall(r"[A-Za-z0-9_]+", q_text.lower())
                     match_score = 0.5
                     for kw in keywords:
@@ -375,6 +519,7 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             except Exception as exc:
                 if self.strict_backends:
                     raise RetrievalBackendError("apache_age", str(exc), cause=exc)
+                failed_backends.append("apache_age")
 
         # -------------------------------------------------------------
         # 4. Deduplication & Provenance Tracking
@@ -423,8 +568,8 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
                 score += w_age * (1.0 / (k_val + age_ranks[did]))
             fused_scores[did] = score
 
-        # Sort descending by fused RRF score
-        sorted_ids = sorted(all_doc_ids, key=lambda d: fused_scores[d], reverse=True)[:top_k]
+        # Sort descending by fused RRF score with stable tie-breaking on doc_id
+        sorted_ids = sorted(all_doc_ids, key=lambda did: (-fused_scores[did], str(did)))[:top_k]
 
         # -------------------------------------------------------------
         # 6. Graph Enrichment & Result Assembly
@@ -432,15 +577,31 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
         results: List[SearchResult] = []
         for did in sorted_ids:
             doc = doc_registry[did]
-            # Attach graph relationships discovered for this document
-            doc_graph_links = [
-                e
-                for e in graph_relationships_found
-                if e.get("source") == did
-                or e.get("target") == did
-                or did in str(e.get("a_props", ""))
-                or did in str(e.get("b_props", ""))
-            ]
+            # Attach graph relationships discovered for this document (exact match)
+            doc_graph_links = []
+            for e in graph_relationships_found:
+                src = e.get("source")
+                tgt = e.get("target")
+                a_props = e.get("a_props") or {}
+                b_props = e.get("b_props") or {}
+                if isinstance(a_props, str):
+                    try:
+                        a_props = json.loads(a_props)
+                    except Exception:
+                        a_props = {}
+                if isinstance(b_props, str):
+                    try:
+                        b_props = json.loads(b_props)
+                    except Exception:
+                        b_props = {}
+                if (
+                    src == did
+                    or tgt == did
+                    or a_props.get("doc_id") == did
+                    or b_props.get("doc_id") == did
+                ):
+                    doc_graph_links.append(e)
+
             enriched_meta = dict(doc.metadata)
             enriched_meta["provenance"] = sorted(list(provenance_map.get(did, [])))
             if doc_graph_links:
@@ -460,10 +621,11 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
 
         duration_ms = (time.perf_counter() - start_time) * 1000.0
 
+        # Report accurate backend contributions, flagging failed backends in degraded mode
         backend_counts = {
-            "qdrant": len(qdrant_candidates),
-            "pgvector": len(pgvector_candidates),
-            "apache_age": len(age_candidates),
+            "qdrant": len(qdrant_candidates) if "qdrant" not in failed_backends else -1,
+            "pgvector": len(pgvector_candidates) if "pgvector" not in failed_backends else -1,
+            "apache_age": len(age_candidates) if "apache_age" not in failed_backends else -1,
         }
 
         serializable_prov = {did: sorted(list(prov)) for did, prov in provenance_map.items()}
@@ -478,12 +640,25 @@ class IntegratedHybridRetrievalEngine(BaseSearchEngine):
             graph_entities=graph_relationships_found,
             provenance_map=serializable_prov,
             execution_time_ms=round(duration_ms, 2),
-            degraded=False,
+            degraded=len(failed_backends) > 0,
         )
 
     def search(self, query: SearchQuery) -> SearchResponse:
-        """BaseSearchEngine interface compatibility."""
-        res = self.retrieve(query=query, tenant_id=query.tenant_id, top_k=query.limit)
+        """BaseSearchEngine interface compatibility, leveraging vector and graph retrieval."""
+        vec = getattr(query, "embedding", None)
+        if vec is None and self.embedder is not None and query.query_text:
+            try:
+                vec = self.embedder.embed_text(query.query_text)
+            except Exception:
+                vec = None
+
+        res = self.retrieve(
+            query=query,
+            tenant_id=query.tenant_id,
+            query_embedding=vec,
+            top_k=query.limit,
+            project_id=query.project_id,
+        )
         return SearchResponse(
             query=res.query,
             tenant_id=res.tenant_id,
