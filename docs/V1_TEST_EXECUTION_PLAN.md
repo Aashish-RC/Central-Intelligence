@@ -3,8 +3,8 @@
 **Author:** Principal QA Lead, Security Architect & Release Coordinator  
 **Target:** Central Intelligence v1 Testing & Operational Validation Phase (Stages S2, S3, S4)  
 **Date:** 2026-11-17  
-**Build Revision:** `54ae6e7d23874676f3f7d7fb181242311d97da06` (`54ae6e7`)  
-**Status:** **ACTIVE TEST EXECUTION PLAN**  
+**Build Revision:** `481d10dee0bf19ffa5a721b17a134b9d8d0fff46` (`481d10d`)  
+**Status:** **ACTIVE TEST EXECUTION PLAN (RECONCILED)**  
 
 ---
 
@@ -125,17 +125,17 @@ flowchart LR
 
 | Scenario ID | Target Service | Execution Command / Script | Acceptance Criteria |
 |---|---|---|---|
-| **SC-01** | **OpenFGA** | `pytest tests/integration/test_compose_stack_e2e.py -k test_openfga_live` | Create model, write authorization tuple, check permission, restart OpenFGA container, verify tuple persists without data loss. |
-| **SC-02** | **Infisical** | `pytest tests/integration/test_compose_stack_e2e.py -k test_infisical_live` | Authenticate with Universal Auth, store secret in project workspace, restart Infisical container, retrieve secret successfully. |
-| **SC-03** | **Lago** | `pytest tests/integration/test_compose_stack_e2e.py -k test_lago_live` | Create customer, assign subscription plan, dispatch usage event via HTTP, verify webhook signature and invoice generation. |
-| **SC-04** | **OpenMeter** | `pytest tests/integration/test_compose_stack_e2e.py -k test_openmeter_live` | Ingest CloudEvent token consumption event via Kafka sink, query ClickHouse aggregated balance, verify HTTP 204 response. |
-| **SC-05** | **SigNoz** | `pytest tests/integration/test_compose_stack_e2e.py -k test_signoz_live` | Emit OTel trace span from reasoning gateway, query SigNoz ClickHouse trace store, verify span duration and tags appear in query. |
-| **SC-06** | **Temporal** | `pytest tests/integration/test_compose_stack_e2e.py -k test_temporal_live` | Launch long-running multi-step agent workflow, issue SIGKILL to worker container mid-execution, start new worker, verify workflow resumes from last checkpoint. |
-| **SC-07** | **Supabase / Postgres** | `pytest tests/integration/test_compose_stack_e2e.py -k test_postgres_live` | Execute DDL schema migration via `init-multi-db.sh`, write vector embeddings, execute cosine similarity search, restart container, verify relational & vector integrity. |
-| **SC-08** | **Sandbox Isolation** | `pytest tests/integration/test_compose_stack_e2e.py -k test_sandbox_live` | With `SANDBOX_LIVE=1`, execute untrusted Python code inside Docker container, verify Windows host filesystem is unreachable and Job Object / cgroup CPU ceilings hold. |
-| **SC-09** | **Kamal Deployment** | `pytest tests/integration/test_compose_stack_e2e.py -k test_kamal_live` | Execute Kamal zero-downtime deployment script in staging container, verify rolling container replacement without 502/503 dropped requests. |
-| **SC-10** | **Bytebase** | `pytest tests/integration/test_compose_stack_e2e.py -k test_bytebase_live` | Authenticate against Bytebase API, submit DDL migration issue, approve migration pipeline, verify schema applied to target PostgreSQL database. |
-| **SC-11** | **LibreChat to Gateway** | `pnpm --filter @central-intelligence/reasoning run test:e2e-chat` | Launch headless browser script connecting to LibreChat, submit user prompt, verify request traverses to reasoning gateway and streams response tokens back to UI. |
+| **SC-01** | **OpenFGA** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_openfga_persists_across_python_restart` | Create model, write authorization tuple, check permission, restart OpenFGA container, verify tuple persists without data loss. |
+| **SC-02** | **Infisical** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_infisical_persists_across_python_restart` | Authenticate with Universal Auth, store secret in project workspace, restart Infisical container, retrieve secret successfully. |
+| **SC-03** | **Lago** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_lago_persists_across_python_restart` | Create customer, assign subscription plan, dispatch usage event via HTTP, verify webhook signature and invoice generation. |
+| **SC-04** | **OpenMeter** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_openmeter_persists_across_python_restart` | Ingest CloudEvent token consumption event via Kafka sink, query ClickHouse aggregated balance, verify HTTP 204 response. |
+| **SC-05** | **SigNoz** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_signoz_persists_across_python_restart` | Emit OTel trace span from reasoning gateway, query SigNoz ClickHouse trace store, verify span duration and tags appear in query. |
+| **SC-06** | **Temporal** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_temporal_workflow_survives_worker_restart` | Launch long-running multi-step agent workflow, issue SIGKILL to worker container mid-execution, start new worker, verify workflow resumes from last checkpoint. |
+| **SC-07** | **Supabase / Postgres** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_supabase_relational_and_vector_persist` | Execute DDL schema migration via `init-multi-db.sh`, write vector embeddings, execute cosine similarity search, restart container, verify relational & vector integrity. |
+| **SC-08** | **Sandbox Isolation** | `pytest tests/integration/test_c3_sandbox_isolation_live.py -m live` and `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_sandbox_executes_real_python` | With `SANDBOX_LIVE=1`, execute untrusted Python code inside Docker container, verify Windows host filesystem is unreachable and Job Object / cgroup CPU ceilings hold. |
+| **SC-09** | **Kamal Deployment** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_kamal_deployment_command_sequence_is_simulated` | Execute Kamal zero-downtime deployment script in staging container, verify rolling container replacement without 502/503 dropped requests. Note: Simulated in test harness. |
+| **SC-10** | **Bytebase** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_bytebase_migration_executes_real_ddl` | Authenticate against Bytebase API, submit DDL migration issue, approve migration pipeline, verify schema applied to target PostgreSQL database. |
+| **SC-11** | **LibreChat to Gateway** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_librechat_routes_to_reasoning_gateway` | Launch headless browser script connecting to LibreChat, submit user prompt, verify request traverses to reasoning gateway and streams response tokens back to UI. |
 
 ---
 
