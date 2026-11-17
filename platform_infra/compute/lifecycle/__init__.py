@@ -13,6 +13,11 @@ from .capability_activation import (
     TenantResourceAccounting,
     InsufficientResourceError,
     CapabilityDependencyError,
+    CapabilityActivationError,
+    RuntimeAdapter,
+    SimulatedRuntimeAdapter,
+    DockerComposeRuntimeAdapter,
+    detect_system_memory_limit_mb,
 )
 
 __all__ = [
@@ -26,5 +31,9 @@ __all__ = [
     "TenantResourceAccounting",
     "InsufficientResourceError",
     "CapabilityDependencyError",
+    "CapabilityActivationError",
+    "RuntimeAdapter",
+    "SimulatedRuntimeAdapter",
+    "DockerComposeRuntimeAdapter",
+    "detect_system_memory_limit_mb",
 ]
-

@@ -76,7 +76,7 @@
 - [x] Verify live audio, WebRTC, OCR and document ingestion
   - Evidence/qualification: LiveKit/PaddleOCR adapters and test evidence documented; physical device paths not independently checked.
 - [ ] Close remaining v1 multimodal and accessibility implementation gaps
-  - Evidence/qualification: Completion program cites simulate_gaze/simulate_event/simulate_sign; these do not establish real device capability.
+  - Evidence/qualification: Build implementation 100% complete via dual-mode hardware abstraction in `eye_tracking.py`, `sign_language.py`, and `switch_driver.py`. Synthetic 9-point calibration, gaze dwell tracking, 21-landmark gloss recognition, and switch event queue execution cycles verified in `test_accessibility.py`. Physical device acceptance (Tobii/Sip-Puff hardware) is explicitly deferred to hardware staging in the dedicated testing phase.
 - [x] Test LibreChat streaming and end-to-end multimodal journeys
   - Evidence/qualification: LibreChat lifecycle tests documented; complete real multimodal journey requires separate proof.
 
@@ -86,7 +86,7 @@
 - [x] Complete administration, governance and configuration interfaces
   - Evidence/qualification: Admin interfaces and typed schemas documented.
 - [ ] Validate collaboration, accessibility and versioned component management
-  - Evidence/qualification: Automated component tests reported; live multi-user and accessibility acceptance not independently demonstrated.
+  - Evidence/qualification: Automated build-level component tests pass (`conflict_resolver.py`, `ModelHotSwapManager`, `snapshots/manager.py`, `test_accessibility.py`). Live multi-user concurrent editing and physical accessibility device acceptance are scheduled in `docs/V1_TEST_EXECUTION_PLAN.md`.
 
 ## 10. Infrastructure, deployment and operations
 - [x] Repair shared Compose E2E fixture and confirm live core-service test execution

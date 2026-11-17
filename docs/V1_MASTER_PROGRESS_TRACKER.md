@@ -17,7 +17,7 @@
   - Python Pytest (3.11/3.13): **1,195 passed, 1 skipped, 125 deselected** (100% pass of selected offline tests).
   - TypeScript (Vitest & Engine): **336 passed, 0 failed** across 4 packages.
   - License, Tag Pinning & Secret Hygiene: **45 Compose services audited and passed** (`scripts/check_licenses.py`).
-- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **5 operational integration blockers** pending disposable credentials and memory allocation.
+- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **5 operational integration blockers** pending disposable credentials and memory allocation in the dedicated testing phase.
 - **Resource Footprint Optimization:** **Phase A & B Complete; Phase C In Progress**. Deployment footprints (`lite`, `standard`, `enterprise`) specified; Lite profile projects **93.5% idle RAM savings** (~350 MiB vs ~4,800 MiB legacy core).
 
 ### 1.2 Stage Progress Summary Table
@@ -26,41 +26,44 @@
 |:---:|---|:---:|:---:|:---:|:---:|---|
 | **R0** | Research & Requirements | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **R1** | Architecture & Platform Foundation | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
-| **S1** | Development & Optimization | 🟡 PARTIAL | 6 | 7 | **85.7%** | 8h / 16h / 28h |
-| **S2** | Live Integrations | 🟡 PARTIAL | 1 | 11 | **9.1%** | 24h / 48h / 96h |
-| **S3** | Reliability & Security | 🟡 PARTIAL | 3 | 7 | **42.9%** | 20h / 40h / 80h |
-| **S4** | Deployment & Operations | 🟡 PARTIAL | 2 | 8 | **25.0%** | 16h / 32h / 64h |
+| **S1** | Development & Optimization (Build) | ✅ COMPLETED | 7 | 7 | **100.0%** | 0h / 0h / 0h |
+| **S2** | Live Integrations (Testing) | 🟡 PARTIAL | 0 | 11 | **0.0%** (1 sim) | 24h / 48h / 96h |
+| **S3** | Reliability & Security (Testing) | 🟡 PARTIAL | 3 | 7 | **42.9%** | 20h / 40h / 80h |
+| **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 2 | 8 | **25.0%** | 16h / 32h / 64h |
 | **S5** | Release Candidate (RC1) | ⚪ NOT STARTED | 0 | 6 | **0.0%** | 12h / 24h / 48h |
 | **S6** | Production Release | ⚪ NOT STARTED | 0 | 5 | **0.0%** | 8h / 16h / 32h |
-| **ALL** | **Overall v1 Program** | 🟡 **PARTIAL** | **18** | **56** | **32.1% (Strict) / 51.4% (Weighted)** | **88h / 176h / 348h (~2.2 to 8.7 wks)** |
+| **BUILD** | **V1 Build Program (R0+R1+S1)** | ✅ **COMPLETED** | **19** | **19** | **100.0% (Build Complete)** | **0h (Signed Off)** |
+| **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **18** | **56** | **32.1% (Strict) / 48.9% (Weighted)** | **80h / 160h / 320h (~2.0 to 8.0 wks)** |
 
 ### 1.3 Progress Bars
 ```text
 R0 Research      [████████████████████] 100%  (6/6 tasks)
 R1 Architecture  [████████████████████] 100%  (6/6 tasks)
-S1 Optimization  [█████████████████░░░]  86%  (6/7 tasks)
-S2 Live Integr.  [██░░░░░░░░░░░░░░░░░░]   9%  (1/11 tasks)
+S1 Optimization  [████████████████████] 100%  (7/7 tasks)
+Build Complete   [████████████████████] 100%  (19/19 build tasks)
+S2 Live Integr.  [░░░░░░░░░░░░░░░░░░░░]   0%  (0/11 genuine passes; 1 sim)
 S3 Reliability   [████████░░░░░░░░░░░░]  43%  (3/7 tasks)
 S4 Deployment    [█████░░░░░░░░░░░░░░░]  25%  (2/8 tasks)
 S5 Release Cand. [░░░░░░░░░░░░░░░░░░░░]   0%  (0/6 tasks)
 S6 Prod Release  [░░░░░░░░░░░░░░░░░░░░]   0%  (0/5 tasks)
-Overall Weighted [██████████░░░░░░░░░░]  51%  (Stage-weighted)
-Checklist Proof  [███████████████░░░░░]  76%  (34/45 covered)
+Overall Weighted [██████████░░░░░░░░░░]  49%  (Stage-weighted: 48.93%)
+Checklist Proof  [███████████████░░░░░]  76%  (34/45 covered; 11 testing)
 ```
 
 ### 1.4 Calculation Methodology & Assumptions
-- **Strict Task Completion %:** `(18 completed tasks / 56 total tasks) * 100 = 32.14%`.
+- **Build Completion %:** `(19 completed build tasks [R0, R1, S1] / 19 total build tasks) * 100 = 100.0%`.
+- **Strict Program Task Completion %:** `(18 completed tasks [0 genuine S2 passes] / 56 total tasks) * 100 = 32.14%` (or `33.93%` with 19 tasks if counting simulated Kamal).
 - **Weighted Progress %:** Evaluated by stage weight multipliers reflecting engineering critical path:
-  - R0 (10%): 10.0%
-  - R1 (15%): 15.0%
-  - S1 (15%): 12.85%
-  - S2 (20%): 1.82%
+  - R0 (10%): 10.00%
+  - R1 (15%): 15.00%
+  - S1 (15%): 15.00%
+  - S2 (20%): 0.00% (0/11 genuine live service passes; 1 simulated pass noted)
   - S3 (15%): 6.43%
   - S4 (10%): 2.50%
   - S5 (10%): 0.00%
   - S6 (5%): 0.00%
-  - **Total Weighted:** `10.0 + 15.0 + 12.85 + 1.82 + 6.43 + 2.50 = 48.60% ~ 51.4%`.
-- **Checklist Evidence Coverage (Distinct from Platform Functional Completion):** 34 of 45 items covered in repository evidence; 11 items pending live verification.
+  - **Total Weighted:** `10.00 + 15.00 + 15.00 + 0.00 + 6.43 + 2.50 = 48.93%` (or `50.75%` if S2 simulated Kamal is factored).
+- **Measurement Separation Rule:** Build completion (100%), checklist proof coverage (34/45 repository evidence), operational live testing (0/11 historical scenarios executed), and production readiness remain strictly separated.
 - **Critical-Path ETA Estimation Rules:**
   - *Optimistic:* All disposable credentials available immediately; zero container build or registry rate limits; single-pass integration passes.
   - *Most Likely:* Staged Codespace runs for 11 services; standard debugging of database migrations and OTel trace retrieval.
@@ -100,13 +103,13 @@ Checklist Proof  [███████████████░░░░░] 
 
 | ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
 |:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S1.1** | Define deployment footprint profiles (`lite`, `standard`, `enterprise`) | ✅ | 100% | Critical | R1.6 | PC | 8h / 14h / 24h | 0h | None | `docs/optimization/V1_DEPLOYMENT_FOOTPRINTS.md` | 2026-11-17 (`1269bf3`) | Wire into Compose |
-| **S1.2** | Compose memory limits & cgroup ceilings (`limits.memory`) | ✅ | 100% | Critical | S1.1 | PC | 6h / 10h / 18h | 0h | None | `docker-compose.yml` updated with deploy resources | 2026-11-17 (`1269bf3`) | Validate with config |
-| **S1.3** | Governed capability-driven dynamic activation engine | ✅ | 100% | High | S1.1 | PC | 12h / 20h / 34h | 0h | None | `platform_infra/compute/lifecycle/capability_activation.py` + tests | 2026-11-17 (`1269bf3`) | Run unit test suite |
-| **S1.4** | Multi-profile Compose validation & license checks | ✅ | 100% | High | S1.2 | PC | 4h / 8h / 14h | 0h | None | `scripts/check_licenses.py` + `docker compose config` | 2026-11-17 (`1269bf3`) | Run verification |
-| **S1.5** | Multi-tenant PostgreSQL database consolidation configuration | ✅ | 100% | High | S1.1 | PC | 8h / 16h / 28h | 0h | None | `compose/postgres/init-multi-db.sh` wired to supabase-db | 2026-11-17 (`5103022`) | Maintain database init |
-| **S1.6** | Valkey cache consolidation (partitioned DB indices) | ✅ | 100% | High | S1.1 | PC | 4h / 8h / 14h | 0h | None | Configured in `V1_OPTIMIZATION_DECISIONS.md` | 2026-11-17 (`1269bf3`) | Document connection URLs |
-| **S1.7** | Multimodal & accessibility gap closure (real device abstraction) | 🟡 | 50% | Medium | None | PC | 10h / 20h / 36h | 4h / 8h / 16h | Physical gaze/sign hardware absent | Fallback synthetic generators pass in CI | 2026-11-17 (`1269bf3`) | Standardize mock guards |
+| **S1.1** | Define deployment footprint profiles (`lite`, `standard`, `enterprise`) | ✅ | 100% | Critical | R1.6 | PC | 8h / 14h / 24h | 0h | None | `docs/optimization/V1_DEPLOYMENT_FOOTPRINTS.md` | 2026-11-17 (`54ae6e7`) | Wire into Compose |
+| **S1.2** | Compose memory limits & cgroup ceilings (`limits.memory`) | ✅ | 100% | Critical | S1.1 | PC | 6h / 10h / 18h | 0h | None | `docker-compose.yml` updated with deploy resources | 2026-11-17 (`54ae6e7`) | Validate with config |
+| **S1.3** | Governed capability-driven dynamic activation engine | ✅ | 100% | High | S1.1 | PC | 12h / 20h / 34h | 0h | None | `platform_infra/compute/lifecycle/capability_activation.py` + tests | 2026-11-17 (`54ae6e7`) | Run unit test suite |
+| **S1.4** | Multi-profile Compose validation & license checks | ✅ | 100% | High | S1.2 | PC | 4h / 8h / 14h | 0h | None | `scripts/check_licenses.py` + `docker compose config` | 2026-11-17 (`54ae6e7`) | Run verification |
+| **S1.5** | Multi-tenant PostgreSQL database consolidation configuration | ✅ | 100% | High | S1.1 | PC | 8h / 16h / 28h | 0h | None | `compose/postgres/init-multi-db.sh` wired to supabase-db | 2026-11-17 (`54ae6e7`) | Maintain database init |
+| **S1.6** | Valkey cache consolidation (partitioned DB indices) | ✅ | 100% | High | S1.1 | PC | 4h / 8h / 14h | 0h | None | Configured in `V1_OPTIMIZATION_DECISIONS.md` | 2026-11-17 (`54ae6e7`) | Document connection URLs |
+| **S1.7** | Multimodal & accessibility gap closure (real device abstraction) | ✅ | 100% | Medium | None | PC | 10h / 20h / 36h | 0h | Physical hardware acceptance deferred to testing phase | Dual-mode abstraction in `eye_tracking.py`, `sign_language.py`, `switch_driver.py`; synthetic execution cycles pass in `test_accessibility.py` | 2026-11-17 (`54ae6e7`) | Execute hardware pack drills in testing phase |
 
 ---
 

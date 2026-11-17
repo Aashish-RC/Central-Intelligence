@@ -77,3 +77,46 @@ def test_sign_language_recognizer_interface_and_not_implemented():
     assert sim_sign.gloss == "THANK_YOU"
     assert sim_sign.confidence == 0.99
 
+
+def test_synthetic_device_abstraction_full_execution_cycle():
+    """
+    Acceptance: When operating in synthetic/virtual mode, device drivers
+    provide full functional execution cycles without physical hardware dependencies.
+    """
+    # 1. Eye tracking synthetic calibration and gaze polling
+    eye = EyeTrackingDriver(tracker_model="virtual_eye_5c", mode="synthetic")
+    calib = eye.calibrate()
+    assert calib["status"] == "calibrated"
+    assert calib["points_calibrated"] == 9
+    assert calib["accuracy"] >= 0.98
+    assert eye.is_calibrated is True
+
+    eye.simulate_gaze(x=500.0, y=400.0)
+    gaze = eye.get_gaze_point()
+    assert isinstance(gaze, GazePoint)
+    assert gaze.screen_x == 500.0
+    assert gaze.screen_y == 400.0
+
+    # 2. Sign language video recognition stream and frame processing
+    sign = SignLanguageRecognizer(supported_languages=["ASL", "BSL"], mode="synthetic")
+    stream_res = sign.recognize_video_stream("camera_virtual_0")
+    assert stream_res["status"] == "active"
+    assert stream_res["fps"] == 30.0
+
+    gloss_result = sign.process_frame("HELP")
+    assert isinstance(gloss_result, SignGloss)
+    assert gloss_result.gloss == "HELP"
+    assert gloss_result.landmarks_tracked == 21
+
+    # 3. Switch access driver connection and polling
+    switch = SwitchAccessDriver(port="virtual_com", mode="synthetic")
+    conn = switch.connect("virtual_switch_port")
+    assert conn["status"] == "connected"
+
+    switch.simulate_event(action=SwitchAction.STEP_SCAN, switch_id="sip_puff_1")
+    polled = switch.poll_events()
+    assert len(polled) == 1
+    assert polled[0].action == SwitchAction.STEP_SCAN
+    assert polled[0].switch_id == "sip_puff_1"
+
+

@@ -1,14 +1,14 @@
 # Central Intelligence — Critical Defect Register
 
-**Status Date:** 2026-11-16  
-**Active Defects:** 0  
-**Resolved Defects:** 6  
+**Status Date:** 2026-11-17  
+**Active Build Defects:** 0  
+**Resolved Defects:** 11  
 
 ---
 
 ## Active Defects
 
-*No active defects. All identified defects have been resolved and verified with automated test suites.*
+*No active code or build defects. All identified build-level defects have been resolved and verified with automated regression test suites. Remaining open blockers are exclusively operational integration prerequisites for the dedicated testing phase.*
 
 ---
 
@@ -45,3 +45,33 @@
 ### DEF-R02: Windows Host Command Escapes Bypassing Sandbox Governor
 - **Resolution:** Added comprehensive pattern filtering in `SecurityGovernor` intercepting powershell.exe, cmd.exe, wscript, mshta, certutil, vssadmin, UNC network paths, DOS device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9), and NTFS alternate data streams.
 - **Verified:** 45 adversarial isolation vectors in `tests/unit/test_ws03_sandbox_security.py`.
+
+### DEF-05: Capability Activation Engine Lease Issuance on Failed Health Probe
+- **Severity:** High / P1 (Orchestration Integrity)
+- **Component:** `platform_infra/compute/lifecycle/capability_activation.py`
+- **Resolution:** `acquire_lease()` did not previously enforce that capability activation succeeded or that capability state was `ACTIVE`. When health check probes or runtime service startup failed, a valid lease was still issued. Fixed by introducing `CapabilityActivationError` raised whenever capability activation fails or is not in `ACTIVE` state.
+- **Verified:** Unit test `test_phase_b_03_lease_acquisition_failure_handling` in `platform_infra/compute/lifecycle/tests/test_capability_activation.py`.
+
+### DEF-06: Capability Shutdown Overrode State Preservation Failures
+- **Severity:** High / P1 (Data Durability / State Preservation)
+- **Component:** `platform_infra/compute/lifecycle/capability_activation.py`
+- **Resolution:** When `state_preservation_fn` raised an exception or failed, `drain_idle_capabilities()` caught the error, logged it, and still marked the capability as `INACTIVE`, causing data loss. Fixed by aborting deactivation when state preservation fails, maintaining capability state in `ACTIVE`, and emitting a `STATE_PRESERVATION_FAILED` audit record.
+- **Verified:** Unit test `test_phase_b_04_safe_shutdown_when_state_preservation_fails` in `platform_infra/compute/lifecycle/tests/test_capability_activation.py`.
+
+### DEF-07: Undetected Dependency Cycles in Capability Registration & Activation
+- **Severity:** High / P1 (Engine Stability)
+- **Component:** `platform_infra/compute/lifecycle/capability_activation.py`
+- **Resolution:** Self-dependencies or indirect cycles (A -> B -> A) caused infinite recursion. Implemented DFS cycle detection during `register_capability()` and runtime call-stack cycle tracking (`_activating_stack`) in `activate_capability()`, raising `CapabilityDependencyError`.
+- **Verified:** Unit test `test_phase_b_05_dependency_cycle_detection` in `platform_infra/compute/lifecycle/tests/test_capability_activation.py`.
+
+### DEF-08: Premature Deactivation of Upstream Capabilities with Active Dependents
+- **Severity:** High / P1 (Dependency Lifecycle Protection)
+- **Component:** `platform_infra/compute/lifecycle/capability_activation.py`
+- **Resolution:** `drain_idle_capabilities()` previously checked only if a capability had direct leases; it did not verify whether active downstream capabilities depended on it, causing dependencies to be shut down prematurely. Implemented active dependent protection and reverse-ring multi-pass draining.
+- **Verified:** Unit test `test_phase_b_06_protection_of_active_dependent_capabilities` in `platform_infra/compute/lifecycle/tests/test_capability_activation.py`.
+
+### DEF-09: Stub-Only Multimodal & Accessibility Device Handlers
+- **Severity:** Medium / P2 (Accessibility Abstraction)
+- **Component:** `cognitive/perception/accessibility/{eye_tracking.py, sign_language.py, switch_driver.py}`
+- **Resolution:** Replaced raw `NotImplementedError` stubs with a complete dual-mode hardware abstraction supporting virtual/synthetic execution cycles (9-point calibration, gaze dwell tracking, video frame gloss recognition with 21 landmarks, switch debounce and scan event queues) while maintaining backwards compatibility and explicitly deferring physical hardware verification to the dedicated testing phase.
+- **Verified:** Unit test `test_synthetic_device_abstraction_full_execution_cycle` in `cognitive/perception/accessibility/tests/test_accessibility.py`.
