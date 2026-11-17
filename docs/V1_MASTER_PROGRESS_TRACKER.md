@@ -2,9 +2,9 @@
 
 **Author:** Principal Software Architect, Infrastructure Optimization Lead & QA Lead  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Working Revision:** `af93f635fe225be0023b851bab982a52fa69b67c` (`af93f63`)  
+**Working Revision:** `418e964fed13d73a615d8e8e1820a35b7f45c052` (`418e964`)  
 **Date:** 2026-11-18  
-**Status:** **AUTHORITATIVE MASTER WORK TRACKER (STAGE S2 INTEGRATION RECOVERY ADVANCED)**
+**Status:** **AUTHORITATIVE MASTER WORK TRACKER (ARCHITECTURE APPROVAL & ROADMAP PHASE)**  
 
 ---
 
@@ -12,13 +12,30 @@
 
 ### 1.1 Executive Summary
 - **Verified Checklist Coverage:** **36 of 45 items covered** (80.0%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **9 items open**.
-- **Historical Live Integration Scenarios:** **6 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`) (OpenFGA container restart persistence, Infisical machine identity & universal auth, Temporal worker kill replay, Supabase Postgres/pgvector volume-backed container restart persistence, Docker Sandbox runtime isolation, Bytebase 3.x authenticated DDL rollout & verification) + **1 simulated** (Kamal deployment sequence) + **4 auxiliary live passes** (Valkey, Qdrant, Apache AGE, Temporal echo) + **4 blocked** on 16 GB staging environment (Lago, OpenMeter, SigNoz, LibreChat).
+- **Historical Live Integration Scenarios:** **6 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`, `docs/V1_INTEGRATION_EXECUTION_STATUS.md`):
+  - SC-01: OpenFGA (Live pass, persistent DB datastore)
+  - SC-02: Infisical (Live pass, Universal Auth machine identity)
+  - SC-06: Temporal (Live pass, worker kill & replay)
+  - SC-07: PostgreSQL / pgvector (Live pass, volume durability)
+  - SC-08: Sandbox Isolation (Live pass, 12 runtime controls)
+  - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout)
+  - SC-09: Kamal (Simulated pass preserved; live server execution deferred)
+  - SC-03, SC-04, SC-05, SC-11: Blocked on 16 GB staging environment (Lago, OpenMeter, SigNoz, LibreChat).
+- **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
 - **Offline Automated Test Baseline:**
-  - Python Pytest (3.11/3.13): **1,217 passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
-  - TypeScript (Vitest & Engine): **336 passed, 0 failed** across 4 packages.
+  - Python Pytest (3.12.12): **1,217 collected & passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
+  - TypeScript (Vitest & Engine): **336 passed, 0 failed** across 4 packages (Full Turbo cache hit / verified).
   - License, Tag Pinning & Secret Hygiene: **45 Compose services audited and passed** (`scripts/check_licenses.py`).
-- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **15 resolved defects** (including DEF-10 OpenFGA volume migration, DEF-11 Postgres tmpfs volume recreation, DEF-12 Bytebase 3.x CI/CD rollout adapter, and DEF-13 Infisical status endpoint fix).
-- **Resource Footprint Optimization:** Standard staging measured at **1,116.3 MiB** across 8 active running containers with zero OOM terminations and >800 MB host headroom.
+- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **15 resolved defects** (including DEF-10, DEF-11, DEF-12, DEF-13).
+- **Resource Footprint Optimization:** Standard staging measured at **1,116.3 MiB** across 8 active running containers with zero OOM terminations and >700 MB host physical RAM headroom.
+- **Architectural Deliverables Complete:**
+  1. `docs/V1_CORE_CAPABILITY_CONTRACTS.md` (Formal domain contracts for Authz, Secrets, Workflows, Metering, Telemetry)
+  2. `docs/V1_SERVICE_CONSOLIDATION_PLAN.md` (Lite, Standard, Enterprise profiles & consolidation math)
+  3. `docs/V1_REVISED_TEST_GATE_IMPLEMENTATION_PLAN.md` (Four-Tier gate matrix & CI mapping)
+  4. `docs/V1_INTEGRATION_EXECUTION_STATUS.md` (Authoritative execution ledger)
+  5. `docs/V1_DEPENDENCY_IMPLEMENTATION_ROADMAP.md` (P0-P3 prioritized backlog & Decision Register)
+
+---
 
 ### 1.2 Stage Progress Summary Table
 
@@ -35,6 +52,8 @@
 | **BUILD** | **V1 Build Program (R0+R1+S1)** | ✅ **COMPLETED** | **19** | **19** | **100.0% (Build Complete)** | **0h (Signed Off)** |
 | **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **33** | **56** | **58.9% (Strict) / 64.5% (Weighted)** | **46h / 92h / 184h (~1.1 to 4.6 wks)** |
 
+---
+
 ### 1.3 Progress Bars
 ```text
 R0 Research      [████████████████████] 100%  (6/6 tasks)
@@ -50,143 +69,68 @@ Overall Weighted [█████████████░░░░░░░] 
 Checklist Proof  [████████████████░░░░]  80%  (36/45 covered; 9 testing)
 ```
 
-### 1.4 Calculation Methodology & Assumptions
-- **Build Completion %:** `(19 completed build tasks [R0, R1, S1] / 19 total build tasks) * 100 = 100.0%`.
-- **Strict Program Task Completion %:** `(33 completed tasks [6 genuine S2 passes, 4 S3, 4 S4, 19 build] / 56 total tasks) * 100 = 58.93%` (or `60.71%` with 34 tasks if counting simulated Kamal).
-- **Weighted Progress %:** Evaluated by stage weight multipliers reflecting engineering critical path:
-  - R0 (10%): 10.00%
-  - R1 (15%): 15.00%
-  - S1 (15%): 15.00%
-  - S2 (20%): (6 / 11) * 20% = 10.91% (or 12.73% if counting simulated Kamal)
-  - S3 (15%): (4 / 7) * 15% = 8.57%
-  - S4 (10%): (4 / 8) * 10% = 5.00%
-  - S5 (10%): 0.00%
-  - S6 (5%): 0.00%
-  - **Total Weighted:** `10.00 + 15.00 + 15.00 + 10.91 + 8.57 + 5.00 = 64.48%` (or `66.30%` with Kamal).
-- **Measurement Separation Rule:** Build completion (100%), checklist proof coverage (34/45 repository evidence), operational live testing (0/11 historical scenarios executed), and production readiness remain strictly separated.
-- **Critical-Path ETA Estimation Rules:**
-  - *Optimistic:* All disposable credentials available immediately; zero container build or registry rate limits; single-pass integration passes.
-  - *Most Likely:* Staged Codespace runs for 11 services; standard debugging of database migrations and OTel trace retrieval.
-  - *Conservative:* Intermittent registry rate limits; schema reconciliation required across Postgres/Lago/OpenMeter; prolonged soak tests.
-
 ---
 
 ## 2. Granular Task Inventory Across All Stages
 
 ### R0 — Research & Requirements
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **R0.1** | Reconcile 19-layer architecture requirements against codebase | ✅ | 100% | Critical | None | PC | 12h / 20h / 36h | 0h | None | `docs/FEATURE_AUDIT.md` (337 features mapped) | 2026-11-17 (`1269bf3`) | Maintain requirement freeze |
-| **R0.2** | Technology stack & open-source license audit | ✅ | 100% | Critical | None | PC | 8h / 14h / 24h | 0h | None | `scripts/check_licenses.py` (45 compose services passed) | 2026-11-17 (`1269bf3`) | Keep lockfile clean |
-| **R0.3** | Map gateway specification (219 features) | ✅ | 100% | High | R0.1 | PC | 8h / 12h / 20h | 0h | None | `docs/GATEWAY_SPEC_AUDIT.md` | 2026-11-17 (`1269bf3`) | Wire into router |
-| **R0.4** | Complete service inventory & hardware constraint baseline | ✅ | 100% | Critical | None | PC | 10h / 16h / 30h | 0h | None | `docs/optimization/V1_RESOURCE_BASELINE.md` | 2026-11-17 (`1269bf3`) | Reference in ADRs |
-| **R0.5** | Dependency topology & startup ring modeling | ✅ | 100% | High | R0.4 | PC | 6h / 10h / 18h | 0h | None | `docs/optimization/V1_SERVICE_DEPENDENCY_MATRIX.md` | 2026-11-17 (`1269bf3`) | Apply ring rules |
-| **R0.6** | Cost & operational feasibility assessment | ✅ | 100% | High | R0.4 | PC | 4h / 8h / 14h | 0h | None | Zero-paid policy established; Lite target <= 4GB | 2026-11-17 (`1269bf3`) | Guide footprinting |
-
----
+*Status: 100% COMPLETED (Tasks R0.1 through R0.6 verified).*
 
 ### R1 — Architecture & Platform Foundation
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **R1.1** | Component hot-swapping and model fallback chains | ✅ | 100% | Critical | R0.1 | PC | 12h / 20h / 32h | 0h | None | `platform_infra/compute/lifecycle/hot_swap.py` | 2026-11-17 (`1269bf3`) | Maintain zero drops |
-| **R1.2** | Multi-tenant workspace isolation & AES key management | ✅ | 100% | Critical | R0.2 | PC | 14h / 24h / 40h | 0h | None | `tests/unit/test_ws02_identity_governance.py` | 2026-11-17 (`1269bf3`) | Audit boundary leaks |
-| **R1.3** | Tamper-evident Merkle audit ledger | ✅ | 100% | High | None | PC | 8h / 14h / 22h | 0h | None | `tests/unit/test_ws02_identity_governance.py` | 2026-11-17 (`1269bf3`) | Verify hash chain |
-| **R1.4** | Hybrid retrieval architecture (Qdrant + AGE + pgvector) | ✅ | 100% | Critical | R0.1 | PC | 16h / 28h / 48h | 0h | None | `tests/integration/test_d3_combined_live_retrieval.py` | 2026-11-17 (`1269bf3`) | Validate fallback |
-| **R1.5** | Sandbox boundary & host escape prevention | ✅ | 100% | Critical | None | PC | 18h / 30h / 52h | 0h | None | `tests/integration/test_c3_sandbox_isolation_live.py` (11 controls pass) | 2026-11-17 (`1269bf3`) | Maintain cgroup bounds |
-| **R1.6** | Architectural decision record for infrastructure consolidation | ✅ | 100% | Critical | R0.4 | PC | 8h / 14h / 24h | 0h | None | `docs/optimization/V1_OPTIMIZATION_DECISIONS.md` | 2026-11-17 (`1269bf3`) | Implement decisions |
-
----
+*Status: 100% COMPLETED (Tasks R1.1 through R1.6 verified).*
 
 ### S1 — Development & Optimization
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S1.1** | Define deployment footprint profiles (`lite`, `standard`, `enterprise`) | ✅ | 100% | Critical | R1.6 | PC | 8h / 14h / 24h | 0h | None | `docs/optimization/V1_DEPLOYMENT_FOOTPRINTS.md` | 2026-11-17 (`54ae6e7`) | Wire into Compose |
-| **S1.2** | Compose memory limits & cgroup ceilings (`limits.memory`) | ✅ | 100% | Critical | S1.1 | PC | 6h / 10h / 18h | 0h | None | `docker-compose.yml` updated with deploy resources | 2026-11-17 (`54ae6e7`) | Validate with config |
-| **S1.3** | Governed capability-driven dynamic activation engine | ✅ | 100% | High | S1.1 | PC | 12h / 20h / 34h | 0h | None | `platform_infra/compute/lifecycle/capability_activation.py` + tests | 2026-11-17 (`54ae6e7`) | Run unit test suite |
-| **S1.4** | Multi-profile Compose validation & license checks | ✅ | 100% | High | S1.2 | PC | 4h / 8h / 14h | 0h | None | `scripts/check_licenses.py` + `docker compose config` | 2026-11-17 (`54ae6e7`) | Run verification |
-| **S1.5** | Multi-tenant PostgreSQL database consolidation configuration | ✅ | 100% | High | S1.1 | PC | 8h / 16h / 28h | 0h | None | `compose/postgres/init-multi-db.sh` wired to supabase-db | 2026-11-17 (`54ae6e7`) | Maintain database init |
-| **S1.6** | Valkey cache consolidation (partitioned DB indices) | ✅ | 100% | High | S1.1 | PC | 4h / 8h / 14h | 0h | None | Configured in `V1_OPTIMIZATION_DECISIONS.md` | 2026-11-17 (`54ae6e7`) | Document connection URLs |
-| **S1.7** | Multimodal & accessibility gap closure (real device abstraction) | ✅ | 100% | Medium | None | PC | 10h / 20h / 36h | 0h | Physical hardware acceptance deferred to testing phase | Dual-mode abstraction in `eye_tracking.py`, `sign_language.py`, `switch_driver.py`; synthetic execution cycles pass in `test_accessibility.py` | 2026-11-17 (`54ae6e7`) | Execute hardware pack drills in testing phase |
-
----
+*Status: 100% COMPLETED (Tasks S1.1 through S1.7 verified).*
 
 ### S2 — Live Integrations (The 11 Historical Scenarios)
 
 | ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
 |:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S2.1** | OpenFGA persistent datastore restart verification | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_openfga_persists_across_python_restart` PASSED against live `openfga:v1.22.1` | 2026-11-17 (`481d10d`) | Maintain live test |
-| **S2.2** | Infisical secret lifecycle & restart persistence | 🟡 | 20% | High | S1.2 | Codespace | 4h / 8h / 14h | 3h / 6h / 10h | `INFISICAL_LIVE_URL` + credentials absent | Fail-closed preflight passed | 2026-11-17 (`481d10d`) | Run disposable auth |
-| **S2.3** | Lago subscription lifecycle & webhook persistence | 🟡 | 20% | High | S1.2 | Codespace | 4h / 8h / 14h | 3h / 6h / 10h | `LAGO_LIVE_URL` + API key absent | Fail-closed preflight passed | 2026-11-17 (`481d10d`) | Launch on quarantine net |
-| **S2.4** | OpenMeter Kafka event ingestion & ClickHouse persistence | 🟡 | 20% | High | S1.2 | Codespace | 6h / 12h / 20h | 5h / 10h / 16h | `OPENMETER_LIVE_URL` absent; Kafka/ClickHouse RAM | Unit test HTTP 204 passed; mocked adapter passed | 2026-11-17 (`481d10d`) | Execute in Codespace |
-| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | 🟡 | 20% | High | S1.2 | Codespace | 6h / 12h / 20h | 5h / 10h / 16h | `SIGNOZ_LIVE_URL` absent; RAM limit | OTel collector config parsed | 2026-11-17 (`481d10d`) | Verify in Codespace |
-| **S2.6** | Temporal workflow durability across worker restart | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_temporal_workflow_survives_worker_restart` PASSED against live `temporal:1.10.0` (worker SIGKILL recovery) | 2026-11-17 (`481d10d`) | Maintain live test |
-| **S2.7** | Supabase/PostgreSQL relational & vector persistence | ✅ | 100% | Critical | S1.2 | PC/Docker | 4h / 8h / 12h | 0h | None | `test_supabase_relational_and_vector_persist` PASSED against live `supabase/postgres:15.1.1.78` | 2026-11-17 (`481d10d`) | Maintain live test |
-| **S2.8** | Sandbox execution of untrusted Python code | ✅ | 100% | High | None | PC/Docker | 4h / 8h / 14h | 0h | None | 12/12 C3 sandbox controls + `test_sandbox_executes_real_python` PASSED live with `SANDBOX_LIVE=1` | 2026-11-17 (`481d10d`) | Maintain live test |
-| **S2.9** | Kamal deployment command sequence validation | ✅ | 100% | Medium | None | PC | 2h / 4h / 8h | 0h | Real deployment prohibited; simulated pass accepted | `test_kamal_deployment_command_sequence_is_simulated` passed | 2026-11-17 (`481d10d`) | Maintain simulation label |
-| **S2.10** | Bytebase authenticated DDL schema migration | 🟡 | 20% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 3h / 6h / 10h | `BYTEBASE_API_TOKEN` absent (HTTP 401) | Container online; fail-closed preflight passed | 2026-11-17 (`481d10d`) | Provision staging token |
-| **S2.11** | LibreChat authenticated route to reasoning gateway | 🟡 | 20% | Medium | S1.2 | Codespace | 4h / 8h / 14h | 3h / 6h / 10h | `LIBRECHAT_LIVE_URL` + gateway key absent | Custom endpoint config mounted | 2026-11-17 (`481d10d`) | Execute UI-to-gateway chat |
+| **S2.1** | OpenFGA persistent datastore restart verification | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_openfga_persists_across_python_restart` PASSED against live `openfga:v1.22.1` | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.2** | Infisical secret lifecycle & restart persistence | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Machine identity + Universal Auth + `test_infisical_persists_across_python_restart` PASSED live | 2026-11-18 (`418e964`) | Rotate test secrets |
+| **S2.3** | Lago subscription lifecycle & webhook persistence | 🟡 | 20% | High | S1.2 | Staging 16G | 4h / 8h / 14h | 3h / 6h / 10h | BLK-01 (16 GB staging needed) | Unit tests pass; preflight pass | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.4** | OpenMeter Kafka event ingestion & ClickHouse persistence | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (Kafka/CH RAM) | CloudEvents unit tests pass | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (ClickHouse RAM) | OTel collector config parsed | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.6** | Temporal workflow durability across worker restart | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_temporal_workflow_survives_worker_restart` PASSED live (worker SIGKILL recovery) | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.7** | Supabase/PostgreSQL relational & vector persistence | ✅ | 100% | Critical | S1.2 | PC/Docker | 4h / 8h / 12h | 0h | None | `test_supabase_relational_and_vector_persist` PASSED live (volume durability) | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.8** | Sandbox execution of untrusted Python code | ✅ | 100% | High | None | PC/Docker | 4h / 8h / 14h | 0h | None | 12/12 C3 sandbox controls + `test_sandbox_executes_real_python` PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.9** | Kamal deployment command sequence validation | ✅ | 100% | Medium | None | PC | 2h / 4h / 8h | 0h | Real deployment deferred | Simulated command sequence ordering verified | 2026-11-18 (`418e964`) | Maintain simulation label |
+| **S2.10** | Bytebase authenticated DDL schema migration | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Bytebase 3.x CI/CD flow (Sheet/Plan/Issue/Rollout) PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.11** | LibreChat authenticated route to reasoning gateway | 🟡 | 20% | Medium | S1.2 | Staging 16G | 4h / 8h / 14h | 3h / 6h / 10h | BLK-01 (16 GB staging needed) | Custom endpoint config mounted | 2026-11-18 (`418e964`) | Run on 16 GB staging |
 
 ---
 
 ### S3 — Reliability & Security
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S3.1** | Concurrency and thread-safety load tests | ✅ | 100% | Critical | None | PC | 6h / 10h / 18h | 0h | None | `test_load_chat`, `test_load_memory`, `test_load_retrieval` passed | 2026-11-17 (`481d10d`) | Maintain load suites |
-| **S3.2** | Dependency supply-chain vulnerability audit (`pip-audit`) | ✅ | 100% | Critical | None | PC | 4h / 8h / 14h | 0h | None | `pip-audit` passed (0 vulnerabilities) | 2026-11-17 (`481d10d`) | Periodic scan |
-| **S3.3** | License & secret hygiene validation | ✅ | 100% | Critical | None | PC | 4h / 6h / 10h | 0h | None | `scripts/check_licenses.py` (0 errors across 45 services) | 2026-11-17 (`481d10d`) | Run on every change |
-| **S3.4** | Multi-tenant retrieval isolation & permission leak tests | ✅ | 100% | Critical | S1.5 | PC | 6h / 12h / 20h | 0h | None | 14/14 tests in `test_ws02_identity_governance.py` passed | 2026-11-17 (`481d10d`) | Maintain isolation tests |
-| **S3.5** | Extended soak test (24h continuous operation under memory limits)| ⚪ | 0% | High | S1.2 | Codespace | 12h / 24h / 48h | 12h / 24h / 48h | Host resource & environment availability | None | Not verified | Schedule 24h soak |
-| **S3.6** | Chaos engineering & crash recovery drill | 🟡 | 50% | High | S2.1–S2.7 | PC/Code | 8h / 16h / 32h | 4h / 8h / 16h | Full multi-node chaos needs Codespace | Temporal worker kill and state replay verified live | 2026-11-17 (`481d10d`) | Run DB kill drill |
-| **S3.7** | Production security review & penetration test sign-off | 🟡 | 50% | Critical | S3.2 | PC/Other | 10h / 20h / 40h | 5h / 10h / 20h | Production environment review pending | 25/25 sandbox security tests passed | 2026-11-17 (`481d10d`) | Complete threat model |
+- **S3.1:** Concurrency and thread-safety load tests (PASSED, 100%).
+- **S3.2:** Dependency supply-chain vulnerability audit (PASSED, 0 vulnerabilities).
+- **S3.3:** License & secret hygiene validation (PASSED, 0 errors across 45 services).
+- **S3.4:** Multi-tenant retrieval isolation & permission leak tests (PASSED, 14/14 tests).
+- **S3.5:** Extended soak test (24h continuous operation under memory limits) (Pending 16 GB runner, 0%).
+- **S3.6:** Chaos engineering & crash recovery drill (Partial, 50% - Temporal worker kill verified live).
+- **S3.7:** Production security review & penetration test sign-off (Partial, 50% - 25/25 sandbox security tests passed).
 
 ---
 
 ### S4 — Deployment & Operations
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S4.1** | Deployment documentation & operational runbooks | ✅ | 100% | High | None | PC | 8h / 14h / 22h | 0h | None | `docs/DEPLOYMENT.md`, `docs/API.md` | 2026-11-17 (`481d10d`) | Add profile commands |
-| **S4.2** | Clean installation & fresh environment bootstrap script | 🟡 | 60% | High | S1.2 | PC/Code | 6h / 12h / 20h | 2h / 5h / 8h | Fresh machine test pending | Verified commands in docs & wheel install | 2026-11-17 (`481d10d`) | Execute clean install |
-| **S4.3** | Automated rollback guard & database migration reversibility | ✅ | 100% | High | None | PC | 8h / 14h / 24h | 0h | None | `platform_infra/release/migration/tests/test_rollback_guard.py` passed | 2026-11-17 (`481d10d`) | Maintain rollback tests |
-| **S4.4** | Disaster recovery & snapshot restoration drill | ✅ | 100% | High | S1.5 | PC | 6h / 12h / 24h | 0h | None | `cognitive/memory/tests/test_memory_snapshots.py` passed | 2026-11-17 (`481d10d`) | Maintain DR snapshots |
-| **S4.5** | Resource telemetry & tenant cost accounting exporter | ✅ | 100% | Medium | S1.3 | PC | 6h / 10h / 18h | 0h | None | Capability lease tracking & tenant accounting verified | 2026-11-17 (`481d10d`) | Maintain accounting tests |
-| **S4.6** | Private cloud / air-gapped deployment verification | ⚪ | 0% | Medium | S4.2 | Other | 8h / 16h / 32h | 8h / 16h / 32h | Air-gapped network required | None | Not verified | Test offline bundle |
-| **S4.7** | Kubernetes Helm chart / Kustomize manifests | ⚪ | 0% | Low | S1.1 | Other | 12h / 24h / 48h | 12h / 24h / 48h | Post-v1 optimization | None | Not verified | Defer to v1.1 |
-| **S4.8** | Production health check & self-healing watchdog daemon | 🟡 | 60% | High | S1.3 | PC | 6h / 12h / 20h | 2h / 5h / 8h | Full daemon supervisor | Container health probes verified across 7 containers | 2026-11-17 (`481d10d`) | Implement daemon |
+- **S4.1:** Deployment documentation & operational runbooks (PASSED, 100%).
+- **S4.2:** Clean installation & fresh environment bootstrap script (Partial, 60%).
+- **S4.3:** Automated rollback guard & database migration reversibility (PASSED, 100%).
+- **S4.4:** Disaster recovery & snapshot restoration drill (PASSED, 100%).
+- **S4.5:** Resource telemetry & tenant cost accounting exporter (PASSED, 100%).
+- **S4.6:** Private cloud / air-gapped deployment verification (Pending offline bundle, 0%).
+- **S4.7:** Kubernetes Helm chart / Kustomize manifests (Deferred to V1.1, 0%).
+- **S4.8:** Production health check & self-healing watchdog daemon (Partial, 60%).
 
 ---
 
-### S5 — Release Candidate (RC1)
+## 3. Summary Program Metrics
 
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S5.1** | End-to-end full regression test suite execution | ⚪ | 0% | Critical | S2, S3 | PC/Code | 8h / 16h / 30h | 8h / 16h / 30h | Prerequisites in S2 | 1,195 offline unit tests pass | Not verified | Run full suite on RC1 |
-| **S5.2** | Consolidation of all verification logs & test artifacts | ⚪ | 0% | High | S5.1 | PC | 4h / 8h / 14h | 4h / 8h / 14h | Pending S5.1 | None | Not verified | Aggregate into report |
-| **S5.3** | Zero unresolved P0/P1 defect sign-off | ⚪ | 0% | Critical | S5.1 | PC | 4h / 8h / 14h | 4h / 8h / 14h | Defect audit on RC1 | 0 defects currently | Not verified | Verify register |
-| **S5.4** | Residual risk acceptance review | ⚪ | 0% | High | S5.3 | PC | 4h / 8h / 14h | 4h / 8h / 14h | Pending S5.3 | `docs/V1_BLOCKERS_AND_RISKS.md` | Not verified | Sign off risks |
-| **S5.5** | Formal 19-layer operational gate acceptance | ⚪ | 0% | Critical | S5.1–S5.4 | PC | 8h / 14h / 24h | 8h / 14h / 24h | S2 live closure needed | Prior report superseded | Not verified | Sign off all 19 layers |
-| **S5.6** | RC1 tag creation & release candidate notification | ⚪ | 0% | Critical | S5.5 | Other | 2h / 4h / 8h | 2h / 4h / 8h | Explicit approval required | None | Not verified | Await authorization |
-
----
-
-### S6 — Production Release (v1.0.0 GA)
-
-| ID | Task | Status | % | Priority | Dependencies | Env | Effort (Opt/Likely/Worst) | Remaining ETA | Blocker | Evidence | Last Verified | Next Action |
-|:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
-| **S6.1** | Release artifact packaging & SHA-256 digest locking | ⚪ | 0% | Critical | S5.6 | CI | 4h / 8h / 14h | 4h / 8h / 14h | Await S5 approval | Lockfiles hashed | Not verified | Generate digests |
-| **S6.2** | Final production deployment verification & smoke testing | ⚪ | 0% | Critical | S6.1 | Prod | 6h / 12h / 20h | 6h / 12h / 20h | Await S6.1 | None | Not verified | Run smoke suite |
-| **S6.3** | Production telemetry, alerting & APM active verification | ⚪ | 0% | High | S6.2 | Prod | 4h / 8h / 14h | 4h / 8h / 14h | Await S6.2 | None | Not verified | Confirm metrics |
-| **S6.4** | Release notes & v1 documentation freeze | ⚪ | 0% | High | S6.2 | PC | 4h / 8h / 12h | 4h / 8h / 12h | Await S6.2 | Docs drafted | Not verified | Publish notes |
-| **S6.5** | Executive sign-off & v1.0.0 GA announcement | ⚪ | 0% | Critical | S6.1–S6.4 | Other | 2h / 4h / 8h | 2h / 4h / 8h | Explicit release approval | None | Not verified | Execute release |
-
----
-
-## 3. Summary Progress Metrics & ETAs
-
-- **Active Engineering Work Remaining:** ~62 hours (Optimistic) to ~128 hours (Most Likely) to ~248 hours (Conservative).
-- **Calendar Time (Single Engineer @ 40h/week):** ~1.5 weeks (Optimistic) to ~3.2 weeks (Most Likely) to ~6.2 weeks (Conservative).
-- **Release Blocker Count:** 4 (16 GB Codespace environment allocation for 6 heavy integrations, disposable machine credential injection for Infisical/Lago/Bytebase, 24h continuous soak execution, fresh VM clean-bootstrap drill).
+- **Build Completion %:** **100.0%** (19/19 build tasks complete and signed off).
+- **Live Integration Testing:** **6 genuine live passes** / 11 historical scenarios (54.5%) + 1 simulated pass.
+- **Auxiliary Live Passes:** **4/4** (Valkey, Qdrant, Apache AGE, Temporal Echo).
+- **Offline Automated Test Suite:** **1,217 Python tests passing**; **336 TypeScript tests passing**.
+- **Active Release Blockers:** **4** (16 GB Staging Environment for SC-03, SC-04, SC-05, SC-11; 24h Soak Test; Air-gapped Verification; Release Gate Transition Sign-off).
+- **Remaining ETA:**
+  - *Optimistic:* **46 hours** (~1.1 weeks)
+  - *Most Likely:* **92 hours** (~2.3 weeks)
+  - *Conservative:* **184 hours** (~4.6 weeks)
