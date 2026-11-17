@@ -1,15 +1,15 @@
 # 01 — Compose Service Validation
 
-**Reviewed:** 2026-11-16
+**Reviewed:** 2026-11-17
 **Branch:** `main`
-**Baseline revision:** `c6b2cdb99ee3688187c87e2f0bc429517fee8c44`
+**Revalidated revision:** `af5f7f163af10a9c29b2778e15a2311a4c9afc02`
 **Status:** **PARTIAL — Compose definitions validate; live service acceptance is not established**
 
 ## Executive summary
 
-The local branch was at the requested baseline revision before these changes. The prior validation report overstated readiness: it labeled the stack a pass while its own matrix recorded unavailable services and skipped live cases. This report supersedes those claims.
+The prior validation report overstated readiness: it labeled the stack a pass while its own matrix recorded unavailable services and skipped live cases. This report supersedes those claims. The current checkout was revalidated at `af5f7f163af10a9c29b2778e15a2311a4c9afc02`.
 
-The current Compose model renders successfully, the core profile contains 37 services including the Foundry-generated SigNoz deployment, and focused OpenMeter adapter tests pass. No service container was started or stopped, no image was pulled, and no volume was deleted during this execution. **No mandatory service has been proven healthy from a fresh start, and no live integration case is being counted as passed.**
+The current Compose model renders successfully, and the core profile contains 37 services including the Foundry-generated SigNoz deployment. The already-running Qdrant container passed two live E2E cases; Apache AGE readiness was confirmed, but no AGE graph writes were made. No service container was started or stopped, no image was pulled, and no volume was deleted during this execution. **No mandatory service has been proven healthy from a fresh start, and no historical live integration scenario is being counted as passed.**
 
 ## Configuration changes
 
@@ -25,6 +25,40 @@ The current Compose model renders successfully, the core profile contains 37 ser
 | Supabase / Apache AGE | Existing pinned images | Replaced ephemeral `tmpfs` database storage with the already-declared named volumes so data can survive container recreation. | Configuration only; restart/persistence tests not run. |
 
 `valkey` is now in the `core` profile and `dragonfly` remains `optional`, consistent with the OSI-default cache boundary. Existing named volumes are retained; this change does not remove volumes or migrate existing data.
+
+## Revalidation on 2026-11-17
+
+| Service / check | Result | Qualification |
+|---|---|---|
+| Compose core profile (37 services) | **Configuration valid** | `docker compose --env-file .env.example --profile core config --quiet` and JSON render succeeded. The example file was used because the local `.env` does not define the mandatory Compose variables. No interpolated configuration or credential values were recorded. |
+| All Compose profiles (51 services) | **Configuration valid** | `docker compose --env-file .env.example --profile core --profile optional config --quiet` and JSON rendering succeeded. `scripts/check_licenses.py` independently verified its 45 Compose service entries. |
+| Qdrant | **Healthy; 2 live E2E tests passed** | Existing `central-qdrant` was already healthy. Vector round-trip and Qdrant adapter tests passed; the tests created and removed only their own uniquely named collections. The container was not restarted. |
+| Apache AGE | **Readiness passed; integration not run** | Existing `central-apache-age` was already healthy and `pg_isready -U postgres -d postgres` succeeded. No graph writes or restart/persistence test was performed. |
+| OpenFGA, Infisical, Lago, OpenMeter, SigNoz/OTel, Temporal, PostgreSQL/pgvector, Keycloak, Valkey, Bytebase, LibreChat/MongoDB | **Not runtime validated** | No fresh startup, health check, authenticated operation, migration, persistence check, or shutdown was attempted. Compose rendering is not runtime evidence. |
+| Reasoning gateway | **Blocked** | No configured gateway URL or API key was available. |
+
+Commands and results:
+
+```powershell
+docker compose --env-file .env.example --profile core config --quiet
+# pass
+docker compose --env-file .env.example --profile core --profile optional config --quiet
+# pass
+docker compose --env-file .env.example --profile core --profile optional config --format json
+# pass; 51 services rendered, 37 in core and 14 in optional profiles
+docker exec central-apache-age pg_isready -U postgres -d postgres
+# /var/run/postgresql:5432 - accepting connections
+$env:QDRANT_URL = 'http://localhost:6333'
+.\.venv\Scripts\python.exe -m pytest -o addopts= tests\integration\test_compose_stack_e2e.py `
+  -k 'qdrant_vector_roundtrip_e2e or memory_qdrant_adapter_v120_e2e' -q
+# 2 passed, 17 deselected
+.\.venv\Scripts\python.exe scripts\check_licenses.py
+# License, lockfile hash, Docker tag pinning, and secret hygiene checks passed (45 compose services verified).
+```
+
+The host reported 7.8 GiB total RAM with less than 1 GiB free; Docker's memory limit was about 3.72 GiB. Starting the 37-service core profile—particularly ClickHouse, SigNoz, OpenMeter, and Kafka—was not safe on this machine. Existing containers and volumes were left untouched.
+
+Offline regression checks also passed: in isolated environments, Python 3.11.14 and 3.13.11 each ran `python -m pytest -q` and reported 1,195 passed, 1 skipped, and 125 deselected. `pnpm test`, `pnpm run test:connectors`, `pnpm run test:orchestration`, and `pnpm run test:surface` succeeded. These checks do not establish service startup or live integration.
 
 ## Verification evidence
 

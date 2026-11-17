@@ -1,6 +1,6 @@
 # Central Intelligence — 12-Section Project Completion Checklist (Evidence-Reconciled)
 
-**Reviewed:** 2026-11-16 | **Branch:** `main` | **Source revision:** `5dfb59c0090f90e450fc574b801847e96f2ca985`
+**Reviewed:** 2026-11-17 | **Branch:** `main` | **Source revision:** `af5f7f163af10a9c29b2778e15a2311a4c9afc02`
 
 **Legend:** `[x]` = implemented/covered according to committed repository evidence (not independently rerun); `[ ]` = requires additional operational evidence or remains unproven. This checklist is distinct from the 30/30 critical acceptance checklist and the repository's self-reported 60/60 completion program.
 
@@ -92,7 +92,7 @@
 - [x] Repair shared Compose E2E fixture and confirm live core-service test execution
   - Evidence/qualification: PR #2 merged.
 - [ ] Validate all mandatory Compose services, including currently skipped integrations
-  - Evidence/qualification: `docker compose config --quiet` and rendered core-profile YAML validation pass with process-only placeholder secrets; 37 core service definitions are present. No services were started, migrations or readiness were verified, or images built/pulled. See `docs/verification/01_COMPOSE_SERVICE_VALIDATION.md`.
+  - Evidence/qualification: Core (37 services) and all-profile Compose configuration render with `.env.example`. Existing Qdrant passed two live E2E checks and Apache AGE readiness passed; this does not prove a fresh startup. Resource limits prevented safely starting the remaining services. See `docs/verification/01_COMPOSE_SERVICE_VALIDATION.md`.
 - [ ] Verify cloud, private and on-prem deployment profiles
   - Evidence/qualification: Compose profiles are not equivalent to successful deployments in all three environments.
 - [ ] Complete monitoring, migration, scaling, backup and rollback exercises
@@ -102,7 +102,7 @@
 - [x] Restore passing Python 3.11, Python 3.13, TypeScript and Compose CI
   - Evidence/qualification: Recent GitHub Actions CI runs successful.
 - [ ] Run all 11 previously skipped live integration scenarios
-  - Evidence/qualification: 19 tests collect. The selected 11-case preflight reports 10 missing-prerequisite failures, one mocked Kamal sequence pass, zero skips, and zero genuine live-service passes. See `docs/verification/02_LIVE_INTEGRATION_CLOSURE.md`.
+  - Evidence/qualification: Revalidated 2026-11-17: 10 missing-prerequisite failures, one mocked Kamal sequence pass, zero skips, and zero genuine passes among the 11. Qdrant live E2E checks are separate and do not close a historical scenario. See `docs/verification/02_LIVE_INTEGRATION_CLOSURE.md`.
 - [ ] Complete load, soak, fault-injection and recovery testing
   - Evidence/qualification: Load tests reported; prolonged soak and real fault recovery not fully evidenced.
 - [ ] Perform full security, isolation and release acceptance testing

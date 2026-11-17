@@ -1,12 +1,12 @@
 # 02 — Live Integration Closure
 
-**Reviewed:** 2026-11-16
-**Baseline revision:** `c6b2cdb99ee3688187c87e2f0bc429517fee8c44`
+**Reviewed:** 2026-11-17
+**Revalidated revision:** `af5f7f163af10a9c29b2778e15a2311a4c9afc02`
 **Status:** **OPEN — 0 of 11 scenarios has genuine live-service pass evidence**
 
 ## Result
 
-The 11 historical scenarios were collected and their explicit preflight was run with live target/credential variables blanked in that process. The result was **10 expected prerequisite failures, 1 pass of a mocked Kamal command-sequence test, 8 deselected unrelated tests, and 0 skips**. None of the 11 was executed against a real target service.
+The 11 historical scenarios were selected and their explicit preflight was run with live target/credential variables blanked in that process. On the current revision the result was **10 expected prerequisite failures, 1 pass of a mocked Kamal command-sequence test, 8 deselected unrelated tests, and 0 skips**. None of the 11 was executed against a real target service. Separately, two live Qdrant Compose E2E tests passed against an already-running local service; neither is one of these 11 scenarios.
 
 The test module no longer calls `pytest.skip()` for missing live prerequisites. When explicitly selected, cases now fail with the missing variable rather than appearing as successful or silently skipped. The module remains marked `live` and is excluded by the repository's normal offline pytest configuration; run the live gate explicitly.
 
@@ -33,6 +33,24 @@ The test module no longer calls `pytest.skip()` for missing live prerequisites. 
 - **Mocked/simulated:** the Kamal command-order test; the OpenMeter adapter regression test; the earlier 31-test adapter suite. None counts as a live-service success.
 - **Expected fail-closed regression:** `test_live_query_fails_closed_when_openmeter_down` passed against the local unused port `127.0.0.1:59998`; this verifies adapter behavior only.
 - **Skipped:** 0 in the selected preflight run. Other offline pytest commands continue to exclude tests marked `live` by configuration; the explicit live gate is required.
+
+### Revalidation commands and host evidence (2026-11-17)
+
+The preflight used the repository's existing `.venv` and set each variable below to an empty value in the test process only; no `.env` file was changed:
+
+```powershell
+$names = 'OPENFGA_LIVE_URL','INFISICAL_LIVE_URL','INFISICAL_CLIENT_ID','INFISICAL_CLIENT_SECRET',
+  'LAGO_LIVE_URL','LAGO_API_KEY','OPENMETER_LIVE_URL','OPENMETER_API_TOKEN','SIGNOZ_LIVE_URL',
+  'TEMPORAL_LIVE_URL','POSTGRES_LIVE_URL','SANDBOX_LIVE','BYTEBASE_LIVE_URL','BYTEBASE_API_TOKEN',
+  'LIBRECHAT_LIVE_URL','REASONING_GATEWAY_URL','REASONING_GATEWAY_API_KEY'
+foreach ($name in $names) { Set-Item -Path "Env:$name" -Value '' }
+.\.venv\Scripts\python.exe -m pytest -o addopts= tests\integration\test_compose_stack_e2e.py `
+  -k 'openfga_persists or infisical_persists or lago_persists or openmeter_persists or signoz_persists or temporal_workflow_survives_worker_restart or supabase_relational_and_vector_persist or sandbox_executes_real_python or bytebase_migration_executes_real_ddl or librechat_routes_to_reasoning_gateway or kamal_deployment_command_sequence_is_simulated' `
+  --tb=no -q
+# 10 failed (missing prerequisites), 1 passed (mocked Kamal), 8 deselected
+```
+
+The Python 3.11.14 and 3.13.11 offline suites each passed (**1,195 passed, 1 skipped, 125 deselected**). TypeScript workspace, connector, orchestration, and surface suites passed. These are regression checks, not live evidence for any of the 11 scenarios.
 
 ## Exact verification commands
 
