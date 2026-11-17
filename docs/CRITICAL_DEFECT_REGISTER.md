@@ -1,8 +1,8 @@
 # Central Intelligence — Critical Defect Register
 
-**Status Date:** 2026-11-17  
+**Status Date:** 2026-11-18  
 **Active Build Defects:** 0  
-**Resolved Defects:** 11  
+**Resolved Defects:** 15  
 
 ---
 
@@ -75,3 +75,27 @@
 - **Component:** `cognitive/perception/accessibility/{eye_tracking.py, sign_language.py, switch_driver.py}`
 - **Resolution:** Replaced raw `NotImplementedError` stubs with a complete dual-mode hardware abstraction supporting virtual/synthetic execution cycles (9-point calibration, gaze dwell tracking, video frame gloss recognition with 21 landmarks, switch debounce and scan event queues) while maintaining backwards compatibility and explicitly deferring physical hardware verification to the dedicated testing phase.
 - **Verified:** Unit test `test_synthetic_device_abstraction_full_execution_cycle` in `cognitive/perception/accessibility/tests/test_accessibility.py`.
+
+### DEF-10: OpenFGA Ephemeral In-Memory Storage Lacking Restart Durability
+- **Severity:** High / P1 (Data Durability / Security)
+- **Component:** `central-openfga` deployment & `compose/postgres/init-multi-db.sh`
+- **Resolution:** `central-openfga` was originally deployed with `OPENFGA_DATA_STORE_ENGINE=memory`, causing all authorization tuples to be discarded upon container restart. Initialized dedicated `openfga` database schema within consolidated PostgreSQL container and redeployed OpenFGA with `--datastore-engine postgres` connecting to `central-supabase-db:5432/openfga`.
+- **Verified:** Tested pre-restart tuple write, container restart via `docker restart central-openfga`, service readiness polling (`/healthz` -> SERVING), post-restart tuple check verification, and negative authorization checks.
+
+### DEF-11: PostgreSQL Container In-Memory tmpfs Data Storage
+- **Severity:** High / P1 (Data Durability / State Preservation)
+- **Component:** `central-supabase-db` container configuration
+- **Resolution:** Container was launched mounting `/var/lib/postgresql/data` on volatile `tmpfs` RAM, risking total data loss upon container recreation. Created persistent named Docker volume `central-intelligence_supabase_data` and recreated the database container attaching this persistent volume.
+- **Verified:** Tested volume inspection (`Type: volume`), schema creation, relational and pgvector inserts, container restart via `docker restart central-supabase-db`, and post-restart vector cosine search / relational retrieval.
+
+### DEF-12: Bytebase Uninitialized Workspace & Incompatible Legacy Execution Endpoint
+- **Severity:** High / P1 (CI/CD Deployment & Schema Management)
+- **Component:** `platform_infra/release/db/bytebase_adapter.py`
+- **Resolution:** Live Bytebase 3.24.1 returned HTTP 401 due to uninitialized workspace and lacked legacy ad-hoc `/v1/sql/execute` endpoint. Initialized local admin account via `/v1/auth/signup`, registered Postgres instance, set `environments/test`, and upgraded `BytebaseAdapter` to use the modern Bytebase 3.x CI/CD flow: Sheet upload -> Plan creation -> Issue generation -> Rollout `tasks:batchRun` with asynchronous rollout readiness polling.
+- **Verified:** Automated live DDL migration creating table `e2e_bb_*`, information schema validation in PostgreSQL, live rollback execution, unauthenticated HTTP 401 rejection, and unapproved migration `PermissionError` gate enforcement.
+
+### DEF-13: Infisical Status Endpoint Mismatch & Module Singleton Eager Auth
+- **Severity:** High / P1 (Secrets Management & System Boot)
+- **Component:** `control/identity/secrets/infisical_adapter.py`
+- **Resolution:** `InfisicalAdapter._ensure_live_backend` probed `/api/v1/status` (returning HTTP 404 in modern Infisical) rather than `/api/status`, and the module-level singleton `default_infisical_adapter` eagerly attempted universal auth during module import. Updated status check with `/api/status` fallback, implemented `/api/v3/secrets/raw` secret lifecycle with legacy v1 fallback, and deferred singleton auth checks (`_defer_prod_check=True`).
+- **Verified:** Full machine identity creation, Universal Auth Client Secret generation, secret storage, container restart persistence, and `test_infisical_persists_across_python_restart` pytest execution.

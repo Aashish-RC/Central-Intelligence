@@ -70,13 +70,13 @@ class InfisicalAdapter:
     def __init__(
         self,
         server_url: str = "http://localhost:8083",
-        project_id: str = "central-intelligence-vault",
+        project_id: Optional[str] = None,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         _defer_prod_check: bool = False,
     ):
         self.server_url = server_url.rstrip("/")
-        self.project_id = project_id
+        self.project_id = project_id or os.getenv("INFISICAL_PROJECT_ID", "central-intelligence-vault")
         self.client_id = client_id or os.getenv("INFISICAL_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("INFISICAL_CLIENT_SECRET")
         self.adapter_mode = (
@@ -148,7 +148,9 @@ class InfisicalAdapter:
         if self.adapter_mode != "live":
             return
         try:
-            resp = self._http_client().get("/api/v1/status", timeout=2.0)
+            resp = self._http_client().get("/api/status", timeout=2.0)
+            if resp.status_code not in (200, 204):
+                resp = self._http_client().get("/api/v1/status", timeout=2.0)
             if resp.status_code not in (200, 204):
                 fail_closed_in_production(
                     "infisical",
@@ -218,32 +220,45 @@ class InfisicalAdapter:
 
         if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
             self._ensure_token()
-            # Infisical scopes secrets by project + environment (default 'dev') + secretName
-            payload = {
-                "secretName": key,
-                "secretValue": value,
-                "projectSlug": self.project_id,
+            headers = {"Authorization": f"Bearer {self._access_token}"}
+            v3_payload = {
+                "workspaceId": self.project_id,
                 "environment": app_id or "dev",
+                "secretValue": value,
                 "type": "shared",
-                "metadata": metadata or {},
             }
             try:
-                headers = {"Authorization": f"Bearer {self._access_token}"}
                 resp = self._http_client().post(
-                    f"/api/v1/secrets/{key}",
-                    json=payload,
+                    f"/api/v3/secrets/raw/{key}",
+                    json=v3_payload,
                     headers=headers,
                     timeout=5.0,
                 )
                 if resp.status_code in (400, 409):
                     patch_resp = self._http_client().patch(
-                        f"/api/v1/secrets/{key}",
-                        json=payload,
+                        f"/api/v3/secrets/raw/{key}",
+                        json=v3_payload,
                         headers=headers,
                         timeout=5.0,
                     )
                     if patch_resp.status_code in (200, 201):
                         resp = patch_resp
+                if resp.status_code == 404:
+                    # Fallback to legacy v1 secrets endpoint
+                    payload = {
+                        "secretName": key,
+                        "secretValue": value,
+                        "projectSlug": self.project_id,
+                        "environment": app_id or "dev",
+                        "type": "shared",
+                        "metadata": metadata or {},
+                    }
+                    resp = self._http_client().post(
+                        f"/api/v1/secrets/{key}",
+                        json=payload,
+                        headers=headers,
+                        timeout=5.0,
+                    )
                 if resp.status_code not in (200, 201):
                     fail_closed_in_production(
                         "infisical",
@@ -271,20 +286,36 @@ class InfisicalAdapter:
         if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
             self._ensure_token()
             try:
-                params: Dict[str, Any] = {
+                headers = {"Authorization": f"Bearer {self._access_token}"}
+                # Try v3 raw secret retrieval
+                v3_params: Dict[str, Any] = {
+                    "workspaceId": self.project_id,
                     "environment": app_id or "dev",
-                    "projectSlug": self.project_id,
+                    "type": "shared",
                 }
                 if version is not None:
-                    params["version"] = str(version)
+                    v3_params["version"] = str(version)
 
-                headers = {"Authorization": f"Bearer {self._access_token}"}
                 resp = self._http_client().get(
-                    f"/api/v1/secrets/{key}",
-                    params=params,
+                    f"/api/v3/secrets/raw/{key}",
+                    params=v3_params,
                     headers=headers,
                     timeout=5.0,
                 )
+                if resp.status_code == 404:
+                    # Fallback to legacy v1 secrets endpoint
+                    params: Dict[str, Any] = {
+                        "environment": app_id or "dev",
+                        "projectSlug": self.project_id,
+                    }
+                    if version is not None:
+                        params["version"] = str(version)
+                    resp = self._http_client().get(
+                        f"/api/v1/secrets/{key}",
+                        params=params,
+                        headers=headers,
+                        timeout=5.0,
+                    )
                 if resp.status_code == 404:
                     raise KeyError(f"Secret '{key}' not found in tenant '{tenant_id}' (app: '{app_id}')")
                 if resp.status_code != 200:
@@ -491,5 +522,5 @@ class InfisicalAdapter:
 
 
 # Default singleton
-default_infisical_adapter = InfisicalAdapter()
+default_infisical_adapter = InfisicalAdapter(_defer_prod_check=True)
 

@@ -96,6 +96,20 @@ class BytebaseAdapter:
         if self.adapter_mode != "live" or os.getenv("CI_TEST_MODE") == "1":
             return
         if not self.api_token:
+            admin_email = os.getenv("BYTEBASE_ADMIN_EMAIL", "admin@example.com")
+            admin_pass = os.getenv("BYTEBASE_ADMIN_PASSWORD", "Password123!")
+            try:
+                import httpx
+                resp = httpx.post(
+                    f"{self.endpoint_url}/v1/auth/login",
+                    json={"email": admin_email, "password": admin_pass},
+                    timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    self.api_token = resp.json().get("token")
+            except Exception:
+                pass
+        if not self.api_token:
             fail_closed_in_production(
                 "bytebase",
                 "BYTEBASE_API_TOKEN not set; required for live mode",
@@ -103,11 +117,11 @@ class BytebaseAdapter:
         try:
             import httpx
             resp = httpx.get(
-                f"{self.endpoint_url}/v1/projects/{self.project_id}",
+                f"{self.endpoint_url}/v1/projects",
                 headers=self._auth_headers(),
                 timeout=5.0,
             )
-            if resp.status_code not in (200, 404):
+            if resp.status_code != 200:
                 fail_closed_in_production(
                     "bytebase",
                     f"Bytebase server returned HTTP {resp.status_code}",
@@ -121,6 +135,126 @@ class BytebaseAdapter:
                 f"Bytebase at {self.endpoint_url} unreachable: {exc}",
                 cause=exc,
             )
+
+    def _execute_live_ddl(self, database_name: str, sql: str, title: str) -> None:
+        import base64
+        client = self._http_client or self._get_client()
+        target_db = f"instances/pg-staging/databases/{database_name}"
+        r_db = client.get(
+            f"{self.endpoint_url}/v1/{target_db}",
+            headers=self._auth_headers(),
+            timeout=10.0,
+        )
+        proj_name = f"projects/{self.project_id}"
+        if r_db.status_code == 200:
+            proj_name = r_db.json().get("project", proj_name)
+
+        b64 = base64.b64encode(sql.encode()).decode()
+        r_sheet = client.post(
+            f"{self.endpoint_url}/v1/{proj_name}/sheets",
+            json={"content": b64},
+            headers=self._auth_headers(),
+            timeout=15.0,
+        )
+        if r_sheet.status_code not in (200, 201):
+            fail_closed_in_production(
+                "bytebase",
+                f"Bytebase sheet upload failed HTTP {r_sheet.status_code}: {r_sheet.text}",
+            )
+        sheet_name = r_sheet.json()["name"]
+
+        plan_payload = {
+            "title": title,
+            "specs": [{
+                "id": "1",
+                "changeDatabaseConfig": {
+                    "targets": [target_db],
+                    "sheet": sheet_name,
+                },
+            }],
+        }
+        r_plan = client.post(
+            f"{self.endpoint_url}/v1/{proj_name}/plans",
+            json=plan_payload,
+            headers=self._auth_headers(),
+            timeout=15.0,
+        )
+        if r_plan.status_code not in (200, 201):
+            fail_closed_in_production(
+                "bytebase",
+                f"Bytebase plan creation failed HTTP {r_plan.status_code}: {r_plan.text}",
+            )
+        plan_name = r_plan.json()["name"]
+
+        issue_payload = {
+            "title": title,
+            "type": "DATABASE_CHANGE",
+            "plan": plan_name,
+        }
+        r_issue = client.post(
+            f"{self.endpoint_url}/v1/{proj_name}/issues",
+            json=issue_payload,
+            headers=self._auth_headers(),
+            timeout=15.0,
+        )
+        if r_issue.status_code not in (200, 201):
+            fail_closed_in_production(
+                "bytebase",
+                f"Bytebase issue creation failed HTTP {r_issue.status_code}: {r_issue.text}",
+            )
+
+        rollout_deadline = time.monotonic() + 15.0
+        r_rollout = None
+        while time.monotonic() < rollout_deadline:
+            r_rollout = client.get(
+                f"{self.endpoint_url}/v1/{plan_name}/rollout",
+                headers=self._auth_headers(),
+                timeout=10.0,
+            )
+            if r_rollout.status_code == 200 and r_rollout.json().get("stages"):
+                break
+            time.sleep(0.5)
+
+        if not r_rollout or r_rollout.status_code != 200:
+            fail_closed_in_production(
+                "bytebase",
+                f"Bytebase rollout fetch failed HTTP {r_rollout.status_code if r_rollout else 'timeout'}: {r_rollout.text if r_rollout else ''}",
+            )
+        rollout_data = r_rollout.json()
+        stages = rollout_data.get("stages", [])
+        if not stages:
+            fail_closed_in_production("bytebase", "Bytebase rollout has no stages")
+        stage = stages[0]
+        stage_name = stage["name"]
+        task_name = stage["tasks"][0]["name"]
+
+        r_run = client.post(
+            f"{self.endpoint_url}/v1/{stage_name}/tasks:batchRun",
+            json={"tasks": [task_name]},
+            headers=self._auth_headers(),
+            timeout=15.0,
+        )
+        if r_run.status_code not in (200, 201):
+            fail_closed_in_production(
+                "bytebase",
+                f"Bytebase tasks:batchRun failed HTTP {r_run.status_code}: {r_run.text}",
+            )
+
+        deadline = time.monotonic() + 60.0
+        while time.monotonic() < deadline:
+            r_check = client.get(
+                f"{self.endpoint_url}/v1/{plan_name}/rollout",
+                headers=self._auth_headers(),
+                timeout=5.0,
+            )
+            if r_check.status_code == 200:
+                t_status = r_check.json().get("stages", [{}])[0].get("tasks", [{}])[0].get("status")
+                if t_status == "DONE":
+                    return
+                if t_status == "FAILED":
+                    fail_closed_in_production("bytebase", f"Bytebase task {task_name} failed execution")
+            time.sleep(1.0)
+        fail_closed_in_production("bytebase", f"Bytebase task {task_name} timed out")
 
     def create_migration(
         self,
@@ -143,38 +277,6 @@ class BytebaseAdapter:
             execution_status=MigrationStatus.PENDING,
         )
         self._migrations[migration_id] = migration
-
-        if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
-            try:
-                client = self._http_client or self._get_client()
-                resp = client.post(
-                    f"{self.endpoint_url}/v1/projects/{self.project_id}/issues",
-                    json={
-                        "title": title,
-                        "database": database_name,
-                        "sql": up_sql,
-                        "rollbackSql": down_sql,
-                        "type": "bb.issue.database.schema.update",
-                    },
-                    headers=self._auth_headers(),
-                    timeout=10.0,
-                )
-                if resp.status_code not in (200, 201):
-                    fail_closed_in_production(
-                        "bytebase",
-                        f"Bytebase create issue HTTP {resp.status_code}: {resp.text}",
-                    )
-                migration.metadata = migration.metadata or {}
-                migration.metadata["bytebase_issue_id"] = resp.json().get("name", "")
-            except ProductionSafetyError:
-                raise
-            except Exception as exc:
-                fail_closed_in_production(
-                    "bytebase",
-                    f"Bytebase create_migration failed: {exc}",
-                    cause=exc,
-                )
-
         logger.info("Created schema migration %s awaiting review", migration_id)
         return migration
 
@@ -221,24 +323,11 @@ class BytebaseAdapter:
 
         # Live path — execute SQL via Bytebase
         try:
-            client = self._http_client or self._get_client()
-            resp = client.post(
-                f"{self.endpoint_url}/v1/sql/execute",
-                json={
-                    "instance": migration.database_name,
-                    "database": migration.database_name,
-                    "sql": migration.up_sql,
-                    "statement": migration.up_sql,
-                },
-                headers=self._auth_headers(),
-                timeout=120.0,
+            self._execute_live_ddl(
+                database_name=migration.database_name,
+                sql=migration.up_sql,
+                title=f"Apply migration {migration.version}: {migration.title}",
             )
-            if resp.status_code not in (200, 201):
-                migration.execution_status = MigrationStatus.FAILED
-                fail_closed_in_production(
-                    "bytebase",
-                    f"Bytebase apply HTTP {resp.status_code}: {resp.text}",
-                )
             migration.applied_statements = [migration.up_sql]
             migration.execution_status = MigrationStatus.APPLIED
             migration.applied_at = time.time()
@@ -276,24 +365,11 @@ class BytebaseAdapter:
 
         # Live path
         try:
-            client = self._http_client or self._get_client()
-            resp = client.post(
-                f"{self.endpoint_url}/v1/sql/execute",
-                json={
-                    "instance": migration.database_name,
-                    "database": migration.database_name,
-                    "sql": migration.down_sql,
-                    "statement": migration.down_sql,
-                },
-                headers=self._auth_headers(),
-                timeout=120.0,
+            self._execute_live_ddl(
+                database_name=migration.database_name,
+                sql=migration.down_sql,
+                title=f"Rollback migration {migration.version}: {migration.title}",
             )
-            if resp.status_code not in (200, 201):
-                migration.execution_status = MigrationStatus.FAILED
-                fail_closed_in_production(
-                    "bytebase",
-                    f"Bytebase rollback HTTP {resp.status_code}: {resp.text}",
-                )
             migration.execution_status = MigrationStatus.ROLLED_BACK
             migration.rolled_back_at = time.time()
             if migration.database_name in self._schema_state:

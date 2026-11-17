@@ -2,23 +2,23 @@
 
 **Author:** Principal Software Architect, Infrastructure Optimization Lead & QA Lead  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Working Revision:** `481d10dee0bf19ffa5a721b17a134b9d8d0fff46`  
-**Date:** 2026-11-17  
-**Status:** **AUTHORITATIVE MASTER WORK TRACKER (STAGE S2-S4 TESTING ACTIVE)**
+**Working Revision:** `af93f635fe225be0023b851bab982a52fa69b67c` (`af93f63`)  
+**Date:** 2026-11-18  
+**Status:** **AUTHORITATIVE MASTER WORK TRACKER (STAGE S2 INTEGRATION RECOVERY ADVANCED)**
 
 ---
 
 ## 1. High-Level Progress Dashboard
 
 ### 1.1 Executive Summary
-- **Verified Checklist Coverage:** **34 of 45 items covered** (75.6%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **11 items open**.
-- **Historical Live Integration Scenarios:** **4 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`) (OpenFGA, Temporal worker kill replay, Supabase Postgres/pgvector, Docker Sandbox runtime isolation) + **1 simulated** (Kamal deployment sequence) + **4 auxiliary live passes** (Valkey, Qdrant, Apache AGE, Temporal echo) + **6 blocked** on credentials or 16 GB Codespace.
+- **Verified Checklist Coverage:** **36 of 45 items covered** (80.0%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **9 items open**.
+- **Historical Live Integration Scenarios:** **6 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`) (OpenFGA container restart persistence, Infisical machine identity & universal auth, Temporal worker kill replay, Supabase Postgres/pgvector volume-backed container restart persistence, Docker Sandbox runtime isolation, Bytebase 3.x authenticated DDL rollout & verification) + **1 simulated** (Kamal deployment sequence) + **4 auxiliary live passes** (Valkey, Qdrant, Apache AGE, Temporal echo) + **4 blocked** on 16 GB staging environment (Lago, OpenMeter, SigNoz, LibreChat).
 - **Offline Automated Test Baseline:**
-  - Python Pytest (3.11/3.13): **1,216 passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
+  - Python Pytest (3.11/3.13): **1,217 passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
   - TypeScript (Vitest & Engine): **336 passed, 0 failed** across 4 packages.
   - License, Tag Pinning & Secret Hygiene: **45 Compose services audited and passed** (`scripts/check_licenses.py`).
-- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **5 operational integration blockers** pending disposable credentials and memory allocation in the dedicated testing phase.
-- **Resource Footprint Optimization:** **Phase A & B Complete; Phase C In Progress**. Deployment footprints (`lite`, `standard`, `enterprise`) specified; Lite profile measured at **315 MiB** peak RAM; Standard staging measured at **910.3 MiB** across 7 active containers with zero OOM terminations.
+- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **15 resolved defects** (including DEF-10 OpenFGA volume migration, DEF-11 Postgres tmpfs volume recreation, DEF-12 Bytebase 3.x CI/CD rollout adapter, and DEF-13 Infisical status endpoint fix).
+- **Resource Footprint Optimization:** Standard staging measured at **1,116.3 MiB** across 8 active running containers with zero OOM terminations and >800 MB host headroom.
 
 ### 1.2 Stage Progress Summary Table
 
@@ -27,13 +27,13 @@
 | **R0** | Research & Requirements | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **R1** | Architecture & Platform Foundation | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **S1** | Development & Optimization (Build) | ✅ COMPLETED | 7 | 7 | **100.0%** | 0h / 0h / 0h |
-| **S2** | Live Integrations (Testing) | 🟡 PARTIAL | 4 | 11 | **36.4%** (1 sim) | 16h / 32h / 64h |
+| **S2** | Live Integrations (Testing) | 🟡 ADVANCED | 6 | 11 | **54.5%** (1 sim) | 8h / 16h / 32h |
 | **S3** | Reliability & Security (Testing) | 🟡 PARTIAL | 4 | 7 | **57.1%** | 14h / 28h / 56h |
 | **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 4 | 8 | **50.0%** | 12h / 24h / 48h |
 | **S5** | Release Candidate (RC1) | ⚪ NOT STARTED | 0 | 6 | **0.0%** | 12h / 24h / 48h |
 | **S6** | Production Release | ⚪ NOT STARTED | 0 | 5 | **0.0%** | 8h / 16h / 32h |
 | **BUILD** | **V1 Build Program (R0+R1+S1)** | ✅ **COMPLETED** | **19** | **19** | **100.0% (Build Complete)** | **0h (Signed Off)** |
-| **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **31** | **56** | **55.4% (Strict) / 60.8% (Weighted)** | **62h / 128h / 248h (~1.5 to 6.2 wks)** |
+| **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **33** | **56** | **58.9% (Strict) / 64.5% (Weighted)** | **46h / 92h / 184h (~1.1 to 4.6 wks)** |
 
 ### 1.3 Progress Bars
 ```text
@@ -41,28 +41,28 @@ R0 Research      [████████████████████] 
 R1 Architecture  [████████████████████] 100%  (6/6 tasks)
 S1 Optimization  [████████████████████] 100%  (7/7 tasks)
 Build Complete   [████████████████████] 100%  (19/19 build tasks)
-S2 Live Integr.  [███████░░░░░░░░░░░░░]  36%  (4/11 genuine passes; 1 sim; 6 blocked)
+S2 Live Integr.  [███████████░░░░░░░░░]  55%  (6/11 genuine passes; 1 sim; 4 blocked)
 S3 Reliability   [███████████░░░░░░░░░]  57%  (4/7 tasks)
 S4 Deployment    [██████████░░░░░░░░░░]  50%  (4/8 tasks)
 S5 Release Cand. [░░░░░░░░░░░░░░░░░░░░]   0%  (0/6 tasks)
 S6 Prod Release  [░░░░░░░░░░░░░░░░░░░░]   0%  (0/5 tasks)
-Overall Weighted [████████████░░░░░░░░]  61%  (Stage-weighted: 60.84%)
-Checklist Proof  [███████████████░░░░░]  76%  (34/45 covered; 11 testing)
+Overall Weighted [█████████████░░░░░░░]  65%  (Stage-weighted: 64.48%)
+Checklist Proof  [████████████████░░░░]  80%  (36/45 covered; 9 testing)
 ```
 
 ### 1.4 Calculation Methodology & Assumptions
 - **Build Completion %:** `(19 completed build tasks [R0, R1, S1] / 19 total build tasks) * 100 = 100.0%`.
-- **Strict Program Task Completion %:** `(31 completed tasks [4 genuine S2 passes, 4 S3, 4 S4] / 56 total tasks) * 100 = 55.36%` (or `57.14%` with 32 tasks if counting simulated Kamal).
+- **Strict Program Task Completion %:** `(33 completed tasks [6 genuine S2 passes, 4 S3, 4 S4, 19 build] / 56 total tasks) * 100 = 58.93%` (or `60.71%` with 34 tasks if counting simulated Kamal).
 - **Weighted Progress %:** Evaluated by stage weight multipliers reflecting engineering critical path:
   - R0 (10%): 10.00%
   - R1 (15%): 15.00%
   - S1 (15%): 15.00%
-  - S2 (20%): (4 / 11) * 20% = 7.27% (or 9.09% if counting simulated Kamal)
+  - S2 (20%): (6 / 11) * 20% = 10.91% (or 12.73% if counting simulated Kamal)
   - S3 (15%): (4 / 7) * 15% = 8.57%
   - S4 (10%): (4 / 8) * 10% = 5.00%
   - S5 (10%): 0.00%
   - S6 (5%): 0.00%
-  - **Total Weighted:** `10.00 + 15.00 + 15.00 + 7.27 + 8.57 + 5.00 = 60.84%` (or `62.66%` with Kamal).
+  - **Total Weighted:** `10.00 + 15.00 + 15.00 + 10.91 + 8.57 + 5.00 = 64.48%` (or `66.30%` with Kamal).
 - **Measurement Separation Rule:** Build completion (100%), checklist proof coverage (34/45 repository evidence), operational live testing (0/11 historical scenarios executed), and production readiness remain strictly separated.
 - **Critical-Path ETA Estimation Rules:**
   - *Optimistic:* All disposable credentials available immediately; zero container build or registry rate limits; single-pass integration passes.

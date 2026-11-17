@@ -2,9 +2,9 @@
 
 **Author:** Principal Security Reviewer, Infrastructure Architect & QA Lead  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Working Revision:** `54ae6e7d23874676f3f7d7fb181242311d97da06`  
-**Date:** 2026-11-17  
-**Status:** **ACTIVE RISK & BLOCKER REGISTER**
+**Working Revision:** `af93f635fe225be0023b851bab982a52fa69b67c` (`af93f63`)  
+**Date:** 2026-11-18  
+**Status:** **ACTIVE RISK & BLOCKER REGISTER (STAGE S2 INTEGRATION RECOVERY)**
 
 ---
 
@@ -14,11 +14,11 @@ The following items are active blockers preventing unconditional sign-off for Re
 
 | Blocker ID | Category | Description | Impact | Current Status | Required Action / Owner |
 |---|---|---|---|---|---|
-| **BLK-01** | Live Integration | Missing authenticated disposable test endpoints/credentials for Infisical, Lago, Bytebase, and Reasoning Gateway. | Prevents genuine live execution of scenarios 2, 3, 10, 11 in `test_compose_stack_e2e.py`. | **BLOCKED (Fail-Closed)** | Provide disposable integration credentials in GitHub Codespaces environment. (Owner: DevOps / QA Lead) |
-| **BLK-02** | Hardware / Memory | Local PC (8 GB RAM, 3.72 GiB WSL2 Docker ceiling) cannot safely start the full 37-service legacy core profile simultaneously. | Concurrent startup triggers OOM killer (Exit Code 137) across Kafka, Keycloak, Supabase, and Temporal. | **MITIGATED by M1 Profiles** | Enforce `lite` and `standard` profiles; execute full 37-service enterprise validation in 16 GB Codespaces. (Owner: Infra Lead) |
-| **BLK-03** | Database Protection | `POSTGRES_LIVE_URL` is set in local environment, but target database is not confirmed disposable. | Test suite cannot execute real DDL table creation and embedding mutation against user's potential production/stateful store. | **BLOCKED (Fail-Safe)** | Provision isolated disposable test database or execute against ephemeral Compose Postgres volume. (Owner: Data Lead) |
-| **BLK-04** | Sandbox Execution | `SANDBOX_LIVE=1` test is unverified against live Docker daemon due to remote execution provider guard. | Sandbox isolation controls verified via in-repo test suite, but end-to-end unmocked container execution requires local daemon activation. | **PENDING EXECUTION** | Run unmocked test against local Docker container engine with strict cgroup limits. (Owner: Security Lead) |
-| **BLK-05** | Surface Chat Flow | LibreChat custom endpoint configuration is mounted, but live authenticated UI-originated chat traversing to reasoning gateway is not demonstrated. | End-to-end user journey requires verification of browser session to model output. | **PENDING EXECUTION** | Run automated headless Playwright/Puppeteer script through LibreChat UI to gateway. (Owner: Surface Lead) |
+| **BLK-01** | Live Integration | Remaining multi-tier enterprise integrations (Lago, OpenMeter, SigNoz, LibreChat) exceed 8 GB host memory headroom. | Prevents simultaneous execution on 8 GB laptop without OOM thrashing. | **BLOCKED (Requires 16 GB Staging)** | Execute in approved 16 GB disposable staging environment (e.g. GitHub Codespace). Infisical (SC-02) and Bytebase (SC-10) are fully unblocked and verified live. (Owner: DevOps / QA Lead) |
+| **BLK-02** | Hardware / Memory | Local PC (8 GB RAM, 3.72 GiB WSL2 Docker ceiling) cannot safely start the full 37-service enterprise profile simultaneously. | Concurrent startup triggers OOM killer across ClickHouse, Kafka, and telemetry clusters. | **MITIGATED by M1 Profiles** | Enforce sequential execution; maintain 8 running containers under 1.2 GiB; execute full 37-service enterprise validation in 16 GB staging. (Owner: Infra Lead) |
+| **BLK-03** | Database Protection | Target database volume durability and disposable schema isolation required live verification. | Potential state corruption if tests touch stateful shared databases. | **RESOLVED** | Verified named volume `central-intelligence_supabase_data`, multi-database isolation (`openfga`, `infisical`, `lago`, `openmeter`, `signoz`), and isolated schema drop patterns. (Owner: Data Lead) |
+| **BLK-04** | Sandbox Execution | Unmocked container execution required live daemon activation with strict isolation. | Ensuring agent runtime code cannot escape or escalate privileges on host. | **RESOLVED** | Verified 12/12 C3 runtime isolation controls and live container stdout execution (`print(2+2)` -> `4`). (Owner: Security Lead) |
+| **BLK-05** | Surface Chat Flow | LibreChat custom endpoint configuration is mounted, but live authenticated UI-originated chat traversing to reasoning gateway is not demonstrated. | End-to-end user journey requires verification of browser session to model output. | **PENDING EXECUTION** | Run automated headless Playwright/Puppeteer script through LibreChat UI to gateway in 16 GB staging environment. (Owner: Surface Lead) |
 
 ---
 
