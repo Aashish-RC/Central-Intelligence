@@ -104,7 +104,7 @@ Checklist Proof  [███████████████░░░░░] 
 | **S1.2** | Compose memory limits & cgroup ceilings (`limits.memory`) | ✅ | 100% | Critical | S1.1 | PC | 6h / 10h / 18h | 0h | None | `docker-compose.yml` updated with deploy resources | 2026-11-17 (`1269bf3`) | Validate with config |
 | **S1.3** | Governed capability-driven dynamic activation engine | ✅ | 100% | High | S1.1 | PC | 12h / 20h / 34h | 0h | None | `platform_infra/compute/lifecycle/capability_activation.py` + tests | 2026-11-17 (`1269bf3`) | Run unit test suite |
 | **S1.4** | Multi-profile Compose validation & license checks | ✅ | 100% | High | S1.2 | PC | 4h / 8h / 14h | 0h | None | `scripts/check_licenses.py` + `docker compose config` | 2026-11-17 (`1269bf3`) | Run verification |
-| **S1.5** | Multi-tenant PostgreSQL database consolidation configuration | 🟡 | 60% | High | S1.1 | PC | 8h / 16h / 28h | 4h / 8h / 12h | Needs test verification | `init-multi-db.sh` drafted | 2026-11-17 (`1269bf3`) | Test schema boot |
+| **S1.5** | Multi-tenant PostgreSQL database consolidation configuration | ✅ | 100% | High | S1.1 | PC | 8h / 16h / 28h | 0h | None | `compose/postgres/init-multi-db.sh` wired to supabase-db | 2026-11-17 (`5103022`) | Maintain database init |
 | **S1.6** | Valkey cache consolidation (partitioned DB indices) | ✅ | 100% | High | S1.1 | PC | 4h / 8h / 14h | 0h | None | Configured in `V1_OPTIMIZATION_DECISIONS.md` | 2026-11-17 (`1269bf3`) | Document connection URLs |
 | **S1.7** | Multimodal & accessibility gap closure (real device abstraction) | 🟡 | 50% | Medium | None | PC | 10h / 20h / 36h | 4h / 8h / 16h | Physical gaze/sign hardware absent | Fallback synthetic generators pass in CI | 2026-11-17 (`1269bf3`) | Standardize mock guards |
 

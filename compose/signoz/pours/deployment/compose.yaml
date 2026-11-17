@@ -41,6 +41,7 @@ services:
         - signoz-ingester
     profiles:
     - core
+    - enterprise
     restart: unless-stopped
     volumes:
     - ./ingester/ingester.yaml:/etc/otel-collector-config.yaml:ro
@@ -64,6 +65,7 @@ services:
     - signoz-network
     profiles:
     - core
+    - enterprise
     restart: unless-stopped
     volumes:
     - signoz-metastore-postgres-0-data:/var/lib/postgresql/data
@@ -100,6 +102,7 @@ services:
     - 3301:8080
     profiles:
     - core
+    - enterprise
     restart: unless-stopped
   signoz-telemetrykeeper-clickhousekeeper-0:
     container_name: signoz-telemetrykeeper-clickhousekeeper-0
@@ -125,6 +128,7 @@ services:
     - signoz-network
     profiles:
     - core
+    - enterprise
     restart: unless-stopped
     volumes:
     - signoz-telemetrykeeper-0-data:/var/lib/clickhouse-keeper
@@ -155,6 +159,7 @@ services:
     - signoz-network
     profiles:
     - core
+    - enterprise
     restart: unless-stopped
     volumes:
     - signoz-telemetrystore-0-0-data:/var/lib/clickhouse
@@ -180,6 +185,7 @@ services:
     - signoz-network
     profiles:
     - core
+    - enterprise
     restart: on-failure
     volumes:
     - signoz-telemetrystore-user-scripts:/var/lib/clickhouse/user_scripts
@@ -205,6 +211,7 @@ services:
     - signoz-network
     profiles:
     - core
+    - enterprise
     restart: "no"
 volumes:
   signoz-metastore-postgres-0-data:
