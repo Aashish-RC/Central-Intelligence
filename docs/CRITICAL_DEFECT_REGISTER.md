@@ -1,8 +1,8 @@
 # Central Intelligence — Critical Defect Register
 
-**Status Date:** 2026-11-18  
+**Status Date:** 2026-11-19  
 **Active Build Defects:** 0  
-**Resolved Defects:** 18  
+**Resolved Defects:** 24  
 
 ---
 
@@ -117,3 +117,39 @@
 - **Component:** `docker-compose.yml` (`central-openmeter-clickhouse`, `central-kafka`)
 - **Resolution:** ClickHouse Alpine image healthcheck queried `http://localhost:8123/ping` which resolved to IPv6 `::1`, refused by Docker WSL2 network bridge. Updated healthcheck to explicit IPv4 loopback `http://127.0.0.1:8123/ping`. In addition, replaced slow JVM-based Kafka health check with fast socket check `bash -c '</dev/tcp/127.0.0.1/29092'` with 5s timeout.
 - **Verified:** Both ClickHouse and Kafka reported `healthy` within 5 seconds without JVM timeout delays.
+
+### DEF-19: SigNoz Ingester Missing Wget Binary & Standalone OpAMP Failure
+- **Severity:** High / P1 (Observability & APM)
+- **Component:** `compose/signoz/docker-compose.signoz.yml`, `tests/integration/test_compose_stack_e2e.py`
+- **Resolution:** The SigNoz ingester container image lacked `wget`, causing container healthchecks using `wget -q --spider` to fail continuously. Furthermore, running with default OpAMP management flags failed because no local OpAMP server was running. Updated healthcheck to pure bash socket probe `/dev/tcp/localhost/13133` and removed the OpAMP flag to run the ingester standalone against local configuration.
+- **Verified:** SigNoz cluster booted and passed live OTLP trace ingestion and ClickHouse query in 48.02s (`SC-05`).
+
+### DEF-20: Reasoning Gateway Localhost Binding Inaccessible from Container Network
+- **Severity:** High / P1 (Surface Routing & Networking)
+- **Component:** `cognitive/gateway/run_reasoning_gateway.py`
+- **Resolution:** Layer 4 Reasoning Gateway defaulted to listening on `127.0.0.1:4000`. Docker containers communicating via `host.docker.internal` were refused connection. Updated default host binding to `0.0.0.0:4000` while keeping CORS restricted to authenticated origins.
+- **Verified:** Authenticated Playwright Chrome session routed prompt from LibreChat container to reasoning gateway and received DOM response in 14.67s (`tests/integration/test_librechat_e2e.py`).
+
+### DEF-21: Missing Runner Dependencies (`sqlalchemy` & `playwright`) in CI Workflow
+- **Severity:** Critical / P0 (CI / Build Pipeline)
+- **Component:** `.github/workflows/ci.yml`, `tests/integration/test_chaos_recovery_live.py`, `tests/integration/test_librechat_e2e.py`
+- **Resolution:** GitHub Actions `python-tests` job failed during pytest test collection with `ModuleNotFoundError: No module named 'sqlalchemy'` and `'playwright'`. Added `pip install sqlalchemy playwright` and `playwright install --with-deps chromium` to CI workflow steps, guarded module imports with `pytest.importorskip`, and marked live integration tests with `@pytest.mark.live`.
+- **Verified:** Pytest test collection succeeded across Python 3.11 and 3.13 runners in GitHub Actions; CI run `44376212191` passed 100% green.
+
+### DEF-22: `MEILISEARCH_MASTER_KEY` Missing Environment Value in Compose Config Validation
+- **Severity:** High / P1 (CI / Compose Validation)
+- **Component:** `.github/workflows/ci.yml`, `tests/unit/test_s42_clean_bootstrap.py`
+- **Resolution:** `docker compose config --quiet` failed in CI because `MEILISEARCH_MASTER_KEY` had no value when `.env` was not copied before test execution. Added `cp .env.example .env` and `MEILISEARCH_MASTER_KEY: e2e-test-meili-key` to CI workflow, and updated `test_s42_clean_bootstrap.py` to pass `--env-file .env.example` if `.env` is absent.
+- **Verified:** Unit test `test_compose_config_validation` passed cleanly in CI; full test suite (1,238 tests) passed.
+
+### DEF-23: PostgreSQL Lock Contention on Cleanup in Chaos Crash Recovery Drill
+- **Severity:** Medium / P1 (Test Harness Reliability)
+- **Component:** `tests/integration/test_chaos_recovery_live.py`
+- **Resolution:** In the PostgreSQL SIGKILL crash recovery test, `DROP TABLE` timed out because an unclosed connection from the previous test iteration held an active read lock. Separated read and write connections using `poolclass=sqlalchemy.pool.NullPool` to ensure immediate socket closure upon test fixture teardown.
+- **Verified:** Test executed cleanly and passed in 75.57s without connection leaks.
+
+### DEF-24: Crisis Self-Harm Phrase Detection Boundary False Negative
+- **Severity:** High / P0 (Safety & Compliance)
+- **Component:** `control/safety/guardrails/core/crisis.py`
+- **Resolution:** Red-team evaluation detected false negatives on colloquial self-harm expressions such as "cutting my wrists" and false positives on historical health queries ("988 Lifeline history"). Updated regex pattern to `(?:slit|cut)(?:ting)?\s+(?:my\s+)?wrists` and introduced public health history exemptions.
+- **Verified:** Red-team suite achieved 100.0% detection (96/96 blocked) and 0.0% false positives (52/52 allowed); 226/226 safety tests passed.

@@ -2,24 +2,28 @@
 
 **Author:** Principal Security Reviewer, Infrastructure Architect & QA Lead  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Working Revision:** `418e964fed13d73a615d8e8e1820a35b7f45c052`  
-**Date:** 2026-11-18  
-**Status:** **AUTHORITATIVE RISK & BLOCKER REGISTER (ARCHITECTURE APPROVAL & ROADMAP PHASE)**  
+**Working Revision:** `75b2666a4bc2cbb242637b830d1ff69e88b6932a` (`75b2666`)  
+**Date:** 2026-11-19  
+**Status:** **AUTHORITATIVE RISK & BLOCKER REGISTER (RECONCILED RELEASE BASELINE)**  
 
 ---
 
 ## 1. Active Release Blockers
 
-The following items are active blockers preventing unconditional sign-off for Release Candidate 1 (RC1) and GA Production Release:
+The following items are the tracked blockers and operational gates for Release Candidate 1 (RC1) and GA Production Release:
 
 | Blocker ID | Category | Description | Impact | Current Status | Required Action / Owner |
 |---|---|---|---|---|---|
-| **BLK-01** | Live Integration | Remaining multi-tier enterprise integration: SigNoz (SC-05) full cluster OTel/ClickHouse/ZooKeeper. | Successfully run in bounded local cluster (~817 MiB RAM) with OTLP ingestion into ClickHouse and SigNoz API query verification. | **RESOLVED** | Executed in local environment with standalone ingester and ClickHouse 25.12; 48.02s live pass recorded without host memory exhaustion. (Owner: DevOps / QA Lead) |
-| **BLK-02** | Hardware / Memory | Local PC (8 GB RAM, 3.72 GiB WSL2 Docker ceiling) cannot safely start the full 51-service stack simultaneously. | Concurrent startup triggers OOM killer across ClickHouse, Kafka, and telemetry clusters. | **MITIGATED by Operational Profiles** | Adopt Lite (~450 MiB), Standard (~1,116 MiB), and Enterprise (~7.2 GiB) profiles; maintain 8 running containers under 1.2 GiB on developer hosts. (Owner: Infra Lead) |
+| **BLK-01** | Live Integration | Multi-tier enterprise integration: SigNoz (SC-05) full cluster OTel/ClickHouse/ZooKeeper. | Telemetry trace ingestion and query verification against real ClickHouse. | **RESOLVED** | Executed in local environment with standalone ingester and ClickHouse 25.12; 48.02s live pass recorded without host memory exhaustion. (Commit `0aaed35`) |
+| **BLK-02** | Hardware / Memory | Local PC (8 GB RAM, 3.72 GiB WSL2 Docker ceiling) cannot safely start the full 51-service stack simultaneously. | Concurrent startup triggers OOM killer across ClickHouse, Kafka, and telemetry clusters. | **RESOLVED by Operational Profiles** | Adopted Lite (~315 MiB), Standard (~910 MiB), and Enterprise (~4.8 GiB) profiles; maintained 8 running containers under 1.2 GiB on developer hosts. (Owner: Infra Lead) |
 | **BLK-03** | Database Protection | Target database volume durability and disposable schema isolation required live verification. | Potential state corruption if tests touch stateful shared databases. | **RESOLVED** | Verified named volume `central-intelligence_supabase_data`, multi-database isolation (`openfga`, `infisical`, `lago`, `openmeter`, `signoz`), and isolated schema drop patterns. (Owner: Data Lead) |
 | **BLK-04** | Sandbox Execution | Unmocked container execution required live daemon activation with strict isolation. | Ensuring agent runtime code cannot escape or escalate privileges on host. | **RESOLVED** | Verified 12/12 C3 runtime isolation controls and live container stdout execution (`print(2+2)` -> `4`). (Owner: Security Lead) |
-| **BLK-05** | Surface Chat Flow | LibreChat custom endpoint configuration is mounted, but live authenticated UI-originated chat traversing to reasoning gateway is not demonstrated. | End-to-end user journey requires verification of browser session to model output. | **RESOLVED** | Verified via Playwright headless Chrome: authenticated session -> LibreChat UI -> Custom Endpoint "Central Intelligence" (GPT-4o) -> Layer 4 Reasoning Gateway (:4000) -> assistant response rendered in DOM and verified (`tests/integration/test_librechat_e2e.py`). |
-| **BLK-06** | Test Gate Decoupling | Historical release gates G-B1, G-B2, G-D3, G-E1 hard-code vendor server daemons. | Blocks release sign-off when native or embedded engines are utilized. | **PROPOSED & SPECIFIED** | Awaiting formal architectural sign-off of `docs/V1_REVISED_TEST_GATE_IMPLEMENTATION_PLAN.md` before updating release gates. (Owner: QA Lead) |
+| **BLK-05** | Surface Chat Flow | LibreChat custom endpoint configuration is mounted, but live authenticated UI-originated chat traversing to reasoning gateway required browser proof. | End-to-end user journey requires verification of browser session to model output. | **RESOLVED** | Verified via Playwright headless Chrome: authenticated session -> LibreChat UI -> Custom Endpoint "Central Intelligence" (GPT-4o) -> Layer 4 Reasoning Gateway (:4000) -> assistant response rendered in DOM and verified in 14.67s (`tests/integration/test_librechat_e2e.py`). (Commit `ff483a4`) |
+| **BLK-06** | Test Gate Decoupling | Historical release gates G-B1, G-B2, G-D3, G-E1 hard-code vendor server daemons. | Blocks release sign-off when native or embedded engines are utilized. | **PROPOSED & SPECIFIED** | Formal proposal in `docs/V1_REVISED_TEST_GATES_PROPOSAL.md` and implementation plan in `docs/V1_REVISED_TEST_GATE_IMPLEMENTATION_PLAN.md`; awaiting administrative sign-off before modifying authoritative gates. (Owner: QA Lead) |
+| **BLK-07** | Operational Reliability | Uninterrupted 24-hour continuous soak execution. | Proves zero memory leaks, thread starvation, or handle exhaustion over prolonged operation. | **HARNESS READY / EXECUTION PENDING** | Bounded-memory soak test passed (31.4s) and 24h staging daemon implemented (`scripts/soak_runner_24h.py`); requires dedicated persistent CI/staging runner to execute 24h uninterrupted run. (Owner: Reliability Lead) |
+| **BLK-08** | Security Assurance | Formal independent third-party penetration audit and executive security sign-off. | Regulatory, compliance, and multi-tenant security verification. | **TECHNICAL PASS / AUDIT PENDING** | Automated red-team suite (96/96 blocked, 100% detection rate) and 226 safety tests passed cleanly; formal external penetration test report and CISO sign-off required prior to production release. (Owner: Security Lead) |
+| **BLK-09** | Deployment Verification | Clean-host OS bootstrap drill on fresh VM. | Proves zero-dependency fresh environment initialization. | **HARNESS VERIFIED / STAGING DRILL PENDING** | Cross-platform bootstrap scripts and `.env` generator passed 7/7 automated tests; drill on clean Ubuntu/Debian VM required in staging. (Owner: DevOps Lead) |
+| **BLK-10** | Release Governance | Formal production release authorization. | Ensures no production release occurs without documented executive stakeholder approval. | **PENDING** | Formal approval required from Product Owner, Principal Architect, and Security Lead prior to executing S6 production deployment. (Owner: Release Manager) |
 
 ---
 

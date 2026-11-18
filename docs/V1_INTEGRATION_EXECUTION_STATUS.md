@@ -2,26 +2,26 @@
 
 **Author:** QA Lead, Platform Reliability Engineer & Security Lead  
 **Scope:** Status of All 11 Live Integration Scenarios, Resource Auditing, and Staging Blockers  
-**Date:** 2026-11-18  
+**Date:** 2026-11-19  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Status:** **AUTHORITATIVE EXECUTION LEDGER — STAGE S2 ACTIVE**  
+**Status:** **AUTHORITATIVE EXECUTION LEDGER — STAGE S2 COMPLETE (10 LIVE, 1 SIMULATED, 0 BLOCKED)**  
 
 ---
 
 ## 1. Executive Summary & Verification Ledger
 
 Under strict operational constraints ($0.00 spend, zero mock leakage, preservation of host developer memory, no unapproved external deployments):
-- **Genuine Live Verified Passes:** **9 of 11** (`SC-01`, `SC-02`, `SC-03`, `SC-04`, `SC-06`, `SC-07`, `SC-08`, `SC-10`, `SC-11`).
-- **Simulated (Mocked) Passes:** **1 of 11** (`SC-09` Kamal command sequence — preserved as simulated; live server execution deferred).
-- **Blocked on 16 GB Staging:** **1 of 11** (`SC-05` SigNoz — full cluster ClickHouse/ZooKeeper/OTel exceeds 8 GB host RAM ceiling).
+- **Genuine Live Verified Passes:** **10 of 11** (`SC-01`, `SC-02`, `SC-03`, `SC-04`, `SC-05`, `SC-06`, `SC-07`, `SC-08`, `SC-10`, `SC-11`).
+- **Simulated (Mocked) Passes:** **1 of 11** (`SC-09` Kamal command sequence — preserved as simulated CLI deployment test; live remote Linux server execution deferred).
+- **Blocked Scenarios:** **0 of 11** (`SC-05` SigNoz was unblocked and verified live locally with bounded ~817 MiB memory footprint; all 11 scenario dispositions completed).
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
-- **Host Memory Safety:** Currently running 8 active containers inside Docker Desktop WSL2 totaling **1,116.3 MiB RAM**, maintaining **>700 MB physical RAM headroom** on the 8 GB host machine.
+- **Host Memory Safety:** Staging measured at **~817–1,116.3 MiB RAM** during batch execution, maintaining **>700 MB physical RAM headroom** on the 8 GB host machine with zero OOM events.
 
 ---
 
 ## 2. Granular Scenario Ledger (SC-01 through SC-11)
 
-### 2.1 Verified Genuine Live Scenarios (9/11)
+### 2.1 Verified Genuine Live Scenarios (10/11)
 
 #### SC-01: OpenFGA Relationship Authorization
 - **Status:** **PASS (GENUINE LIVE)**
@@ -50,6 +50,13 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 - **Verification Evidence:** Booted ClickHouse 25.12, Kafka 3.9, OpenMeter backend and sink-worker. Subprocess 1 dispatched real CloudEvents 1.0 `token_consumption` payload (150 total tokens). OpenMeter ingested and published to Kafka partition `om_default_events-0`. Sink-worker flushed to ClickHouse OLAP table. Subprocess 2 queried `/api/v1/meters/token_consumption/query` and confirmed persisted `total_tokens >= 150` in 42.66s.
 - **Durability Scope:** Python Process Restart + Kafka Ingestion + ClickHouse Columnar Storage.
 - **Measured RAM:** Ephemeral sequential batch run (~680 MiB).
+
+#### SC-05: SigNoz Distributed APM & Telemetry
+- **Status:** **PASS (GENUINE LIVE)**
+- **Image / Target:** `signoz/signoz:v0.150.0` (port 3301) + `signoz-otel-collector` (port 4318) + ClickHouse 25.12 + Postgres metastore + ClickHouse Keeper.
+- **Verification Evidence:** Booted bounded SigNoz cluster (ClickHouse 25.12, ClickHouse Keeper, Postgres metastore, SigNoz query v0.150.0, SigNoz Ingester, Central OTel Collector). Peak RAM: ~817 MiB. Subprocess 1 emitted real trace with span via OTLP HTTP receiver (port 4318) through BatchSpanProcessor to ClickHouse `signoz_traces.signoz_index_v3`. Subprocess 2 authenticated via `/api/v2/sessions/email_password` against Postgres metastore, queried `/api/v1/traces/{trace_id}`, retrieved full persisted span events, matched operation name. Passed cleanly in 48.02s.
+- **Durability Scope:** Python Process Restart + ClickHouse OLAP Ingestion & Query Persistence.
+- **Measured RAM:** ~817 MiB (peak sequential batch run).
 
 #### SC-06: Temporal Workflow Crash Recovery & Replay
 - **Status:** **PASS (GENUINE LIVE)**
@@ -98,14 +105,12 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 
 ---
 
-### 2.3 Blocked Scenario Awaiting 16 GB Staging (1/11)
+### 2.3 Blocked Integration Scenarios (0/11)
 
-#### SC-05: SigNoz Distributed APM & Telemetry
-- **Status:** **BLOCKED (Requires 16 GB Staging)**
-- **Required Stack:** 7 containers (`signoz-telemetrystore-clickhouse`, `signoz-telemetrykeeper`, `signoz-metastore-postgres`, `signoz-ingester`, `signoz-frontend`, `otel-collector`).
-- **Resource Requirement:** ~2.5–4.0 GiB RAM baseline.
-- **Blocking Constraint:** ClickHouse cluster and ClickHouse Keeper require massive memory allocation, exceeding the 3.723 GiB WSL2 ceiling on this 8 GB host and risking Docker engine termination.
-- **Readiness:** Code is 100% written (`SigNozAdapter`). OpenTelemetry trace generation and local span logging verified. Ready for execution in 16 GB staging.
+*All 11 tracked historical integration scenario dispositions are complete: 10 genuine live verified passes, 1 simulated CLI deployment test (Kamal), and 0 blocked scenarios.*
+
+- **Previous Blocker (SC-05 SigNoz):** Previously flagged as blocked pending 16 GB staging due to high memory assumptions. Successfully unblocked by running an optimized, bounded cluster configuration (ClickHouse 25.12, ClickHouse Keeper, Postgres metastore, SigNoz query v0.150.0, SigNoz Ingester, Central OTel Collector) with peak batch memory consumption bounded to ~817 MiB, completing live verification cleanly in 48.02s without host memory contention.
+- **Kamal Disposition (SC-09):** Formally dispositioned as a simulated CLI command sequence test. Full live server deployment is deferred until an authorized disposable target server with SSH credentials is provided.
 
 ---
 
