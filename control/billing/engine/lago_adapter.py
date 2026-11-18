@@ -173,6 +173,7 @@ class LagoAdapter:
                 # Now create the subscription tied to the Lago plan code
                 sub_payload = {
                     "subscription": {
+                        "external_id": sub.subscription_id,
                         "external_customer_id": customer_id,
                         "plan_code": plan_code,
                         "status": "active",
@@ -213,10 +214,23 @@ class LagoAdapter:
                         timeout=5.0,
                     )
                     if c_resp.status_code == 200:
+                        s_resp = self._http_client().get(
+                            "/api/v1/subscriptions",
+                            params={"external_customer_id": customer_id},
+                            headers=self._auth_headers(),
+                            timeout=5.0,
+                        )
+                        sub_id = f"sub_{customer_id}"
+                        plan_code = "free"
+                        if s_resp.status_code == 200:
+                            subs = s_resp.json().get("subscriptions", [])
+                            if subs:
+                                sub_id = subs[0].get("external_id") or subs[0].get("lago_id")
+                                plan_code = subs[0].get("plan_code") or "free"
                         sub = CustomerSubscription(
-                            subscription_id=f"sub_{customer_id}",
+                            subscription_id=sub_id,
                             customer_id=customer_id,
-                            plan_code="free",
+                            plan_code=plan_code,
                             status="active",
                         )
                         self._subscriptions[customer_id] = sub

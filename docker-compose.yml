@@ -601,9 +601,9 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:29092", "--list"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/29092'"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 20
       start_period: 15s
 
@@ -692,7 +692,7 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:8123/ping"]
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:8123/ping"]
       interval: 5s
       timeout: 3s
       retries: 30

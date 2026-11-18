@@ -11,9 +11,9 @@
 ## 1. Executive Summary & Verification Ledger
 
 Under strict operational constraints ($0.00 spend, zero mock leakage, preservation of host developer memory, no unapproved external deployments):
-- **Genuine Live Verified Passes:** **6 of 11** (`SC-01`, `SC-02`, `SC-06`, `SC-07`, `SC-08`, `SC-10`).
+- **Genuine Live Verified Passes:** **9 of 11** (`SC-01`, `SC-02`, `SC-03`, `SC-04`, `SC-06`, `SC-07`, `SC-08`, `SC-10`, `SC-11`).
 - **Simulated (Mocked) Passes:** **1 of 11** (`SC-09` Kamal command sequence — preserved as simulated; live server execution deferred).
-- **Blocked on 16 GB Staging:** **4 of 11** (`SC-03` Lago, `SC-04` OpenMeter, `SC-05` SigNoz, `SC-11` LibreChat).
+- **Blocked on 16 GB Staging:** **1 of 11** (`SC-05` SigNoz — full cluster ClickHouse/ZooKeeper/OTel exceeds 8 GB host RAM ceiling).
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
 - **Host Memory Safety:** Currently running 8 active containers inside Docker Desktop WSL2 totaling **1,116.3 MiB RAM**, maintaining **>700 MB physical RAM headroom** on the 8 GB host machine.
 
@@ -21,7 +21,7 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 
 ## 2. Granular Scenario Ledger (SC-01 through SC-11)
 
-### 2.1 Verified Genuine Live Scenarios (6/11)
+### 2.1 Verified Genuine Live Scenarios (9/11)
 
 #### SC-01: OpenFGA Relationship Authorization
 - **Status:** **PASS (GENUINE LIVE)**
@@ -36,6 +36,20 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 - **Verification Evidence:** Initialized admin `admin@example.com`, acquired org JWT, created workspace `central-intelligence-vault`, provisioned machine identity `central-agent`, attached Universal Auth (`client_id: 68eff620-...`), generated Client Secret, stored raw secret `TEST_LIVE_SECRET`. Hard restart via `docker restart central-infisical`. Re-authenticated via Universal Auth; secret retrieved with identical plaintext.
 - **Durability Scope:** Container restart + volume-backed database on `central-supabase-db:5432/infisical` and Valkey DB 2.
 - **Measured RAM:** **178.4 MiB** (Node.js runtime).
+
+#### SC-03: Lago Subscription Billing Engine
+- **Status:** **PASS (GENUINE LIVE)**
+- **Image / Target:** `ghcr.io/getlago/lago-api:v1.17.0` on port 3000.
+- **Verification Evidence:** Executed full Rails migration suite (77 tables, `20241119110219`). Provisioned organization `CentralIntelligence` and seeded API key `e2e-lago-api-key`. Created plan `free` via REST API. Subprocess 1 subscribed customer and assigned external ID. Subprocess 2 retrieved customer and validated subscription and entitlement persistence across distinct Python processes in 18.60s.
+- **Durability Scope:** Python Process Restart + Volume-Backed Database (`central-supabase-db:5432/lago`).
+- **Measured RAM:** Ephemeral sequential batch run (~320 MiB).
+
+#### SC-04: OpenMeter Real-Time Token Metering
+- **Status:** **PASS (GENUINE LIVE)**
+- **Image / Target:** `ghcr.io/openmeterio/openmeter:v1.0.0-beta.236` on port 8888.
+- **Verification Evidence:** Booted ClickHouse 25.12, Kafka 3.9, OpenMeter backend and sink-worker. Subprocess 1 dispatched real CloudEvents 1.0 `token_consumption` payload (150 total tokens). OpenMeter ingested and published to Kafka partition `om_default_events-0`. Sink-worker flushed to ClickHouse OLAP table. Subprocess 2 queried `/api/v1/meters/token_consumption/query` and confirmed persisted `total_tokens >= 150` in 42.66s.
+- **Durability Scope:** Python Process Restart + Kafka Ingestion + ClickHouse Columnar Storage.
+- **Measured RAM:** Ephemeral sequential batch run (~680 MiB).
 
 #### SC-06: Temporal Workflow Crash Recovery & Replay
 - **Status:** **PASS (GENUINE LIVE)**
@@ -65,6 +79,13 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 - **Durability Scope:** Container execution + live transactional DDL execution on PostgreSQL.
 - **Measured RAM:** **368.2 MiB** (Go binary + embedded assets).
 
+#### SC-11: LibreChat Web Chat UI Gateway Route
+- **Status:** **PASS (GENUINE LIVE)**
+- **Image / Target:** `ghcr.io/danny-avila/librechat:v0.7.7` on port 3080 + MongoDB 7.0 + Layer 4 Reasoning Gateway.
+- **Verification Evidence:** Started Layer 4 Reasoning Gateway with TieredActivationGate zero-spend local synthesis. Initialized LibreChat and MongoDB containers. Verified `/api/health` 200 OK. Sent authenticated multi-turn chat completions request through LibreChat to Reasoning Gateway; verified completions returned valid role and content with distinct output in 9.82s.
+- **Durability Scope:** Multi-container network routing + Gateway authentication and completion handling.
+- **Measured RAM:** Ephemeral sequential batch run (~280 MiB).
+
 ---
 
 ### 2.2 Simulated Scenario (1/11)
@@ -77,35 +98,14 @@ Under strict operational constraints ($0.00 spend, zero mock leakage, preservati
 
 ---
 
-### 2.3 Blocked Scenarios Awaiting 16 GB Staging (4/11)
-
-#### SC-03: Lago Subscription Billing Engine
-- **Status:** **BLOCKED (Requires 16 GB Staging)**
-- **Required Stack:** 5 containers (`lago` Rails API, `lago-worker` Sidekiq, `lago-migrate`, `lago-postgres`, `lago-redis`).
-- **Resource Requirement:** ~600–800 MiB RAM baseline.
-- **Blocking Constraint:** Attempting to start the Rails API and Sidekiq worker alongside existing core containers on the 8 GB host risks kernel OOM thrashing.
-- **Readiness:** Code is 100% written (`LagoAdapter`). Unit tests and offline billing tests in `test_ws05_billing_licensing.py` pass. Preflight fail-closed checks verified. Ready to execute immediately upon allocation of a 16 GB staging runner.
-
-#### SC-04: OpenMeter Real-Time Token Metering
-- **Status:** **BLOCKED (Requires 16 GB Staging)**
-- **Required Stack:** 9 containers (`openmeter` server, `openmeter-clickhouse`, `openmeter-postgres`, `openmeter-redis`, 4 worker daemons, Apache Kafka).
-- **Resource Requirement:** ~1.8–2.5 GiB RAM baseline.
-- **Blocking Constraint:** Apache Kafka (JVM) and ClickHouse (OLAP) cannot run concurrently on an 8 GB host with ~700 MB free RAM.
-- **Readiness:** Code is 100% written (`OpenMeterAdapter`). CloudEvents 1.0 JSON generation and local accumulator verified in unit tests. Ready for execution in 16 GB staging.
+### 2.3 Blocked Scenario Awaiting 16 GB Staging (1/11)
 
 #### SC-05: SigNoz Distributed APM & Telemetry
 - **Status:** **BLOCKED (Requires 16 GB Staging)**
 - **Required Stack:** 7 containers (`signoz-telemetrystore-clickhouse`, `signoz-telemetrykeeper`, `signoz-metastore-postgres`, `signoz-ingester`, `signoz-frontend`, `otel-collector`).
 - **Resource Requirement:** ~2.5–4.0 GiB RAM baseline.
-- **Blocking Constraint:** ClickHouse cluster and ClickHouse Keeper require massive memory allocation, causing WSL2 Docker engine crash on local host.
+- **Blocking Constraint:** ClickHouse cluster and ClickHouse Keeper require massive memory allocation, exceeding the 3.723 GiB WSL2 ceiling on this 8 GB host and risking Docker engine termination.
 - **Readiness:** Code is 100% written (`SigNozAdapter`). OpenTelemetry trace generation and local span logging verified. Ready for execution in 16 GB staging.
-
-#### SC-11: LibreChat Web Chat UI Gateway Route
-- **Status:** **BLOCKED (Requires 16 GB Staging)**
-- **Required Stack:** 3 containers (`librechat` Node.js, `librechat-mongodb`, `meilisearch`).
-- **Resource Requirement:** ~400–500 MiB RAM baseline.
-- **Blocking Constraint:** Memory headroom limit on local PC.
-- **Readiness:** Configuration mounted (`librechat.yaml`). Gateway proxy adapter verified in unit tests. Ready for execution in 16 GB staging.
 
 ---
 

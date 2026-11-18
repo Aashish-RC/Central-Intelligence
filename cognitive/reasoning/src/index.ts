@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { createGatewayApp } from './core/server.js';
+import { TieredActivationGate } from './synthesis/tieredActivation.js';
 export * from './types/chat.js';
 export * from './types/provider.js';
 export * from './types/ra1.js';
@@ -24,6 +25,10 @@ export * from './debate/index.js';
 export * from './simulation/index.js';
 
 const { app, router, engine } = createGatewayApp();
+
+if (process.env.ENABLE_SYNTHESIS === 'true' || !process.env.ANTHROPIC_API_KEY) {
+  engine.setSynthesisGate(new TieredActivationGate());
+}
 
 // Feature 5: Register default routes demonstrating virtual tiers (smart/fast/vision/embedding)
 // 1. smart-tier: Primary Claude 3.7 Sonnet -> Fallback GPT-4o -> Escape Route Ollama

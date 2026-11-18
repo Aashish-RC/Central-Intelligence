@@ -2,7 +2,7 @@
 
 **Status Date:** 2026-11-18  
 **Active Build Defects:** 0  
-**Resolved Defects:** 15  
+**Resolved Defects:** 18  
 
 ---
 
@@ -99,3 +99,21 @@
 - **Component:** `control/identity/secrets/infisical_adapter.py`
 - **Resolution:** `InfisicalAdapter._ensure_live_backend` probed `/api/v1/status` (returning HTTP 404 in modern Infisical) rather than `/api/status`, and the module-level singleton `default_infisical_adapter` eagerly attempted universal auth during module import. Updated status check with `/api/status` fallback, implemented `/api/v3/secrets/raw` secret lifecycle with legacy v1 fallback, and deferred singleton auth checks (`_defer_prod_check=True`).
 - **Verified:** Full machine identity creation, Universal Auth Client Secret generation, secret storage, container restart persistence, and `test_infisical_persists_across_python_restart` pytest execution.
+
+### DEF-16: Lago Subscription Schema Requirement & Process 2 ID Loss
+- **Severity:** High / P1 (Billing & Licensing)
+- **Component:** `control/billing/engine/lago_adapter.py`
+- **Resolution:** Lago API `POST /api/v1/subscriptions` rejected payload with 422 `external_id: value_is_mandatory` when external ID was omitted. Furthermore, a fresh Python process lacked the in-memory subscription ID to query entitlements. Updated `LagoAdapter.subscribe_customer` to pass `external_id`, and updated customer subscription recovery to query `/api/v1/subscriptions` by `customer_id`.
+- **Verified:** `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_lago_persists_across_python_restart` PASSED [100%] in 18.60s.
+
+### DEF-17: OpenMeter Meter Query Format Parameter RFC3339 Rejection
+- **Severity:** High / P1 (Metering & Ingestion)
+- **Component:** `control/billing/metering/openmeter_adapter.py`
+- **Resolution:** `OpenMeterAdapter.query_usage` sent query parameter `from=0` when `since` was None, causing OpenMeter to reject with HTTP 400 (`invalid param format from: error parsing '0' as RFC3339 or 2006-01-02 time`). Updated `OpenMeterAdapter.query_usage` to omit `from` when unbounded or format as `%Y-%m-%dT%H:%M:%SZ`.
+- **Verified:** `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_openmeter_persists_across_python_restart` PASSED [100%] in 42.66s.
+
+### DEF-18: ClickHouse Alpine IPv6 Healthcheck Connection Refused in Docker WSL2
+- **Severity:** Medium / P1 (Infrastructure Resilience)
+- **Component:** `docker-compose.yml` (`central-openmeter-clickhouse`, `central-kafka`)
+- **Resolution:** ClickHouse Alpine image healthcheck queried `http://localhost:8123/ping` which resolved to IPv6 `::1`, refused by Docker WSL2 network bridge. Updated healthcheck to explicit IPv4 loopback `http://127.0.0.1:8123/ping`. In addition, replaced slow JVM-based Kafka health check with fast socket check `bash -c '</dev/tcp/127.0.0.1/29092'` with 5s timeout.
+- **Verified:** Both ClickHouse and Kafka reported `healthy` within 5 seconds without JVM timeout delays.

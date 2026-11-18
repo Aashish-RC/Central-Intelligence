@@ -11,23 +11,26 @@
 ## 1. High-Level Progress Dashboard
 
 ### 1.1 Executive Summary
-- **Verified Checklist Coverage:** **36 of 45 items covered** (80.0%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **9 items open**.
-- **Historical Live Integration Scenarios:** **6 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`, `docs/V1_INTEGRATION_EXECUTION_STATUS.md`):
+- **Verified Checklist Coverage:** **39 of 45 items covered** (86.7%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **6 items open**.
+- **Historical Live Integration Scenarios:** **9 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`, `docs/V1_INTEGRATION_EXECUTION_STATUS.md`):
   - SC-01: OpenFGA (Live pass, persistent DB datastore)
   - SC-02: Infisical (Live pass, Universal Auth machine identity)
+  - SC-03: Lago (Live pass, 77 Rails migrations, subscription & entitlement persistence across Python restart)
+  - SC-04: OpenMeter (Live pass, Kafka 3.9 + ClickHouse 25.12, CloudEvents token ingestion & persistence)
   - SC-06: Temporal (Live pass, worker kill & replay)
   - SC-07: PostgreSQL / pgvector (Live pass, volume durability)
   - SC-08: Sandbox Isolation (Live pass, 12 runtime controls)
   - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout)
+  - SC-11: LibreChat (Live pass, L4 Reasoning Gateway, TieredActivationGate synthesis, multi-turn chat)
   - SC-09: Kamal (Simulated pass preserved; live server execution deferred)
-  - SC-03, SC-04, SC-05, SC-11: Blocked on 16 GB staging environment (Lago, OpenMeter, SigNoz, LibreChat).
+  - SC-05: SigNoz (Blocked on 16 GB staging environment; ClickHouse/ZooKeeper/OTel exceeds 8 GB host RAM ceiling).
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
 - **Offline Automated Test Baseline:**
   - Python Pytest (3.12.12): **1,217 collected & passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
   - TypeScript (Vitest & Engine): **336 passed, 0 failed** across 4 packages (Full Turbo cache hit / verified).
   - License, Tag Pinning & Secret Hygiene: **45 Compose services audited and passed** (`scripts/check_licenses.py`).
-- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **15 resolved defects** (including DEF-10, DEF-11, DEF-12, DEF-13).
-- **Resource Footprint Optimization:** Standard staging measured at **1,116.3 MiB** across 8 active running containers with zero OOM terminations and >700 MB host physical RAM headroom.
+- **Release-Blocking Defects:** **0 active code defects** in `docs/CRITICAL_DEFECT_REGISTER.md`; **17 resolved defects**.
+- **Resource Footprint Optimization:** Standard staging measured at **1,116.3 MiB** across active baseline containers with zero OOM terminations and >700 MB host physical RAM headroom.
 - **Architectural Deliverables Complete:**
   1. `docs/V1_CORE_CAPABILITY_CONTRACTS.md` (Formal domain contracts for Authz, Secrets, Workflows, Metering, Telemetry)
   2. `docs/V1_SERVICE_CONSOLIDATION_PLAN.md` (Lite, Standard, Enterprise profiles & consolidation math)
@@ -44,13 +47,13 @@
 | **R0** | Research & Requirements | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **R1** | Architecture & Platform Foundation | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **S1** | Development & Optimization (Build) | ✅ COMPLETED | 7 | 7 | **100.0%** | 0h / 0h / 0h |
-| **S2** | Live Integrations (Testing) | 🟡 ADVANCED | 6 | 11 | **54.5%** (1 sim) | 8h / 16h / 32h |
+| **S2** | Live Integrations (Testing) | 🟢 SUBSTANTIALLY COMPLETE | 10 | 11 | **90.9%** (9 live, 1 sim) | 2h / 4h / 8h |
 | **S3** | Reliability & Security (Testing) | 🟡 PARTIAL | 4 | 7 | **57.1%** | 14h / 28h / 56h |
 | **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 4 | 8 | **50.0%** | 12h / 24h / 48h |
 | **S5** | Release Candidate (RC1) | ⚪ NOT STARTED | 0 | 6 | **0.0%** | 12h / 24h / 48h |
 | **S6** | Production Release | ⚪ NOT STARTED | 0 | 5 | **0.0%** | 8h / 16h / 32h |
 | **BUILD** | **V1 Build Program (R0+R1+S1)** | ✅ **COMPLETED** | **19** | **19** | **100.0% (Build Complete)** | **0h (Signed Off)** |
-| **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **33** | **56** | **58.9% (Strict) / 64.5% (Weighted)** | **46h / 92h / 184h (~1.1 to 4.6 wks)** |
+| **ALL** | **Overall v1 Program (Build + Test)** | 🟡 **PARTIAL** | **37** | **56** | **66.1% (Strict) / 69.3% (Weighted)** | **32h / 64h / 128h (~0.8 to 3.2 wks)** |
 
 ---
 
@@ -60,13 +63,13 @@ R0 Research      [████████████████████] 
 R1 Architecture  [████████████████████] 100%  (6/6 tasks)
 S1 Optimization  [████████████████████] 100%  (7/7 tasks)
 Build Complete   [████████████████████] 100%  (19/19 build tasks)
-S2 Live Integr.  [███████████░░░░░░░░░]  55%  (6/11 genuine passes; 1 sim; 4 blocked)
+S2 Live Integr.  [██████████████████░░]  91%  (9/11 genuine passes; 1 sim; 1 HW blocked)
 S3 Reliability   [███████████░░░░░░░░░]  57%  (4/7 tasks)
 S4 Deployment    [██████████░░░░░░░░░░]  50%  (4/8 tasks)
 S5 Release Cand. [░░░░░░░░░░░░░░░░░░░░]   0%  (0/6 tasks)
 S6 Prod Release  [░░░░░░░░░░░░░░░░░░░░]   0%  (0/5 tasks)
-Overall Weighted [█████████████░░░░░░░]  65%  (Stage-weighted: 64.48%)
-Checklist Proof  [████████████████░░░░]  80%  (36/45 covered; 9 testing)
+Overall Weighted [██████████████░░░░░░]  69%  (Stage-weighted: 69.25%)
+Checklist Proof  [█████████████████░░░]  87%  (39/45 covered; 6 testing)
 ```
 
 ---
@@ -88,15 +91,15 @@ Checklist Proof  [████████████████░░░░] 
 |:---:|---|:---:|---:|:---:|---|:---:|:---:|:---:|---|---|:---:|---|
 | **S2.1** | OpenFGA persistent datastore restart verification | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_openfga_persists_across_python_restart` PASSED against live `openfga:v1.22.1` | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.2** | Infisical secret lifecycle & restart persistence | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Machine identity + Universal Auth + `test_infisical_persists_across_python_restart` PASSED live | 2026-11-18 (`418e964`) | Rotate test secrets |
-| **S2.3** | Lago subscription lifecycle & webhook persistence | 🟡 | 20% | High | S1.2 | Staging 16G | 4h / 8h / 14h | 3h / 6h / 10h | BLK-01 (16 GB staging needed) | Unit tests pass; preflight pass | 2026-11-18 (`418e964`) | Run on 16 GB staging |
-| **S2.4** | OpenMeter Kafka event ingestion & ClickHouse persistence | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (Kafka/CH RAM) | CloudEvents unit tests pass | 2026-11-18 (`418e964`) | Run on 16 GB staging |
-| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (ClickHouse RAM) | OTel collector config parsed | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.3** | Lago subscription lifecycle & webhook persistence | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Full Rails 77 migration suite passed; customer + subscription + entitlement verified live | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.4** | OpenMeter Kafka event ingestion & ClickHouse persistence | ✅ | 100% | High | S1.2 | PC/Docker | 6h / 12h / 20h | 0h | None | CloudEvents token consumption ingested via Kafka 3.9 into ClickHouse 25.12; queried live in 42s | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (ClickHouse/ZooKeeper RAM ceiling on 8 GB laptop) | OTel collector config parsed & adapter verified | 2026-11-18 (`418e964`) | Run on 16 GB staging |
 | **S2.6** | Temporal workflow durability across worker restart | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_temporal_workflow_survives_worker_restart` PASSED live (worker SIGKILL recovery) | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.7** | Supabase/PostgreSQL relational & vector persistence | ✅ | 100% | Critical | S1.2 | PC/Docker | 4h / 8h / 12h | 0h | None | `test_supabase_relational_and_vector_persist` PASSED live (volume durability) | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.8** | Sandbox execution of untrusted Python code | ✅ | 100% | High | None | PC/Docker | 4h / 8h / 14h | 0h | None | 12/12 C3 sandbox controls + `test_sandbox_executes_real_python` PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.9** | Kamal deployment command sequence validation | ✅ | 100% | Medium | None | PC | 2h / 4h / 8h | 0h | Real deployment deferred | Simulated command sequence ordering verified | 2026-11-18 (`418e964`) | Maintain simulation label |
 | **S2.10** | Bytebase authenticated DDL schema migration | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Bytebase 3.x CI/CD flow (Sheet/Plan/Issue/Rollout) PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
-| **S2.11** | LibreChat authenticated route to reasoning gateway | 🟡 | 20% | Medium | S1.2 | Staging 16G | 4h / 8h / 14h | 3h / 6h / 10h | BLK-01 (16 GB staging needed) | Custom endpoint config mounted | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.11** | LibreChat authenticated route to reasoning gateway | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | LibreChat + MongoDB + Reasoning Gateway with TieredActivationGate verified multi-turn chat in 9.8s | 2026-11-18 (`418e964`) | Maintain live test |
 
 ---
 

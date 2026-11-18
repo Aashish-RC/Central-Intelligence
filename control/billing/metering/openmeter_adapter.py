@@ -174,7 +174,9 @@ class OpenMeterAdapter:
         """Aggregates metered usage across criteria."""
         if self.adapter_mode == "live" and not os.getenv("CI_TEST_MODE") == "1":
             try:
-                params: Dict[str, Any] = {"from": int(since * 1000) if since else 0}
+                params: Dict[str, Any] = {}
+                if since is not None:
+                    params["from"] = datetime.fromtimestamp(since, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                 if user_id:
                     params["subject"] = f"user:{user_id}"
                 resp = self._http_client().get(

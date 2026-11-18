@@ -47,3 +47,4 @@ Thumbs.db
 
 # Runtime checkpoints
 .temporal_checkpoints/
+scratch/
