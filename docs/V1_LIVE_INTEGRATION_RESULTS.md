@@ -6,7 +6,7 @@
 **Working Revision:** `af93f635fe225be0023b851bab982a52fa69b67c` (`af93f63`)  
 **Repository:** `Aashish-RC/Central-Intelligence`  
 **Execution Environment:** Local Hybrid Staging (Windows 11 x64, WSL2 Engine, Docker 29.9.2, Python 3.12.12 venv)  
-**Status:** **STAGE S2 ADVANCED — 6/11 GENUINE PASSES, 1 SIMULATED, 4 BLOCKED (16 GB STAGING ENVIRONMENT REQUIRED)**  
+**Status:** **STAGE S2 ADVANCED — 9/11 GENUINE PASSES, 1 SIMULATED, 1 BLOCKED (16 GB STAGING ENVIRONMENT REQUIRED FOR SIGNOZ)**  
 
 ---
 

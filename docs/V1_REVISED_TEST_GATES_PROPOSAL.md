@@ -11,10 +11,10 @@
 ## 1. Executive Summary & Review of Historical Scenarios
 
 During Stage S2 live integration testing (`docs/V1_LIVE_INTEGRATION_RESULTS.md`), 11 historical live integration scenarios were evaluated against real containers and process restart boundaries:
-- **6 Genuine Live Passes:** OpenFGA (SC-01), Infisical (SC-02), Temporal (SC-06), PostgreSQL/pgvector (SC-07), Sandbox Isolation (SC-08), Bytebase (SC-10).
+- **9 Genuine Live Passes:** OpenFGA (SC-01), Infisical (SC-02), Lago (SC-03), OpenMeter (SC-04), Temporal (SC-06), PostgreSQL/pgvector (SC-07), Sandbox Isolation (SC-08), Bytebase (SC-10), LibreChat (SC-11).
 - **4 Auxiliary Foundation Live Passes:** Valkey (6.5 MiB), Qdrant (57 MiB), Apache AGE (95 MiB), Temporal Echo.
 - **1 Simulated Pass:** Kamal deployment sequence (SC-09).
-- **4 Blocked Scenarios:** Lago (SC-03), OpenMeter (SC-04), SigNoz (SC-05), LibreChat (SC-11) — blocked solely due to the physical RAM limitations of 8 GB developer/CI host environments (>5.4 GiB required).
+- **1 Blocked Scenario:** SigNoz (SC-05) — blocked on local host due to physical RAM ceiling of full ClickHouse/ZooKeeper/OTel telemetry cluster (>4.5 GiB required).
 
 ### The Architectural Problem with Current Release Gates
 The current release gate definitions (G-B1, G-B2, G-D3, G-E1 in `docs/CRITICAL_RELEASE_GATE_REPORT.md`) directly couple release criteria to **specific third-party vendor platforms**:
