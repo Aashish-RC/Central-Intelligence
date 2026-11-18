@@ -21,7 +21,7 @@
   - SC-07: PostgreSQL / pgvector (Live pass, volume durability)
   - SC-08: Sandbox Isolation (Live pass, 12 runtime controls)
   - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout)
-  - SC-11: LibreChat (Live pass, L4 Reasoning Gateway, TieredActivationGate synthesis, multi-turn chat)
+  - SC-11: LibreChat (Live pass, browser Playwright E2E -> UI session -> L4 Reasoning Gateway -> DOM response verified in 14.7s)
   - SC-09: Kamal (Simulated pass preserved; live server execution deferred)
   - SC-05: SigNoz (Live pass, ClickHouse 25.12, Postgres metastore, SigNoz query v0.150, Ingester, OTel collector verified live in 48s)
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
@@ -99,7 +99,7 @@ Checklist Proof  [█████████████████░░░] 
 | **S2.8** | Sandbox execution of untrusted Python code | ✅ | 100% | High | None | PC/Docker | 4h / 8h / 14h | 0h | None | 12/12 C3 sandbox controls + `test_sandbox_executes_real_python` PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.9** | Kamal deployment command sequence validation | ✅ | 100% | Medium | None | PC | 2h / 4h / 8h | 0h | Real deployment deferred | Simulated command sequence ordering verified | 2026-11-18 (`418e964`) | Maintain simulation label |
 | **S2.10** | Bytebase authenticated DDL schema migration | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Bytebase 3.x CI/CD flow (Sheet/Plan/Issue/Rollout) PASSED live | 2026-11-18 (`418e964`) | Maintain live test |
-| **S2.11** | LibreChat authenticated route to reasoning gateway | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | LibreChat + MongoDB + Reasoning Gateway with TieredActivationGate verified multi-turn chat in 9.8s | 2026-11-18 (`418e964`) | Maintain live test |
+| **S2.11** | LibreChat authenticated route to reasoning gateway | ✅ | 100% | Medium | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Authenticated Playwright Chrome session -> UI -> Custom Endpoint "Central Intelligence" -> L4 Gateway -> DOM response verified in 14.7s (`tests/integration/test_librechat_e2e.py`) | 2026-11-18 | Maintain live test |
 
 ---
 

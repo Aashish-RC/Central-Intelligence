@@ -1128,6 +1128,9 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3080
+      - ALLOW_REGISTRATION=true
+      - REQUIRE_EMAIL_VERIFICATION=false
+      - ALLOW_EMAIL_LOGIN=true
       - CONFIG_PATH=/app/librechat.yaml
       - LIBRECHAT_GATEWAY_URL=${LIBRECHAT_GATEWAY_URL:?LIBRECHAT_GATEWAY_URL must be set}
       - REASONING_GATEWAY_API_KEY=${REASONING_GATEWAY_API_KEY:?REASONING_GATEWAY_API_KEY must be set}
