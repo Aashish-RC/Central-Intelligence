@@ -30,7 +30,7 @@ Stage S4 validates that Central Intelligence v1 installs cleanly, configures det
 | **S4.5** | **Resource Telemetry & Capability Accounting** | `platform_infra/compute/lifecycle/capability_activation.py` | Lease tracking, tenant usage metering, and capability lifecycle events audited in Merkle ledger. | **✅ PASSED** |
 | **S4.6** | **Private Cloud / Air-Gapped Deployment** | Offline wheel and pinned Docker image tarballs | Package installs offline from wheel; container images pinned by sha256 digests. Physical air-gapped test pending. | **⚪ PENDING** |
 | **S4.7** | **Kubernetes Helm Manifests** | Kubernetes manifests / Helm charts | Deferred to post-v1 (v1.1 roadmap) per optimization plan. | **⚪ DEFERRED (v1.1)** |
-| **S4.8** | **Production Health Check & Watchdog Daemon** | Sequential health probes across 7 live containers | Health checks verified across all running services (`/healthz`, `pg_isready`, `redis-cli ping`, etc.). | **🟡 PARTIAL** |
+| **S4.8** | **Production Health Check & Watchdog Daemon** | `platform_infra/compute/health/service_watchdog.py`, `scripts/run_service_watchdog.py`, `tests/unit/test_s48_service_watchdog.py` | Multi-service health monitoring daemon implemented with TCP/HTTP/custom probes, consecutive failure degradation, auto-remediation (container restart & custom hooks), cooldown anti-flapping, and fallback routing. 6/6 tests passed. | **✅ PASSED** |
 
 ---
 

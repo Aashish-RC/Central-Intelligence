@@ -122,7 +122,7 @@ Checklist Proof  [█████████████████░░░] 
 - **S4.5:** Resource telemetry & tenant cost accounting exporter (PASSED, 100%).
 - **S4.6:** Private cloud / air-gapped deployment verification (Pending offline bundle, 0%).
 - **S4.7:** Kubernetes Helm chart / Kustomize manifests (Deferred to V1.1, 0%).
-- **S4.8:** Production health check & self-healing watchdog daemon (Partial, 60%).
+- **S4.8:** Production health check & self-healing watchdog daemon (PASSED, 100% - `service_watchdog.py`, `run_service_watchdog.py`, and 6/6 tests passed).
 
 ---
 
