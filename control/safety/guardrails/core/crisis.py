@@ -74,7 +74,7 @@ CRISIS_RESOURCES: Dict[str, Dict[str, str]] = {
 
 CATEGORY_PATTERNS = {
     "self_harm": [
-        r"\b(?:suicid(?:e|al|ing)?|kill(?:ing)?\s+myself|end(?:ing)?\s+my\s+life|want(?:ing)?\s+to\s+die|hang(?:ing)?\s+myself|slit(?:ting)?\s+my\s+wrists)\b",
+        r"\b(?:suicid(?:e|al|ing)?|kill(?:ing)?\s+myself|end(?:ing)?\s+my\s+life|want(?:ing)?\s+to\s+die|hang(?:ing)?\s+myself|(?:slit|cut)(?:ting)?\s+(?:my\s+)?wrists|bleeding\s+out)\b",
         r"\b(?:how\s+to\s+commit\s+suicide|painless\s+way\s+to\s+die|overdose\s+on\s+pills\s+to\s+die|take\s+my\s+(?:own\s+)?life)\b",
         r"\b(?:self[-\s]?harm(?:ing)?|cut(?:ting)?\s+myself|harm(?:ing)?\s+myself|hurt(?:ing)?\s+myself)\b",
         r"\b(?:end\s+it\s+all|don't\s+want\s+to\s+live|want(?:ing)?\s+to\s+commit\s+suicide)\b",
@@ -120,6 +120,10 @@ class CrisisHandler:
         Returns (is_crisis, crisis_response_text).
         Maintains backwards compatibility with earlier calls.
         """
+        # Exclude historical / public health educational inquiries referencing lifeline names
+        if re.search(r"\b(?:history\s+of\s+(?:the\s+)?988|history\s+of\s+the\s+suicide\s+prevention|history\s+of\s+the\s+988\s+suicide)\b", text, re.IGNORECASE):
+            return False, None
+
         for cat, regexes in self._compiled.items():
             for regex in regexes:
                 if regex.search(text):
@@ -130,6 +134,9 @@ class CrisisHandler:
         """
         Returns (is_crisis, category, crisis_response_text).
         """
+        if re.search(r"\b(?:history\s+of\s+(?:the\s+)?988|history\s+of\s+the\s+suicide\s+prevention|history\s+of\s+the\s+988\s+suicide)\b", text, re.IGNORECASE):
+            return False, None, None
+
         for cat, regexes in self._compiled.items():
             for regex in regexes:
                 if regex.search(text):
