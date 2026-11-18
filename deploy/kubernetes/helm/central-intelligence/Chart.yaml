@@ -1,0 +1,15 @@
+apiVersion: v2
+name: central-intelligence
+description: Cloud-native Helm Chart for Central Intelligence V1 Unified AI Brain Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - agentic
+  - reasoning
+  - llm-gateway
+  - central-intelligence
+maintainers:
+  - name: Central Intelligence Platform Team
+    email: ops@central-intelligence.local

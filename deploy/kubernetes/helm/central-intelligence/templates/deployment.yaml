@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "central-intelligence.fullname" . }}
+  labels:
+    {{- include "central-intelligence.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "central-intelligence.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "central-intelligence.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gateway.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "central-intelligence.fullname" . }}-config
+            - secretRef:
+                name: {{ include "central-intelligence.fullname" . }}-secrets
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}

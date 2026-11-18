@@ -121,7 +121,7 @@ Checklist Proof  [█████████████████░░░] 
 - **S4.4:** Disaster recovery & snapshot restoration drill (PASSED, 100%).
 - **S4.5:** Resource telemetry & tenant cost accounting exporter (PASSED, 100%).
 - **S4.6:** Private cloud / air-gapped deployment verification (PASSED, 100% - `dist/airgap_bundle/`, packaging script, verification runner, and 3/3 tests passed).
-- **S4.7:** Kubernetes Helm chart / Kustomize manifests (Deferred to V1.1, 0%).
+- **S4.7:** Kubernetes Helm chart / Kustomize manifests (PASSED, 100% - `deploy/kubernetes/helm/` Chart v1.0.0, Kustomize staging/prod overlays, and 3/3 tests passed).
 - **S4.8:** Production health check & self-healing watchdog daemon (PASSED, 100% - `service_watchdog.py`, `run_service_watchdog.py`, and 6/6 tests passed).
 
 ---

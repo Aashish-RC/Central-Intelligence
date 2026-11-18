@@ -1,0 +1,84 @@
+# Default values for central-intelligence.
+# This is a YAML-formatted file.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/aashish-rc/central-intelligence
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+profile: "standard" # Options: lite, standard, enterprise
+
+gateway:
+  port: 4000
+  env:
+    ENABLE_SYNTHESIS: "true"
+    DEFAULT_LLM_PROVIDER: "ollama"
+    EMBEDDING_BACKEND: "local"
+    ADAPTER_MODE: "live"
+    CI_ENVIRONMENT: "production"
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+storage:
+  postgres:
+    enabled: true
+    host: "central-postgres"
+    port: 5432
+    database: "postgres"
+  valkey:
+    enabled: true
+    host: "central-valkey"
+    port: 6379
+  qdrant:
+    enabled: true
+    host: "central-qdrant"
+    port: 6333
+  temporal:
+    enabled: true
+    host: "central-temporal"
+    port: 7233
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 4000
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: ai.central-intelligence.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: central-intelligence-tls
+      hosts:
+        - ai.central-intelligence.local
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 4000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 4000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
