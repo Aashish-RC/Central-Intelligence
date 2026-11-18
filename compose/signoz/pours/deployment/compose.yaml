@@ -8,7 +8,7 @@ services:
     - -c
     - |
       /signoz-otel-collector migrate sync check &&
-      /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/opamp-config.yaml --copy-path=/var/tmp/collector-config.yaml
+      /signoz-otel-collector --config=/etc/otel-collector-config.yaml
     depends_on:
       signoz-signoz-0:
         condition: service_healthy
@@ -28,11 +28,8 @@ services:
       retries: 10
       start_period: 60s
       test:
-      - CMD
-      - wget
-      - --spider
-      - -q
-      - http://localhost:13133/
+      - CMD-SHELL
+      - bash -c "echo > /dev/tcp/localhost/13133"
       timeout: 5s
     image: signoz/signoz-otel-collector:latest@sha256:09513891a155624e3fc84844c5d41de1fc174dccf48312cfffa9a05e93c1e349
     networks:

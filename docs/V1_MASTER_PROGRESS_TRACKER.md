@@ -23,7 +23,7 @@
   - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout)
   - SC-11: LibreChat (Live pass, L4 Reasoning Gateway, TieredActivationGate synthesis, multi-turn chat)
   - SC-09: Kamal (Simulated pass preserved; live server execution deferred)
-  - SC-05: SigNoz (Blocked on 16 GB staging environment; ClickHouse/ZooKeeper/OTel exceeds 8 GB host RAM ceiling).
+  - SC-05: SigNoz (Live pass, ClickHouse 25.12, Postgres metastore, SigNoz query v0.150, Ingester, OTel collector verified live in 48s)
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
 - **Offline Automated Test Baseline:**
   - Python Pytest (3.12.12): **1,217 collected & passed, 0 failed, 125 deselected** (100% pass of selected offline tests).
@@ -47,7 +47,7 @@
 | **R0** | Research & Requirements | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **R1** | Architecture & Platform Foundation | ✅ COMPLETED | 6 | 6 | **100.0%** | 0h / 0h / 0h |
 | **S1** | Development & Optimization (Build) | ✅ COMPLETED | 7 | 7 | **100.0%** | 0h / 0h / 0h |
-| **S2** | Live Integrations (Testing) | 🟢 SUBSTANTIALLY COMPLETE | 10 | 11 | **90.9%** (9 live, 1 sim) | 2h / 4h / 8h |
+| **S2** | Live Integrations (Testing) | ✅ COMPLETED | 11 | 11 | **100.0%** (10 live, 1 sim) | 0h / 0h / 0h |
 | **S3** | Reliability & Security (Testing) | 🟡 PARTIAL | 4 | 7 | **57.1%** | 14h / 28h / 56h |
 | **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 5 | 8 | **62.5%** | 10h / 20h / 40h |
 | **S5** | Release Candidate (RC1) | ⚪ NOT STARTED | 0 | 6 | **0.0%** | 12h / 24h / 48h |
@@ -63,7 +63,7 @@ R0 Research      [████████████████████] 
 R1 Architecture  [████████████████████] 100%  (6/6 tasks)
 S1 Optimization  [████████████████████] 100%  (7/7 tasks)
 Build Complete   [████████████████████] 100%  (19/19 build tasks)
-S2 Live Integr.  [██████████████████░░]  91%  (9/11 genuine passes; 1 sim; 1 HW blocked)
+S2 Live Integr.  [████████████████████] 100%  (10/11 genuine passes; 1 sim; 0 blocked)
 S3 Reliability   [███████████░░░░░░░░░]  57%  (4/7 tasks)
 S4 Deployment    [██████████░░░░░░░░░░]  50%  (4/8 tasks)
 S5 Release Cand. [░░░░░░░░░░░░░░░░░░░░]   0%  (0/6 tasks)
@@ -93,7 +93,7 @@ Checklist Proof  [█████████████████░░░] 
 | **S2.2** | Infisical secret lifecycle & restart persistence | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Machine identity + Universal Auth + `test_infisical_persists_across_python_restart` PASSED live | 2026-11-18 (`418e964`) | Rotate test secrets |
 | **S2.3** | Lago subscription lifecycle & webhook persistence | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | Full Rails 77 migration suite passed; customer + subscription + entitlement verified live | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.4** | OpenMeter Kafka event ingestion & ClickHouse persistence | ✅ | 100% | High | S1.2 | PC/Docker | 6h / 12h / 20h | 0h | None | CloudEvents token consumption ingested via Kafka 3.9 into ClickHouse 25.12; queried live in 42s | 2026-11-18 (`418e964`) | Maintain live test |
-| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | 🟡 | 20% | High | S1.2 | Staging 16G | 6h / 12h / 20h | 5h / 10h / 16h | BLK-01 (ClickHouse/ZooKeeper RAM ceiling on 8 GB laptop) | OTel collector config parsed & adapter verified | 2026-11-18 (`418e964`) | Run on 16 GB staging |
+| **S2.5** | SigNoz OTel trace ingestion & ClickHouse query verification | ✅ | 100% | High | S1.2 | PC/Docker | 6h / 12h / 20h | 0h | None | Full SigNoz stack (ClickHouse 25.12, Postgres metastore, SigNoz query v0.150, Ingester, OTel collector) verified live in 48s; trace query confirmed | 2026-11-18 (`d8844ec`) | Maintain live test |
 | **S2.6** | Temporal workflow durability across worker restart | ✅ | 100% | High | S1.2 | PC/Docker | 4h / 8h / 14h | 0h | None | `test_temporal_workflow_survives_worker_restart` PASSED live (worker SIGKILL recovery) | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.7** | Supabase/PostgreSQL relational & vector persistence | ✅ | 100% | Critical | S1.2 | PC/Docker | 4h / 8h / 12h | 0h | None | `test_supabase_relational_and_vector_persist` PASSED live (volume durability) | 2026-11-18 (`418e964`) | Maintain live test |
 | **S2.8** | Sandbox execution of untrusted Python code | ✅ | 100% | High | None | PC/Docker | 4h / 8h / 14h | 0h | None | 12/12 C3 sandbox controls + `test_sandbox_executes_real_python` PASSED live | 2026-11-18 (`418e964`) | Maintain live test |

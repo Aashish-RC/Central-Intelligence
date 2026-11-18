@@ -701,7 +701,44 @@ def test_signoz_persists_across_python_restart():
     signoz_url = _required_live_env("SIGNOZ_LIVE_URL")
 
     otlp_url = os.getenv("SIGNOZ_OTLP_URL", "http://localhost:4318")
+    token = os.getenv("SIGNOZ_API_TOKEN", "")
     op_name = f"e2e_trace_{uuid4().hex[:8]}"
+
+    # Auto-acquire token if not provided in environment
+    if not token:
+        try:
+            admin_email = os.getenv("SIGNOZ_ADMIN_EMAIL", "admin@central-intelligence.local")
+            admin_pass = os.getenv("SIGNOZ_ADMIN_PASSWORD", "AdminPassword123!")
+            org_id = os.getenv("SIGNOZ_ORG_ID", "")
+            if not org_id:
+                try:
+                    ctx_resp = httpx.get(f"{signoz_url}/api/v2/sessions/context", params={"email": admin_email}, timeout=5.0)
+                    if ctx_resp.status_code == 200:
+                        orgs = ctx_resp.json().get("data", {}).get("orgs", [])
+                        if orgs:
+                            org_id = orgs[0].get("id", "")
+                except Exception:
+                    pass
+            if not org_id:
+                try:
+                    reg_resp = httpx.post(
+                        f"{signoz_url}/api/v1/register",
+                        json={"email": admin_email, "password": admin_pass, "name": "Admin"},
+                        timeout=5.0,
+                    )
+                    if reg_resp.status_code == 200:
+                        org_id = reg_resp.json().get("data", {}).get("orgId", "")
+                except Exception:
+                    pass
+            login_resp = httpx.post(
+                f"{signoz_url}/api/v2/sessions/email_password",
+                json={"email": admin_email, "password": admin_pass, "orgId": org_id},
+                timeout=5.0,
+            )
+            if login_resp.status_code == 200:
+                token = login_resp.json().get("data", {}).get("accessToken", "")
+        except Exception:
+            pass
 
     env = os.environ.copy()
     env["ADAPTER_MODE"] = "live"
@@ -717,7 +754,13 @@ import os, time
 from control.observability.signoz.signoz_adapter import SigNozAdapter
 adapter = SigNozAdapter(endpoint_url='{otlp_url}')
 span = adapter.start_trace('{op_name}', layer='L14')
+time.sleep(0.05)
 span.end()
+from opentelemetry import trace
+provider = trace.get_tracer_provider()
+if hasattr(provider, 'force_flush'):
+    provider.force_flush()
+print(span.trace_id)
 """,
         ],
         env=env,
@@ -725,6 +768,7 @@ span.end()
         text=True,
     )
     assert p1.returncode == 0, f"Process 1 start trace failed: {p1.stderr}"
+    trace_id = p1.stdout.strip().splitlines()[-1]
 
     # Subprocess 2: query trace from SigNoz
     p2 = subprocess.run(
@@ -734,14 +778,16 @@ span.end()
             f"""
 import os, sys, time, httpx
 deadline = time.monotonic() + 30
+headers = {{'Authorization': f'Bearer {token}'}} if '{token}' else {{}}
 while time.monotonic() < deadline:
-    resp = httpx.get('{signoz_url}/api/v1/traces', params={{'serviceName': 'central-intelligence'}}, timeout=5.0)
+    # Query trace by ID (SigNoz v0.150+) or service traces fallback
+    resp = httpx.get('{signoz_url}/api/v1/traces/{trace_id}', headers=headers, timeout=5.0)
     if resp.status_code != 200:
-        raise AssertionError(f'SigNoz trace query returned HTTP {{resp.status_code}}: {{resp.text}}')
-    if '{op_name}' in resp.text:
+        resp = httpx.get('{signoz_url}/api/v1/traces', headers=headers, params={{'serviceName': 'central-intelligence'}}, timeout=5.0)
+    if resp.status_code == 200 and '{op_name}' in resp.text:
         sys.exit(0)
     time.sleep(1)
-raise AssertionError('SigNoz did not return the trace emitted by the first process')
+raise AssertionError(f'SigNoz did not return trace {trace_id}: HTTP {{resp.status_code}} {{resp.text[:200]}}')
 """,
         ],
         env=env,
