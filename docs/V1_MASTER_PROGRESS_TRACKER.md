@@ -109,7 +109,7 @@ Checklist Proof  [█████████████████░░░] 
 - **S3.3:** License & secret hygiene validation (PASSED, 0 errors across 45 services).
 - **S3.4:** Multi-tenant retrieval isolation & permission leak tests (PASSED, 14/14 tests).
 - **S3.5:** Extended soak test (24h continuous operation under memory limits) (Pending 16 GB runner, 0%).
-- **S3.6:** Chaos engineering & crash recovery drill (Partial, 50% - Temporal worker kill verified live).
+- **S3.6:** Chaos engineering & crash recovery drill (PASSED, 100% - Live PostgreSQL SIGKILL WAL recovery, Valkey cache loss/fallback, 50-worker Capability Activation Drain Race, and Temporal worker crash replay verified).
 - **S3.7:** Production security review & penetration test sign-off (Partial, 50% - 25/25 sandbox security tests passed).
 
 ---

@@ -5,7 +5,7 @@
 **Date:** 2026-11-17  
 **Working Revision:** `481d10dee0bf19ffa5a721b17a134b9d8d0fff46` (`481d10d`)  
 **Repository:** `Aashish-RC/Central-Intelligence`  
-**Status:** **STAGE S3 PARTIALLY COMPLETE (4/7 VERIFIED, EXTENDED SOAK & CHAOS PENDING STAGING)**  
+**Status:** **STAGE S3 NEAR COMPLETION (5/7 VERIFIED, EXTENDED SOAK & SECURITY PENDING)**  
 
 ---
 
@@ -31,7 +31,7 @@ Stage S3 validates Central Intelligence v1 under hostile, concurrent, and degrad
 | **Supply Chain & Secret Hygiene** | `python scripts/check_licenses.py` | Pinned Docker image digests, permissible OSI licenses (Apache-2.0, MIT, BSD-3), secret hygiene in compose and environment files. | 45 Compose services audited and verified. Zero unpinned tags, zero leaked secrets. | **✅ PASSED** |
 | **Crash & Interruption Recovery** | `pytest tests/integration/test_compose_stack_e2e.py -m live -k test_temporal_workflow_survives_worker_restart` | Durability of long-running workflows across sudden worker termination (SIGKILL). | Real Temporal server replayed workflow history to replacement worker; 100% completion verified. | **✅ PASSED** |
 | **24-Hour Continuous Soak Test** | Long-running daemon in Codespace | Continuous 10 RPS simulated load over 24 hours to measure RSS memory drift and file descriptor leaks. | Deferred to dedicated 16 GB Codespace environment to avoid host laptop memory exhaustion. | **⚪ PENDING (Codespace)** |
-| **Distributed Chaos Fault Injection** | Automated kill & partition drill | Container SIGKILL during active writes (PostgreSQL WAL recovery, Valkey fallback, Kafka partition rebalance). | Live worker kill verified (Temporal). PostgreSQL/Valkey live WAL drill pending Codespace cluster. | **🟡 PARTIAL** |
+| **Distributed Chaos Fault Injection & Crash Recovery** | `pytest tests/integration/test_chaos_recovery_live.py` | Container SIGKILL during active writes (PostgreSQL WAL recovery, zero corruption), Valkey outage & fallback to Postgres relational state, and 50-worker Capability Activation Drain Race. | 3 passed in 75.6s. Zero corrupted pages verified via sha256 checksums, clean atomic rollback, resilient cache fallback, unbroken Merkle audit chain. | **✅ PASSED** |
 
 ---
 
