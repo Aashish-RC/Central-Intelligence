@@ -109,9 +109,15 @@ def test_postgres_init_multi_db_script():
 
 
 def test_compose_config_validation():
-    """Verify that docker compose config parses cleanly with the current .env file."""
+    """Verify that docker compose config parses cleanly with current .env or fallback .env.example."""
+    env_file = REPO_ROOT / ".env"
+    cmd = ["docker", "compose"]
+    if not env_file.exists():
+        cmd.extend(["--env-file", str(REPO_ROOT / ".env.example")])
+    cmd.extend(["config", "--quiet"])
+
     res = subprocess.run(
-        ["docker", "compose", "config", "--quiet"],
+        cmd,
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

@@ -30,7 +30,12 @@ jobs:
           pip install sqlalchemy playwright
           playwright install --with-deps chromium
 
+      - name: Provide Compose interpolation placeholders
+        run: cp .env.example .env
+
       - name: Run pytest
+        env:
+          MEILISEARCH_MASTER_KEY: e2e-test-meili-key
         run: python -m pytest -q
 
   typescript-tests:
