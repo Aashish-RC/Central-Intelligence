@@ -57,11 +57,15 @@ test = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.12.0",
+    "sqlalchemy>=2.0.0",
+    "playwright>=1.40.0",
 ]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.12.0",
+    "sqlalchemy>=2.0.0",
+    "playwright>=1.40.0",
     "ruff>=0.3.0",
     "mypy>=1.9.0",
 ]

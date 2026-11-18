@@ -29,7 +29,8 @@ from uuid import uuid4
 
 import pytest
 import redis
-import sqlalchemy
+
+sqlalchemy = pytest.importorskip("sqlalchemy", reason="sqlalchemy is required for live database chaos testing")
 from sqlalchemy import text
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -94,6 +95,8 @@ def _wait_for_valkey(max_wait_s: float = 15.0) -> bool:
 # SCENARIO 1: PostgreSQL SIGKILL WAL Recovery Under Heavy Write Load
 # ==============================================================================
 
+@pytest.mark.live
+@pytest.mark.requires_provisioned_services
 @pytest.mark.integration
 def test_postgres_sigkill_wal_recovery_under_load():
     """Verify PostgreSQL WAL recovery completes cleanly with 0 corrupted pages after sudden SIGKILL."""
@@ -227,6 +230,8 @@ def test_postgres_sigkill_wal_recovery_under_load():
 # SCENARIO 2: Valkey Cache Loss & Relational State Fallback
 # ==============================================================================
 
+@pytest.mark.live
+@pytest.mark.requires_provisioned_services
 @pytest.mark.integration
 def test_valkey_cache_loss_and_relational_fallback():
     """Verify cache loss and complete Valkey outage seamlessly falls back to PostgreSQL relational store."""

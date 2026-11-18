@@ -7,9 +7,11 @@ Validates:
 
 import os
 import pytest
+
+playwright = pytest.importorskip("playwright", reason="playwright is required for browser E2E testing")
 from playwright.async_api import async_playwright
 
-pytestmark = [pytest.mark.integration, pytest.mark.requires_provisioned_services]
+pytestmark = [pytest.mark.live, pytest.mark.integration, pytest.mark.requires_provisioned_services]
 
 @pytest.mark.asyncio
 async def test_librechat_browser_gateway_e2e():
