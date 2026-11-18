@@ -12,18 +12,18 @@
 
 ### 1.1 Executive Summary
 - **Verified Checklist Coverage:** **39 of 45 items covered** (86.7%) in the evidence-reconciled 12-section project checklist (`docs/PROJECT_12_SECTION_CHECKLIST.md`); **6 items open**.
-- **Historical Live Integration Scenarios:** **9 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`, `docs/V1_INTEGRATION_EXECUTION_STATUS.md`):
+- **Historical Live Integration Scenarios:** **10 of 11 verified live** (`docs/V1_LIVE_INTEGRATION_RESULTS.md`, `docs/V1_INTEGRATION_EXECUTION_STATUS.md`):
   - SC-01: OpenFGA (Live pass, persistent DB datastore)
-  - SC-02: Infisical (Live pass, Universal Auth machine identity)
+  - SC-02: Infisical (Live pass, Universal Auth machine identity & vault workspace)
   - SC-03: Lago (Live pass, 77 Rails migrations, subscription & entitlement persistence across Python restart)
   - SC-04: OpenMeter (Live pass, Kafka 3.9 + ClickHouse 25.12, CloudEvents token ingestion & persistence)
+  - SC-05: SigNoz (Live pass, ClickHouse 25.12, Postgres metastore, SigNoz query v0.150, Ingester, OTel collector verified live in 48s)
   - SC-06: Temporal (Live pass, worker kill & replay)
   - SC-07: PostgreSQL / pgvector (Live pass, volume durability)
   - SC-08: Sandbox Isolation (Live pass, 12 runtime controls)
-  - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout)
-  - SC-11: LibreChat (Live pass, browser Playwright E2E -> UI session -> L4 Reasoning Gateway -> DOM response verified in 14.7s)
   - SC-09: Kamal (Simulated pass preserved; live server execution deferred)
-  - SC-05: SigNoz (Live pass, ClickHouse 25.12, Postgres metastore, SigNoz query v0.150, Ingester, OTel collector verified live in 48s)
+  - SC-10: Bytebase (Live pass, authenticated 3.x DDL rollout & Postgres verification)
+  - SC-11: LibreChat (Live pass, browser Playwright E2E -> UI session -> L4 Reasoning Gateway -> DOM response verified in 14.7s)
 - **Auxiliary Live Passes (Foundation):** **4 of 4** (Valkey 8.0, Qdrant 1.20, Apache AGE 1.6, Temporal Echo).
 - **Offline Automated Test Baseline:**
   - Python Pytest (3.12.12): **1,217 collected & passed, 0 failed, 125 deselected** (100% pass of selected offline tests).

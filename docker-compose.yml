@@ -916,8 +916,12 @@ services:
     image: getlago/api:v1.16.0
     container_name: central-lago-migrate
     restart: "no"
-    command: ["./scripts/start.migrate.sh"]
+    command: ["./scripts/migrate.sh"]
     environment:
+      LAGO_CREATE_ORG: "true"
+      LAGO_ORG_NAME: "Central Intelligence"
+      LAGO_ORG_USER_EMAIL: "admin@central-intelligence.local"
+      LAGO_ORG_USER_PASSWORD: "SuperSecurePass123!@#"
       DATABASE_URL: postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@lago-postgres:5432/lago?search_path=public
       REDIS_URL: redis://lago-redis:6379
       SECRET_KEY_BASE: ${LAGO_SECRET_KEY_BASE:?LAGO_SECRET_KEY_BASE must be set}

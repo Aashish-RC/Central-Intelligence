@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Central Intelligence — Clean Environment Bootstrap & Verification Script (Task S4.2)
 Cross-platform deterministic initialization for Windows PowerShell / pwsh environments.
