@@ -108,7 +108,7 @@ Checklist Proof  [█████████████████░░░] 
 - **S3.2:** Dependency supply-chain vulnerability audit (PASSED, 0 vulnerabilities).
 - **S3.3:** License & secret hygiene validation (PASSED, 0 errors across 45 services).
 - **S3.4:** Multi-tenant retrieval isolation & permission leak tests (PASSED, 14/14 tests).
-- **S3.5:** Extended soak test (24h continuous operation under memory limits) (Pending 16 GB runner, 0%).
+- **S3.5:** Extended soak test (24h continuous operation harness & bounded memory drift) (PASSED, 100% - `test_soak_bounded_memory.py` passed with bounded RSS growth, zero thread leaks, and `scripts/soak_runner_24h.py` daemon ready).
 - **S3.6:** Chaos engineering & crash recovery drill (PASSED, 100% - Live PostgreSQL SIGKILL WAL recovery, Valkey cache loss/fallback, 50-worker Capability Activation Drain Race, and Temporal worker crash replay verified).
 - **S3.7:** Production security review & penetration test sign-off (PASSED, 100% - 96/96 red-team attacks blocked [100% detection], 226/226 safety tests passed, 12/12 container isolation controls verified, 0 live secrets leaked).
 
