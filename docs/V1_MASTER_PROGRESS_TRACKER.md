@@ -49,7 +49,7 @@
 | **S1** | Development & Optimization (Build) | ✅ COMPLETED | 7 | 7 | **100.0%** | 0h / 0h / 0h |
 | **S2** | Live Integrations (Testing) | 🟢 SUBSTANTIALLY COMPLETE | 10 | 11 | **90.9%** (9 live, 1 sim) | 2h / 4h / 8h |
 | **S3** | Reliability & Security (Testing) | 🟡 PARTIAL | 4 | 7 | **57.1%** | 14h / 28h / 56h |
-| **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 4 | 8 | **50.0%** | 12h / 24h / 48h |
+| **S4** | Deployment & Operations (Staging) | 🟡 PARTIAL | 5 | 8 | **62.5%** | 10h / 20h / 40h |
 | **S5** | Release Candidate (RC1) | ⚪ NOT STARTED | 0 | 6 | **0.0%** | 12h / 24h / 48h |
 | **S6** | Production Release | ⚪ NOT STARTED | 0 | 5 | **0.0%** | 8h / 16h / 32h |
 | **BUILD** | **V1 Build Program (R0+R1+S1)** | ✅ **COMPLETED** | **19** | **19** | **100.0% (Build Complete)** | **0h (Signed Off)** |
@@ -116,7 +116,7 @@ Checklist Proof  [█████████████████░░░] 
 
 ### S4 — Deployment & Operations
 - **S4.1:** Deployment documentation & operational runbooks (PASSED, 100%).
-- **S4.2:** Clean installation & fresh environment bootstrap script (Partial, 60%).
+- **S4.2:** Clean installation & fresh environment bootstrap script (PASSED, 100% - scripts/bootstrap.sh, scripts/bootstrap.ps1, generate_env.py & 7/7 tests passed).
 - **S4.3:** Automated rollback guard & database migration reversibility (PASSED, 100%).
 - **S4.4:** Disaster recovery & snapshot restoration drill (PASSED, 100%).
 - **S4.5:** Resource telemetry & tenant cost accounting exporter (PASSED, 100%).
