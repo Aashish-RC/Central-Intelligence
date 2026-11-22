@@ -42,27 +42,6 @@ services:
       retries: 30
       start_period: 60s
 
-  # Global Fast Search Engine (MIT)
-  meilisearch:
-    profiles: ["optional"]
-    image: getmeili/meilisearch:v1.7.3
-    container_name: central-meilisearch
-    restart: unless-stopped
-    ports:
-      - "7700:7700"
-    environment:
-      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY:?MEILISEARCH_MASTER_KEY must be set}
-      - MEILI_ENV=development
-      - MEILI_NO_ANALYTICS=true
-    volumes:
-      - meili_data:/meili_data
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:7700/health || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 10s
-
   # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause)
   valkey:
     profiles: ["core", "lite", "standard", "enterprise"]
@@ -458,34 +437,10 @@ services:
       timeout: 10s
       retries: 20
 
-  # Bytebase Database Schema Migration & Version Control for L17 Release (Apache-2.0)
-  bytebase:
-    profiles: ["core", "standard", "enterprise"]
-    image: bytebase/bytebase:3.24.1
-    container_name: central-bytebase
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 64M
-    ports:
-      - "5678:8080"
-    volumes:
-      - bytebase_data:/var/opt/bytebase
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/healthz || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 15s
-
 
 volumes:
   qdrant_data:
   ollama_models:
-  meili_data:
   valkey_data:
   chroma_data:
   nango_data:
@@ -495,11 +450,8 @@ volumes:
   supabase_data:
   age_data:
   nats_data:
-  bytebase_data:
-  infisical_postgres_data:
   lago_redis_data:
   lago_storage_data:
-  openfga_postgres_data:
 
 networks:
   default:
