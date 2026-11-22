@@ -27,6 +27,18 @@ EOSQL
   echo "[init-multi-db] Database '$db_name' initialized successfully."
 }
 
+# Ensure standard Supabase administrative roles exist for extension hooks
+echo "[init-multi-db] Ensuring supabase_admin role exists..."
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'supabase_admin') THEN
+      CREATE ROLE supabase_admin WITH SUPERUSER LOGIN;
+    END IF;
+  END
+  \$\$;
+EOSQL
+
 # Read multiple databases from POSTGRES_MULTIPLE_DATABASES environment variable
 # Format: "db1:user1:pass1,db2:user2:pass2" or comma-separated names "openfga,infisical,lago,openmeter,signoz,temporal"
 DATABASES_CONFIG="${POSTGRES_MULTIPLE_DATABASES:-openfga,infisical,lago,openmeter,signoz,temporal}"

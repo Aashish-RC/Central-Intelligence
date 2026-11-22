@@ -257,7 +257,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
     volumes:
       - supabase_data:/var/lib/postgresql/data
-      - ./compose/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/01-init-multi-db.sh:ro
+      - ./compose/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/99-init-multi-db.sh:ro
     networks:
       - default
       - agpl_quarantine_net

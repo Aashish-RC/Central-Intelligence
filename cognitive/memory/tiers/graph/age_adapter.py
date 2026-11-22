@@ -155,6 +155,17 @@ class ApacheAGEAdapter(BaseGraphStore):
             kwargs = self._parse_pg_url(self._postgres_url)
             conn = pg8000.dbapi.connect(**kwargs)
             cur = conn.cursor()
+            try:
+                cur.execute(
+                    "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'supabase_admin') THEN "
+                    "CREATE ROLE supabase_admin WITH SUPERUSER LOGIN; END IF; END $$;"
+                )
+                conn.commit()
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             cur.execute("CREATE EXTENSION IF NOT EXISTS age;")
             cur.execute("LOAD 'age';")
             cur.execute('SET search_path = ag_catalog, "$user", public;')
