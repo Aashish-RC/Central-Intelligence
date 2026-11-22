@@ -313,42 +313,6 @@ services:
       start_period: 60s
 
   # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
-  openfga-postgres:
-    profiles: ["core", "standard", "enterprise"]
-    image: postgres:14-alpine
-    container_name: central-openfga-postgres
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 192M
-        reservations:
-          memory: 64M
-    environment:
-      POSTGRES_USER: openfga
-      POSTGRES_PASSWORD: ${OPENFGA_POSTGRES_PASSWORD:?OPENFGA_POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: openfga
-    volumes:
-      - openfga_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "openfga", "-d", "openfga"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-
-  openfga-migrate:
-    profiles: ["core", "standard", "enterprise"]
-    image: central-intelligence-openfga:v1.22.1
-    build:
-      context: ./compose/openfga
-    container_name: central-openfga-migrate
-    restart: "no"
-    command: ["migrate", "--datastore-engine", "postgres", "--datastore-uri", "postgres://openfga:${OPENFGA_POSTGRES_PASSWORD:?OPENFGA_POSTGRES_PASSWORD must be set}@openfga-postgres:5432/openfga?sslmode=disable"]
-    depends_on:
-      openfga-postgres:
-        condition: service_healthy
-
   openfga:
     profiles: ["core", "standard", "enterprise"]
     image: central-intelligence-openfga:v1.22.1
@@ -368,12 +332,10 @@ services:
       - "8082:8081"
     environment:
       - OPENFGA_DATASTORE_ENGINE=postgres
-      - OPENFGA_DATASTORE_URI=postgres://openfga:${OPENFGA_POSTGRES_PASSWORD:?OPENFGA_POSTGRES_PASSWORD must be set}@openfga-postgres:5432/openfga?sslmode=disable
+      - OPENFGA_DATASTORE_URI=postgres://openfga:${OPENFGA_POSTGRES_PASSWORD:?OPENFGA_POSTGRES_PASSWORD must be set}@supabase-db:5432/openfga?sslmode=disable
     depends_on:
-      openfga-postgres:
+      supabase-db:
         condition: service_healthy
-      openfga-migrate:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
       interval: 5s
@@ -399,11 +361,11 @@ services:
       - NODE_ENV=production
       - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:?INFISICAL_ENCRYPTION_KEY must be set}
       - AUTH_SECRET=${INFISICAL_AUTH_SECRET:?INFISICAL_AUTH_SECRET must be set}
-      - DB_CONNECTION_URI=postgres://infisical:${INFISICAL_POSTGRES_PASSWORD:?INFISICAL_POSTGRES_PASSWORD must be set}@infisical-postgres:5432/infisical
+      - DB_CONNECTION_URI=postgres://infisical:${INFISICAL_POSTGRES_PASSWORD:?INFISICAL_POSTGRES_PASSWORD must be set}@supabase-db:5432/infisical
       - REDIS_URL=redis://infisical-redis:6379
       - SITE_URL=http://localhost:8083
     depends_on:
-      infisical-postgres:
+      supabase-db:
         condition: service_healthy
       infisical-redis:
         condition: service_healthy
@@ -415,30 +377,6 @@ services:
       timeout: 3s
       retries: 20
       start_period: 60s
-
-  infisical-postgres:
-    profiles: ["core", "standard", "enterprise"]
-    image: postgres:14-alpine
-    container_name: central-infisical-postgres
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 192M
-        reservations:
-          memory: 64M
-    environment:
-      POSTGRES_USER: infisical
-      POSTGRES_PASSWORD: ${INFISICAL_POSTGRES_PASSWORD:?INFISICAL_POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: infisical
-    volumes:
-      - infisical_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready --username=infisical --dbname=infisical"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-      start_period: 10s
 
   infisical-redis:
     profiles: ["core", "standard", "enterprise"]
@@ -520,33 +458,6 @@ services:
       - ./compose/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/01-init-multi-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 10s
-
-  # Apache AGE (PostgreSQL + OpenCypher) for L2/L3 Default Open Graph Store (Apache-2.0)
-  apache-age:
-    profiles: ["core", "standard", "enterprise"]
-    image: apache/age:release_PG16_1.6.0
-    container_name: central-apache-age
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 96M
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      - POSTGRES_DB=${AGE_POSTGRES_DB:-postgres}
-    volumes:
-      - age_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${AGE_POSTGRES_DB:-postgres}"]
       interval: 5s
       timeout: 3s
       retries: 20

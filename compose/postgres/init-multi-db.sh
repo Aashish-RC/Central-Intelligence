@@ -47,3 +47,12 @@ if [ -n "$DATABASES_CONFIG" ]; then
   done
   echo "[init-multi-db] All consolidated multi-tenant databases ready."
 fi
+
+# Install Apache AGE extension into the main postgres database for unified graph queries
+echo "[init-multi-db] Installing Apache AGE extension in database '$POSTGRES_DB'..."
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+  CREATE EXTENSION IF NOT EXISTS age;
+  LOAD 'age';
+  SET search_path = ag_catalog, "$POSTGRES_USER";
+EOSQL
+echo "[init-multi-db] Apache AGE extension successfully configured in database '$POSTGRES_DB'."

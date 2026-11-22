@@ -42,7 +42,7 @@ if _env_path.is_file():
         _k, _, _v = _line.partition("=")
         os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
 
-COMPOSE_SERVICES = ["valkey", "qdrant", "apache-age", "temporal", "keycloak"]
+COMPOSE_SERVICES = ["valkey", "qdrant", "supabase-db", "temporal", "keycloak"]
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8085")
 qdrant_url = QDRANT_URL
@@ -381,7 +381,7 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
     from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
 
     pg_password = os.getenv("POSTGRES_PASSWORD", "e2e-postgres-pass")
-    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
+    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5432"))
     pg_url = os.getenv(
         "AGE_POSTGRES_URL",
         f"postgresql://postgres:{pg_password}@localhost:{age_port}/postgres",

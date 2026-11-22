@@ -121,7 +121,7 @@ class SupabaseAdapter:
         u = urlparse(age_url)
         conn = pg8000.connect(
             host=u.hostname or "localhost",
-            port=u.port or 5433,
+            port=u.port or 5432,
             user=u.username or "postgres",
             password=u.password or "postgres",
             database=(u.path or "/postgres").lstrip("/") or "postgres",
@@ -143,7 +143,7 @@ class SupabaseAdapter:
                 age_url = os.getenv("AGE_POSTGRES_URL")
                 if not age_url:
                     u = urlparse(self.connection_url)
-                    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
+                    age_port = int(os.getenv("AGE_POSTGRES_PORT", "5432"))
                     age_url = (
                         self.connection_url.replace(f":{u.port}", f":{age_port}")
                         if u.port

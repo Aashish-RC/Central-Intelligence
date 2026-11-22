@@ -119,7 +119,7 @@ class ApacheAGEAdapter(BaseGraphStore):
             else (
                 os.getenv("AGE_POSTGRES_URL")
                 or os.getenv("POSTGRES_URL")
-                or "postgresql://postgres:postgres@localhost:5433/postgres"
+                or "postgresql://postgres:postgres@localhost:5432/postgres"
             )
         )
         self._graph_name = re.sub(r"[^A-Za-z0-9_]", "_", graph_name.strip()) or "ci_memory_graph"

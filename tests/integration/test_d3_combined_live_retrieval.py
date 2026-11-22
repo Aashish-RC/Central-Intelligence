@@ -64,7 +64,7 @@ pytestmark = pytest.mark.live
 
 # Live service endpoints from environment / local approved configuration
 QDRANT_URL = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
-AGE_POSTGRES_PORT = int(os.getenv("AGE_POSTGRES_PORT", "5433"))
+AGE_POSTGRES_PORT = int(os.getenv("AGE_POSTGRES_PORT", "5432"))
 AGE_POSTGRES_PASS = os.getenv("POSTGRES_PASSWORD") or os.getenv("AGE_POSTGRES_PASSWORD", "")
 AGE_URL = os.getenv(
     "AGE_POSTGRES_URL",

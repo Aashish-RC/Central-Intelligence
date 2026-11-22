@@ -145,7 +145,7 @@ class MemoryEngine:
                 else (
                     os.getenv("AGE_POSTGRES_URL")
                     or self.config.postgres_url
-                    or "postgresql://postgres:postgres@localhost:5433/postgres"
+                    or "postgresql://postgres:postgres@localhost:5432/postgres"
                 )
             )
             self.graph = ApacheAGEAdapter(
