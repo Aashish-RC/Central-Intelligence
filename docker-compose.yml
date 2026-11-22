@@ -46,9 +46,9 @@ configs:
         enabled: false
 
 services:
-  # Vector Store for Memory Engine & Embeddings
+  # Vector Store for Memory Engine & Embeddings (Optional/Demo profile - default uses supabase-db pgvector)
   qdrant:
-    profiles: ["core", "lite", "standard", "enterprise"]
+    profiles: ["optional", "demo"]
     image: qdrant/qdrant:v1.20.0
     container_name: central-qdrant
     restart: unless-stopped

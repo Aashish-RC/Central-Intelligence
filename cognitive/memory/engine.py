@@ -34,6 +34,7 @@ from cognitive.memory.tiers.working.in_memory import InMemoryWorkingMemory
 from cognitive.memory.tiers.working.redis_adapter import RedisWorkingMemory
 from cognitive.memory.tiers.facts.sqlite_adapter import SQLiteFactStore
 from cognitive.memory.tiers.facts.postgres_adapter import PostgreSQLFactStore
+from cognitive.memory.tiers.semantic.pgvector_adapter import PgVectorAdapter
 from cognitive.memory.tiers.semantic.qdrant_adapter import QdrantAdapter
 from cognitive.memory.tiers.semantic.chroma_adapter import ChromaAdapter
 from cognitive.memory.tiers.graph.age_adapter import ApacheAGEAdapter
@@ -108,7 +109,7 @@ class MemoryEngine:
         else:
             self.facts = SQLiteFactStore(db_path=self.config.sqlite_path)
 
-        # Tier 3: Semantic Vector Store
+        # Tier 3: Semantic Vector Store (pgvector consolidated default, Qdrant/Chroma fallback)
         if vector_store is not None:
             self.vectors = vector_store
         elif self.config.vector_backend == VectorStoreBackend.CHROMA:
@@ -116,9 +117,15 @@ class MemoryEngine:
                 persist_dir=self.config.chroma_path,
                 collection_name=self.config.collection_name,
             )
-        else:
+        elif self.config.vector_backend == VectorStoreBackend.QDRANT:
             self.vectors = QdrantAdapter(
                 location=self.config.qdrant_location,
+                collection_name=self.config.collection_name,
+                dim=self.embedder.dimension,
+            )
+        else:
+            self.vectors = PgVectorAdapter(
+                connection_url=self.config.postgres_url,
                 collection_name=self.config.collection_name,
                 dim=self.embedder.dimension,
             )

@@ -17,6 +17,7 @@ class FactStoreBackend(str, Enum):
 
 
 class VectorStoreBackend(str, Enum):
+    PGVECTOR = "pgvector"
     QDRANT = "qdrant"
     CHROMA = "chroma"
 
@@ -69,8 +70,8 @@ class MemoryConfig(BaseModel):
 
     # Vector Store (Tier 3)
     vector_backend: VectorStoreBackend = Field(
-        default=VectorStoreBackend.QDRANT,
-        description="Tier 3 backend: qdrant or chroma",
+        default=VectorStoreBackend.PGVECTOR,
+        description="Tier 3 backend: pgvector (default consolidated), qdrant, or chroma",
     )
     qdrant_location: str = Field(
         default=":memory:",
@@ -160,7 +161,7 @@ class MemoryConfig(BaseModel):
             fact_backend=os.getenv("MEMORY_FACT_BACKEND", FactStoreBackend.SQLITE.value),
             sqlite_path=os.getenv("SQLITE_PATH", "./facts.db"),
             postgres_url=os.getenv("POSTGRES_URL"),
-            vector_backend=os.getenv("MEMORY_VECTOR_BACKEND", VectorStoreBackend.QDRANT.value),
+            vector_backend=os.getenv("MEMORY_VECTOR_BACKEND", VectorStoreBackend.PGVECTOR.value),
             qdrant_location=os.getenv("QDRANT_LOCATION", ":memory:"),
             chroma_path=os.getenv("CHROMA_PATH", "./chroma_db"),
             collection_name=os.getenv("COLLECTION_NAME", "agent_memories"),
