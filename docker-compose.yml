@@ -110,7 +110,7 @@ services:
       retries: 20
       start_period: 10s
 
-  # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause, optional Dragonfly alternative)
+  # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause)
   valkey:
     profiles: ["core", "lite", "standard", "enterprise"]
     image: valkey/valkey:8.0.2-alpine
@@ -126,6 +126,9 @@ services:
       - "6379:6379"
     volumes:
       - valkey_data:/data
+    networks:
+      - default
+      - agpl_quarantine_net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -325,12 +328,12 @@ services:
       - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY:?INFISICAL_ENCRYPTION_KEY must be set}
       - AUTH_SECRET=${INFISICAL_AUTH_SECRET:?INFISICAL_AUTH_SECRET must be set}
       - DB_CONNECTION_URI=postgres://infisical:${INFISICAL_POSTGRES_PASSWORD:?INFISICAL_POSTGRES_PASSWORD must be set}@supabase-db:5432/infisical
-      - REDIS_URL=redis://infisical-redis:6379
+      - REDIS_URL=redis://valkey:6379/1
       - SITE_URL=http://localhost:8083
     depends_on:
       supabase-db:
         condition: service_healthy
-      infisical-redis:
+      valkey:
         condition: service_healthy
     volumes:
       - infisical_data:/data
@@ -340,27 +343,6 @@ services:
       timeout: 3s
       retries: 20
       start_period: 60s
-
-  infisical-redis:
-    profiles: ["core", "standard", "enterprise"]
-    image: redis:7.4.7-alpine
-    container_name: central-infisical-redis
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-        reservations:
-          memory: 16M
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - infisical_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 5s
 
   # Hyperswitch Universal Payment Router for L13 Billing (Feature 13.13) (Apache-2.0)
   hyperswitch:
@@ -503,23 +485,6 @@ services:
       timeout: 3s
       retries: 20
       start_period: 10s
-
-  # Dragonfly High-Throughput Redis-Compatible Cache (BSL-1.1)
-  dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.26.1
-    container_name: central-dragonfly
-    profiles: ["optional"]
-    restart: unless-stopped
-    ports:
-      - "6381:6379"
-    volumes:
-      - dragonfly_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 5s
 
   # OpenMeter Real-Time Metering & Token Ingestion for L13 Billing (Apache-2.0)
   openmeter-postgres:
@@ -1026,14 +991,12 @@ volumes:
   huly_data:
   kafka_data:
   svix_data:
-  dragonfly_data:
   signoz_data:
   uptime_kuma_data:
   posthog_data:
   bytebase_data:
   librechat_data:
   infisical_postgres_data:
-  infisical_redis_data:
   openmeter_postgres_data:
   openmeter_clickhouse_data:
   openmeter_redis_data:
