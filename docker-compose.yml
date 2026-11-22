@@ -456,6 +456,9 @@ services:
     volumes:
       - supabase_data:/var/lib/postgresql/data
       - ./compose/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/01-init-multi-db.sh:ro
+    networks:
+      - default
+      - agpl_quarantine_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
       interval: 5s
@@ -772,34 +775,6 @@ services:
       openmeter-postgres:
         condition: service_healthy
 
-  # Lago Open Source Metering & Billing Engine for L13 Billing (AGPLv3 quarantined network)
-  lago-postgres:
-    profiles: ["core", "standard", "enterprise"]
-    image: postgres:14-alpine
-    container_name: central-lago-postgres
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 64M
-    environment:
-      POSTGRES_DB: lago
-      POSTGRES_USER: lago
-      POSTGRES_PASSWORD: ${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}
-      PGDATA: /data/postgres
-    volumes:
-      - lago_postgres_data:/data/postgres
-    networks:
-      - agpl_quarantine_net
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "lago", "-d", "lago"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-
   lago-redis:
     profiles: ["core", "standard", "enterprise"]
     image: redis:6-alpine
@@ -833,7 +808,7 @@ services:
       LAGO_ORG_NAME: "Central Intelligence"
       LAGO_ORG_USER_EMAIL: "admin@central-intelligence.local"
       LAGO_ORG_USER_PASSWORD: "SuperSecurePass123!@#"
-      DATABASE_URL: postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@lago-postgres:5432/lago?search_path=public
+      DATABASE_URL: postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@supabase-db:5432/lago?search_path=public
       REDIS_URL: redis://lago-redis:6379
       SECRET_KEY_BASE: ${LAGO_SECRET_KEY_BASE:?LAGO_SECRET_KEY_BASE must be set}
       RAILS_ENV: production
@@ -845,9 +820,10 @@ services:
     volumes:
       - lago_storage_data:/app/storage
     networks:
+      - default
       - agpl_quarantine_net
     depends_on:
-      lago-postgres:
+      supabase-db:
         condition: service_healthy
       lago-redis:
         condition: service_healthy
@@ -868,10 +844,10 @@ services:
       - "3002:3000"
     environment:
       - LAGO_API_URL=http://lago:3000
-      - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@lago-postgres:5432/lago?search_path=public
+      - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@supabase-db:5432/lago?search_path=public
       - REDIS_URL=redis://lago-redis:6379
       - SECRET_KEY_BASE=${LAGO_SECRET_KEY_BASE:?LAGO_SECRET_KEY_BASE must be set}
-      - RAILS_ENV=production
+      - RAILS_ENV: production
       - RAILS_LOG_TO_STDOUT=true
       - LAGO_FRONT_URL=http://localhost:3002
       - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY:?LAGO_RSA_PRIVATE_KEY must be set}
@@ -887,7 +863,7 @@ services:
       - default
       - agpl_quarantine_net
     depends_on:
-      lago-postgres:
+      supabase-db:
         condition: service_healthy
       lago-redis:
         condition: service_healthy
@@ -914,7 +890,7 @@ services:
     command: ["./scripts/start.worker.sh"]
     environment:
       - LAGO_API_URL=http://lago:3000
-      - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@lago-postgres:5432/lago?search_path=public
+      - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@supabase-db:5432/lago?search_path=public
       - REDIS_URL=redis://lago-redis:6379
       - SECRET_KEY_BASE=${LAGO_SECRET_KEY_BASE:?LAGO_SECRET_KEY_BASE must be set}
       - RAILS_ENV=production
@@ -932,6 +908,7 @@ services:
     volumes:
       - lago_storage_data:/app/storage
     networks:
+      - default
       - agpl_quarantine_net
     depends_on:
       lago:
@@ -1099,7 +1076,6 @@ volumes:
   openmeter_postgres_data:
   openmeter_clickhouse_data:
   openmeter_redis_data:
-  lago_postgres_data:
   lago_redis_data:
   lago_storage_data:
   librechat_mongodb_data:

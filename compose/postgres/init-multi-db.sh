@@ -28,8 +28,8 @@ EOSQL
 }
 
 # Read multiple databases from POSTGRES_MULTIPLE_DATABASES environment variable
-# Format: "db1:user1:pass1,db2:user2:pass2" or comma-separated names "openfga,infisical,lago,openmeter,signoz"
-DATABASES_CONFIG="${POSTGRES_MULTIPLE_DATABASES:-openfga,infisical,lago,openmeter,signoz}"
+# Format: "db1:user1:pass1,db2:user2:pass2" or comma-separated names "openfga,infisical,lago,temporal,openmeter,signoz"
+DATABASES_CONFIG="${POSTGRES_MULTIPLE_DATABASES:-openfga,infisical,lago,temporal,openmeter,signoz}"
 
 if [ -n "$DATABASES_CONFIG" ]; then
   echo "[init-multi-db] Processing multi-database configuration..."
@@ -47,6 +47,28 @@ if [ -n "$DATABASES_CONFIG" ]; then
   done
   echo "[init-multi-db] All consolidated multi-tenant databases ready."
 fi
+
+# Mitigate noisy-neighbor risk with per-user statement timeouts
+echo "[init-multi-db] Configuring per-role statement timeouts (noisy-neighbor mitigation)..."
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+  DO \$\$
+  BEGIN
+    IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'openfga') THEN
+      ALTER ROLE openfga SET statement_timeout = '15s';
+    END IF;
+    IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'infisical') THEN
+      ALTER ROLE infisical SET statement_timeout = '15s';
+    END IF;
+    IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'lago') THEN
+      ALTER ROLE lago SET statement_timeout = '30s';
+    END IF;
+    IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'temporal') THEN
+      ALTER ROLE temporal SET statement_timeout = '30s';
+    END IF;
+  END
+  \$\$;
+EOSQL
+echo "[init-multi-db] Statement timeouts configured successfully."
 
 # Install Apache AGE extension into the main postgres database for unified graph queries
 echo "[init-multi-db] Installing Apache AGE extension in database '$POSTGRES_DB'..."
