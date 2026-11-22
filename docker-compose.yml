@@ -268,6 +268,68 @@ services:
       retries: 20
       start_period: 10s
 
+  # PgBouncer Connection Pooler for High Concurrency & HA (Task A11)
+  pgbouncer:
+    profiles: ["core", "lite", "standard", "enterprise"]
+    image: edoburu/pgbouncer:v1.23.1
+    container_name: central-pgbouncer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
+    ports:
+      - "6432:6432"
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=supabase-db
+      - DB_PORT=5432
+      - DB_NAME=*
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=200
+      - DEFAULT_POOL_SIZE=25
+      - AUTH_TYPE=plain
+    networks:
+      - default
+      - agpl_quarantine_net
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Tier 3 Dynamic Router Service (Task A11) (~50 MB RSS)
+  tier-router:
+    profiles: ["core", "lite", "standard", "enterprise"]
+    image: python:3.12-alpine
+    container_name: central-tier-router
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./platform_infra/routing/tier_router.py:/app/tier_router.py:ro
+    working_dir: /app
+    command: ["python", "tier_router.py"]
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8089/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   # NATS JetStream Event & Messaging Broker (Task A7) (Apache-2.0)
   nats:
     profiles: ["core", "standard", "enterprise"]
