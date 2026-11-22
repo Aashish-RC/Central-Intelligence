@@ -284,7 +284,7 @@ services:
       - "6432:6432"
     environment:
       - DB_USER=postgres
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       - DB_HOST=supabase-db
       - DB_PORT=5432
       - DB_NAME=*

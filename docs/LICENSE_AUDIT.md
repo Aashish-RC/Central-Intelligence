@@ -44,6 +44,9 @@ Every Compose service is assigned to either the `core` or `optional` profile. St
 | `apache-age` | `apache/age:release_PG16_1.6.0` | Apache-2.0 | **L2/L3 default open OpenCypher graph DB** (replaces FalkorDB/Memgraph for hosted launches) |
 | `huly` | `hardcoreeng/front:v0.7.432` | EPL-2.0 | Separate container boundary; distribute modifications under EPL-2.0 if modified |
 | `kafka` | `apache/kafka:3.8.0` | Apache-2.0 | L15 Event messaging backbone |
+| `nats` | `nats:2.10-alpine` | Apache-2.0 | Lightweight Go JetStream messaging backbone |
+| `pgbouncer` | `edoburu/pgbouncer:v1.23.1` | BSD-2-Clause | Connection pooler for PostgreSQL |
+| `tier-router` | `python:3.12-alpine` | PSF-2.0 | Tier-1 dynamic reverse proxy router |
 | `svix` | `svix/svix-server:v1.57.0` | MIT | L15 Webhook delivery service |
 | `openmeter` | `ghcr.io/openmeterio/openmeter:v1.0.0-beta.236` | Apache-2.0 | L13 Real-time metering & token ingestion |
 | `openmeter-postgres` | `postgres:14.20-alpine3.23@sha256:14f02666642586a64d6fae8ef42d479fd76456a77c73ae8a626b8fe323b76d22` | PostgreSQL License | OpenMeter metadata store |

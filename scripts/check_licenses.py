@@ -63,6 +63,9 @@ REVIEWED_COMPOSE_SERVICES: dict[str, tuple[str, bool]] = {
     "bytebase": ("Apache-2.0", True),
     "librechat-mongodb": ("SSPL-v1", False),
     "librechat": ("MIT", True),
+    "pgbouncer": ("BSD-2-Clause", True),
+    "tier-router": ("PSF-2.0", True),
+    "nats": ("Apache-2.0", True),
 }
 
 # Packages that include dual licensing or permissive runtime exceptions alongside GPL.
