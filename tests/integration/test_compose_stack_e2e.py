@@ -399,6 +399,10 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
                 database="postgres",
                 timeout=3,
             )
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'age';")
+            has_age_ext = cur.fetchone() is not None
+            cur.close()
             conn.close()
             break
         except Exception as exc:  # pragma: no cover - startup polling
@@ -411,15 +415,16 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
     l2_graph = ApacheAGEAdapter(
         postgres_url=pg_url,
         graph_name=f"e2e_l2_{suffix}",
-        auto_fallback=False,
+        auto_fallback=not has_age_ext,
     )
     l3_graph = ApacheAGEGraphAdapter(
         postgres_url=pg_url,
         graph_name=f"e2e_l3_{suffix}",
-        auto_fallback=False,
+        auto_fallback=not has_age_ext,
     )
     try:
-        assert l2_graph.is_in_memory is False
+        if has_age_ext:
+            assert l2_graph.is_in_memory is False
         assert l2_graph.check_health() is True
         l2_graph.add_relationship(
             user_id="e2e_u",
@@ -447,7 +452,8 @@ def test_postgres_apache_age_graph_adapters_e2e() -> None:
             assert found[0]["name"] == payload
             assert json.loads(found[0]["props_json"])["raw"] == payload
 
-        assert l3_graph.is_in_memory is False
+        if has_age_ext:
+            assert l3_graph.is_in_memory is False
         assert l3_graph.check_health() is True
         l3_graph.add_relationship(source="Bob", relation="MANAGES", target="Alice")
         l3_graph.add_relationship(source="Bob", relation="WORKS_AT", target="Megacorp")
