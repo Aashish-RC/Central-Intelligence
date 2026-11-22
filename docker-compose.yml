@@ -150,44 +150,7 @@ services:
       retries: 20
       start_period: 10s
 
-  # Graph Memory Tier (Tier 4) (BSL-1.1; optional profile — OSI default uses supabase-db with Apache AGE)
-  memgraph:
-    image: memgraph/memgraph-platform:2.14.1-memgraph2.14.1-lab2.11.1
-    container_name: central-memgraph
-    profiles: ["optional"]
-    restart: unless-stopped
-    ports:
-      - "7687:7687"
-      - "3000:3000"
-    environment:
-      - MEMGRAPH=--log-level=WARNING
-    volumes:
-      - memgraph_data:/var/lib/memgraph
-    healthcheck:
-      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole > /dev/null 2>&1 || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 10s
-
-  # GraphRAG Engine for L3 Knowledge
-  # LICENSE NOTICE: SSPL-v1 (non-OSI; optional profile — OSI default uses supabase-db Apache AGE)
-  falkordb:
-    image: falkordb/falkordb:v4.22.3
-    container_name: central-falkordb
-    profiles: ["optional"]
-    restart: unless-stopped
-    ports:
-      - "6380:6379"
-    volumes:
-      - falkordb_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 5s
-
+  # Graph tier is fully consolidated into supabase-db Apache AGE (Task A3)
   # Nango Federated OAuth Gateway for L5 Action
   # LICENSE NOTICE: Elastic-2.0 (source-available, non-OSI; optional profile only)
   nango:
@@ -1052,8 +1015,6 @@ volumes:
   meili_data:
   valkey_data:
   chroma_data:
-  memgraph_data:
-  falkordb_data:
   nango_data:
   temporal_data:
   phoenix_data:
