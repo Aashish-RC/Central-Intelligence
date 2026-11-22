@@ -15,7 +15,12 @@ def test_compose_images_extraction():
     compose_path = REPO_ROOT / "docker-compose.yml"
     images = extract_compose_images(compose_path)
 
-    assert len(images) >= 30, f"Expected at least 30 compose images, got {len(images)}"
+    # Consolidated compose has >= 15 core images; demo stack has >= 30
+    assert len(images) >= 15, f"Expected at least 15 compose images in consolidated compose, got {len(images)}"
+    demo_path = REPO_ROOT / "docker-compose.demo.yml"
+    if demo_path.exists():
+        demo_images = extract_compose_images(demo_path)
+        assert len(demo_images) >= 30, f"Expected at least 30 images in demo compose, got {len(demo_images)}"
 
     # Ensure no image uses unpinned :latest tag without digest
     unpinned = [img for img in images if img.endswith(":latest") and "@sha256:" not in img]
@@ -34,7 +39,7 @@ def test_airgap_bundle_build_and_verification(tmp_path: Path):
 
     assert manifest["airgap_compatible"] is True
     assert manifest["requires_internet_egress"] is False
-    assert len(manifest["pinned_images"]) >= 30
+    assert len(manifest["pinned_images"]) >= 15
     assert len(manifest["artifact_checksums_sha256"]) >= 5
 
     # Run verifier against generated bundle

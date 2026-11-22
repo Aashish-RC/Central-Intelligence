@@ -28,8 +28,8 @@ EOSQL
 }
 
 # Read multiple databases from POSTGRES_MULTIPLE_DATABASES environment variable
-# Format: "db1:user1:pass1,db2:user2:pass2" or comma-separated names "openfga,infisical,lago,temporal,openmeter,signoz"
-DATABASES_CONFIG="${POSTGRES_MULTIPLE_DATABASES:-openfga,infisical,lago,temporal,openmeter,signoz}"
+# Format: "db1:user1:pass1,db2:user2:pass2" or comma-separated names "openfga,infisical,lago,openmeter,signoz,temporal"
+DATABASES_CONFIG="${POSTGRES_MULTIPLE_DATABASES:-openfga,infisical,lago,openmeter,signoz,temporal}"
 
 if [ -n "$DATABASES_CONFIG" ]; then
   echo "[init-multi-db] Processing multi-database configuration..."

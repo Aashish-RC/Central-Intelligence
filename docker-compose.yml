@@ -427,7 +427,7 @@ services:
       - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@supabase-db:5432/lago?search_path=public
       - REDIS_URL=redis://lago-redis:6379
       - SECRET_KEY_BASE=${LAGO_SECRET_KEY_BASE:?LAGO_SECRET_KEY_BASE must be set}
-      - RAILS_ENV: production
+      - RAILS_ENV=production
       - RAILS_LOG_TO_STDOUT=true
       - LAGO_FRONT_URL=http://localhost:3002
       - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY:?LAGO_RSA_PRIVATE_KEY must be set}
