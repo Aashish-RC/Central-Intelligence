@@ -13,15 +13,17 @@ receivers:
 processors:
   memory_limiter:
     check_interval: 1s
-    limit_mib: 256
+    limit_mib: 192
   batch:
     timeout: 5s
 
 exporters:
-  otlp:
-    endpoint: signoz-ingester:4317
-    tls:
-      insecure: true
+  otlphttp/langfuse:
+    endpoint: ${LANGFUSE_HOST:-https://cloud.langfuse.com}/api/public/otel
+    headers:
+      Authorization: ${LANGFUSE_AUTH_HEADER:-}
+  debug:
+    verbosity: basic
 
 service:
   extensions: [health_check]
@@ -29,12 +31,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [otlphttp/langfuse, debug]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [debug]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [debug]
