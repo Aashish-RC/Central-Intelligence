@@ -60,19 +60,13 @@ def test_env_example_completeness():
 
     critical_keys = [
         "NANGO_SECRET_KEY",
-        "MEILISEARCH_MASTER_KEY",
         "KEYCLOAK_ADMIN",
         "KEYCLOAK_ADMIN_PASSWORD",
-        "INFISICAL_ENCRYPTION_KEY",
-        "INFISICAL_AUTH_SECRET",
         "OPENFGA_POSTGRES_PASSWORD",
         "LAGO_POSTGRES_PASSWORD",
         "LAGO_SECRET_KEY_BASE",
         "LAGO_RSA_PRIVATE_KEY",
-        "OPENMETER_POSTGRES_PASSWORD",
-        "OPENMETER_CLICKHOUSE_PASSWORD",
-        "LIBRECHAT_MONGO_USER",
-        "LIBRECHAT_MONGO_PASSWORD",
+        "LIVEKIT_KEYS",
         "POSTGRES_PASSWORD",
     ]
     for key in critical_keys:

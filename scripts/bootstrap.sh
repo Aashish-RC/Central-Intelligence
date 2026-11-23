@@ -175,7 +175,7 @@ fi
 
 # Validate .env contains critical keys
 MISSING_KEYS=0
-for key in NANGO_SECRET_KEY MEILISEARCH_MASTER_KEY INFISICAL_ENCRYPTION_KEY POSTGRES_PASSWORD; do
+for key in NANGO_SECRET_KEY KEYCLOAK_ADMIN_PASSWORD LAGO_SECRET_KEY_BASE POSTGRES_PASSWORD; do
   if ! grep -E "^${key}=" .env >/dev/null 2>&1; then
     check_fail "Missing critical configuration key in .env: $key"
     MISSING_KEYS=1

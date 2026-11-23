@@ -99,16 +99,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [python-tests, license-and-hygiene]
     env:
-      MEILISEARCH_MASTER_KEY: e2e-test-meili-key
       NANGO_SECRET_KEY: e2e-test-nango-secret
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: e2e-admin-pass
-      INFISICAL_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
       LIVEKIT_KEYS: "e2ekey: e2esecret"
       TEMPORAL_LIVE_URL: localhost:7233
       POSTGRES_PASSWORD: e2e-postgres-pass
-      POSTHOG_SECRET: e2e-test-posthog-secret
-      SVIX_JWT_SECRET: e2e-test-svix-jwt-secret
     steps:
       - uses: actions/checkout@v4
 
@@ -137,16 +133,12 @@ jobs:
       - name: Dump compose logs on failure
         if: failure()
         env:
-          MEILISEARCH_MASTER_KEY: e2e-test-meili-key
           NANGO_SECRET_KEY: e2e-test-nango-secret
           KEYCLOAK_ADMIN: admin
           KEYCLOAK_ADMIN_PASSWORD: e2e-admin-pass
-          INFISICAL_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
           TEMPORAL_LIVE_URL: localhost:7233
           LIVEKIT_KEYS: "e2ekey: e2esecret"
           POSTGRES_PASSWORD: e2e-postgres-pass
-          POSTHOG_SECRET: e2e-test-posthog-secret
-          SVIX_JWT_SECRET: e2e-test-svix-jwt-secret
         run: |
           docker compose ps -a
           docker compose logs --tail=80 valkey qdrant supabase-db temporal keycloak

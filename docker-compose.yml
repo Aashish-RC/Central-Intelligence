@@ -1,7 +1,7 @@
 services:
   # Vector Store for Memory Engine & Embeddings (Optional/Demo profile - default uses supabase-db pgvector)
   qdrant:
-    profiles: ["optional", "demo"]
+    profiles: [ "optional", "demo" ]
     image: qdrant/qdrant:v1.20.0
     container_name: central-qdrant
     restart: unless-stopped
@@ -19,7 +19,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /healthz HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1"]
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /healthz HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -27,7 +27,7 @@ services:
 
   # Local Model Serving for Offline / Dev Execution (MIT)
   ollama:
-    profiles: ["optional"]
+    profiles: [ "optional" ]
     image: ollama/ollama:0.40.16
     container_name: central-ollama
     restart: unless-stopped
@@ -36,7 +36,7 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     healthcheck:
-      test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
+      test: [ "CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -44,7 +44,7 @@ services:
 
   # Open-source High-Throughput In-Memory Cache & Pub/Sub (Valkey - OSI BSD-3-Clause)
   valkey:
-    profiles: ["core", "lite", "standard", "enterprise"]
+    profiles: [ "core", "lite", "standard", "enterprise" ]
     image: valkey/valkey:8.0.2-alpine
     container_name: central-valkey
     restart: unless-stopped
@@ -62,7 +62,7 @@ services:
       - default
       - agpl_quarantine_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -70,7 +70,7 @@ services:
 
   # Alternative Vector Store for Offline Mode (Apache-2.0)
   chroma:
-    profiles: ["optional"]
+    profiles: [ "optional" ]
     image: chromadb/chroma:0.4.22
     container_name: central-chroma
     restart: unless-stopped
@@ -79,7 +79,7 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8000/api/v1/heartbeat || exit 1"]
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:8000/api/v1/heartbeat || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -91,7 +91,7 @@ services:
   nango:
     image: nangohq/nango-server:hosted-0.72.4
     container_name: central-nango
-    profiles: ["optional"]
+    profiles: [ "optional" ]
     restart: unless-stopped
     ports:
       - "3003:3003"
@@ -101,7 +101,7 @@ services:
     volumes:
       - nango_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:3003/ || exit 1"]
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:3003/ || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -109,7 +109,7 @@ services:
 
   # Temporal Server for L8 Durable Workflow Execution (MIT)
   temporal:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: temporalio/temporal:1.10.0
     container_name: central-temporal
     restart: unless-stopped
@@ -119,14 +119,14 @@ services:
           memory: 256M
         reservations:
           memory: 64M
-    command: ["server", "start-dev", "--ip", "0.0.0.0"]
+    command: [ "server", "start-dev", "--ip", "0.0.0.0" ]
     ports:
       - "7233:7233"
       - "8233:8233"
     volumes:
       - temporal_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "temporal operator cluster health --address localhost:7233 > /dev/null 2>&1 || grpcurl -plaintext localhost:7233 list > /dev/null 2>&1 || exit 1"]
+      test: [ "CMD-SHELL", "temporal operator cluster health --address localhost:7233 > /dev/null 2>&1 || grpcurl -plaintext localhost:7233 list > /dev/null 2>&1 || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -134,7 +134,7 @@ services:
 
   # OpenTelemetry Collector for L14 Observability (Apache-2.0, OSI default telemetry backend)
   otel-collector:
-    profiles: ["core", "enterprise"]
+    profiles: [ "core", "enterprise" ]
     image: central-intelligence-otel-collector:0.120.0
     build:
       context: ./compose/otel
@@ -149,13 +149,13 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
-    command: ["--config=/etc/otelcol/config.yaml"]
+    command: [ "--config=/etc/otelcol/config.yaml" ]
     volumes:
       - ./compose/otel/collector.yaml:/etc/otelcol/config.yaml:ro
     networks:
       - default
     healthcheck:
-      test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:13133/"]
+      test: [ "CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:13133/" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -163,7 +163,7 @@ services:
 
   # Keycloak Enterprise IAM for L12 Identity (Auth, SSO, Passkeys) (Apache-2.0)
   keycloak:
-    profiles: ["core", "enterprise"]
+    profiles: [ "core", "enterprise" ]
     image: quay.io/keycloak/keycloak:26.8.2
     container_name: central-keycloak
     restart: unless-stopped
@@ -182,7 +182,7 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /realms/master/.well-known/openid-configuration HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1"]
+      test: [ "CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /realms/master/.well-known/openid-configuration HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3' || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -190,7 +190,7 @@ services:
 
   # OpenFGA Zanzibar ReBAC for L12 Fine-Grained Authorization (Apache-2.0)
   openfga:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: central-intelligence-openfga:v1.22.1
     build:
       context: ./compose/openfga
@@ -213,7 +213,7 @@ services:
       supabase-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      test: [ "CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -221,7 +221,7 @@ services:
 
   # LiveKit Real-Time WebRTC Audio/Video Server for L1 Perception (Task 1.1) (Apache-2.0)
   livekit:
-    profiles: ["optional"]
+    profiles: [ "optional" ]
     image: livekit/livekit-server:v1.13.11
     container_name: central-livekit
     restart: unless-stopped
@@ -232,7 +232,7 @@ services:
     environment:
       - LIVEKIT_KEYS=${LIVEKIT_KEYS:?LIVEKIT_KEYS must be set}
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:7880/ || exit 1"]
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:7880/ || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -240,7 +240,7 @@ services:
 
   # Supabase Postgres + pgvector + RLS for L15 Data (Task 15.1) (Apache-2.0 / PostgreSQL)
   supabase-db:
-    profiles: ["core", "lite", "standard", "enterprise"]
+    profiles: [ "core", "lite", "standard", "enterprise" ]
     image: supabase/postgres:15.1.1.78
     container_name: central-supabase-db
     restart: unless-stopped
@@ -262,7 +262,7 @@ services:
       - default
       - agpl_quarantine_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -270,7 +270,7 @@ services:
 
   # PgBouncer Connection Pooler for High Concurrency & HA (Task A11)
   pgbouncer:
-    profiles: ["core", "lite", "standard", "enterprise"]
+    profiles: [ "core", "lite", "standard", "enterprise" ]
     image: edoburu/pgbouncer:v1.23.1
     container_name: central-pgbouncer
     restart: unless-stopped
@@ -299,14 +299,14 @@ services:
       supabase-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
+      test: [ "CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
   # Tier 3 Dynamic Router Service (Task A11) (~50 MB RSS)
   tier-router:
-    profiles: ["core", "lite", "standard", "enterprise"]
+    profiles: [ "core", "lite", "standard", "enterprise" ]
     image: python:3.12-alpine
     container_name: central-tier-router
     restart: unless-stopped
@@ -321,18 +321,18 @@ services:
     volumes:
       - ./platform_infra/routing/tier_router.py:/app/tier_router.py:ro
     working_dir: /app
-    command: ["python", "tier_router.py"]
+    command: [ "python", "tier_router.py" ]
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8089/healthz || exit 1"]
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:8089/healthz || exit 1" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
   # NATS JetStream Event & Messaging Broker (Task A7) (Apache-2.0)
   nats:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: nats:2.10-alpine
     container_name: central-nats
     restart: unless-stopped
@@ -342,21 +342,21 @@ services:
           memory: 128M
         reservations:
           memory: 32M
-    command: ["-js", "-m", "8222"]
+    command: [ "-js", "-m", "8222" ]
     ports:
       - "4222:4222"
       - "8222:8222"
     volumes:
       - nats_data:/data
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8222/healthz"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://127.0.0.1:8222/healthz" ]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 5s
 
   lago-redis:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: redis:6-alpine
     container_name: central-lago-redis
     restart: unless-stopped
@@ -366,23 +366,23 @@ services:
           memory: 64M
         reservations:
           memory: 16M
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - lago_redis_data:/data
     networks:
       - agpl_quarantine_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
   lago-migrate:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: getlago/api:v1.16.0
     container_name: central-lago-migrate
     restart: "no"
-    command: ["./scripts/migrate.sh"]
+    command: [ "./scripts/migrate.sh" ]
     environment:
       LAGO_CREATE_ORG: "true"
       LAGO_ORG_NAME: "Central Intelligence"
@@ -409,7 +409,7 @@ services:
         condition: service_healthy
 
   lago:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: getlago/api:v1.16.0
     container_name: central-lago
     restart: unless-stopped
@@ -419,7 +419,7 @@ services:
           memory: 384M
         reservations:
           memory: 128M
-    command: ["./scripts/start.sh"]
+    command: [ "./scripts/start.sh" ]
     ports:
       - "3002:3000"
     environment:
@@ -450,14 +450,14 @@ services:
       lago-migrate:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000/health || exit 1" ]
       interval: 10s
       timeout: 60s
       retries: 20
       start_period: 30s
 
   lago-worker:
-    profiles: ["core", "standard", "enterprise"]
+    profiles: [ "core", "standard", "enterprise" ]
     image: getlago/api:v1.16.0
     container_name: central-lago-worker
     restart: unless-stopped
@@ -467,7 +467,7 @@ services:
           memory: 384M
         reservations:
           memory: 128M
-    command: ["./scripts/start.worker.sh"]
+    command: [ "./scripts/start.worker.sh" ]
     environment:
       - LAGO_API_URL=http://lago:3000
       - DATABASE_URL=postgresql://lago:${LAGO_POSTGRES_PASSWORD:?LAGO_POSTGRES_PASSWORD must be set}@supabase-db:5432/lago?search_path=public
@@ -494,11 +494,10 @@ services:
       lago:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "bundle exec sidekiqmon | grep \"$$(hostname)\" >/dev/null || exit 1"]
+      test: [ "CMD-SHELL", "bundle exec sidekiqmon | grep \"$$(hostname)\" >/dev/null || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 20
-
 
 volumes:
   qdrant_data:
@@ -508,9 +507,7 @@ volumes:
   nango_data:
   temporal_data:
   keycloak_data:
-  openfga_data:
   supabase_data:
-  age_data:
   nats_data:
   lago_redis_data:
   lago_storage_data:

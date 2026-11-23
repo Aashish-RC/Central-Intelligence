@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Central Intelligence — Clean Environment Bootstrap & Verification Script (Task S4.2)
 Cross-platform deterministic initialization for Windows PowerShell / pwsh environments.
@@ -131,7 +131,7 @@ if (-not (Test-Path -LiteralPath $EnvFile)) {
 }
 
 # Verify essential keys in .env
-$CriticalKeys = @('NANGO_SECRET_KEY', 'MEILISEARCH_MASTER_KEY', 'INFISICAL_ENCRYPTION_KEY', 'POSTGRES_PASSWORD')
+$CriticalKeys = @('NANGO_SECRET_KEY', 'KEYCLOAK_ADMIN_PASSWORD', 'LAGO_SECRET_KEY_BASE', 'POSTGRES_PASSWORD')
 $EnvContent = if (Test-Path -LiteralPath $EnvFile) { Get-Content -LiteralPath $EnvFile } else { @() }
 foreach ($key in $CriticalKeys) {
     $found = $EnvContent | Where-Object { $_ -match "^$key=" }
